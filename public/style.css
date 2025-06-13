@@ -1,16 +1,73 @@
 .filter-group input, .filter-group select {
     padding: 12px 16px;
-}* {
+}/* 브라우저 UI 색상 통합 */
+:root {
+    --primary-color: #667eea;
+    --secondary-color: #764ba2;
+    --gradient-bg: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+}
+
+* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+html {
+    height: 100%;
+    background: #667eea;
+}
+
+html::after {
+    content: '';
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 50vh;
+    background: #667eea;
+    z-index: -10;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--gradient-bg);
     color: #333;
+    min-height: -webkit-fill-available;
     min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* 사파리 바운스 스크롤 - 위아래 모두 파란색 */
+body::before {
+    content: '';
+    position: fixed;
+    top: -100vh;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: #667eea;
+    z-index: -1;
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    bottom: -100vh;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: #667eea;
+    z-index: -2;
+}
+
+/* PWA 지원을 위한 Safe Area 대응 */
+@supports (padding: max(0px)) {
+    body {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
 }
 
 .container {
@@ -193,6 +250,75 @@ header h1 {
     white-space: nowrap;
 }
 
+/* 토글 스위치 스타일 */
+.toggle-switch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #666;
+    white-space: nowrap;
+}
+
+.toggle-input {
+    display: none;
+}
+
+.toggle-label {
+    position: relative;
+    cursor: pointer;
+    font-weight: normal;
+    color: #666;
+    padding-left: 50px;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.toggle-label::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 20px;
+    background: #e0e0e0;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    border: 1px solid #ddd;
+}
+
+.toggle-label::after {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.toggle-input:checked + .toggle-label::before {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    border-color: #667eea;
+}
+
+.toggle-input:checked + .toggle-label::after {
+    transform: translateY(-50%) translateX(20px);
+}
+
+.toggle-label:hover::before {
+    box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+}
+
+.toggle-input:checked + .toggle-label:hover::before {
+    box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+}
+
 .search-box input, .filter-group input, .filter-group select {
     border: 2px solid #e0e0e0;
     border-radius: 25px;
@@ -218,6 +344,7 @@ header h1 {
     height: 35px;
     display: flex;
     align-items: center;
+    padding: 0 15px; /* 양쪽에 패딩 추가 */
 }
 
 .slider-track {
@@ -296,6 +423,7 @@ header h1 {
     font-size: 12px;
     color: #666;
     font-weight: 500;
+    padding: 0 15px; /* 값 표시도 동일한 패딩 */
 }
 
 button {
@@ -748,18 +876,35 @@ td {
         gap: 8px;
     }
     
-    .checkbox-label {
+    .toggle-label {
         font-size: 12px;
+        padding-left: 45px;
+    }
+    
+    .toggle-label::before {
+        width: 36px;
+        height: 18px;
+    }
+    
+    .toggle-label::after {
+        width: 14px;
+        height: 14px;
+    }
+    
+    .toggle-input:checked + .toggle-label::after {
+        transform: translateY(-50%) translateX(18px);
     }
     
     .slider-container {
         margin: 4px 0;
         height: 28px;
+        padding: 0 10px; /* 모바일에서 패딩 조정 */
     }
     
     .slider-values {
         margin-top: 2px;
         font-size: 10px;
+        padding: 0 10px; /* 모바일에서 패딩 조정 */
     }
     
     .search-input-group {

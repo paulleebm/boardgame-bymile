@@ -3,6 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- 사파리 상태바 및 브라우저 UI 색상 설정 -->
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="msapplication-navbutton-color" content="#667eea">
+    <meta name="msapplication-TileColor" content="#667eea">
+    
     <title>꿈엘청 보드게임 동아리</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -33,9 +41,10 @@
                     <label for="playersFilter">플레이 인원:</label>
                     <div class="players-input-group">
                         <input type="number" id="playersFilter" min="1" max="20" placeholder="인원 수">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="bestPlayersOnly"> 베스트만
-                        </label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="bestPlayersOnly" class="toggle-input">
+                            <label for="bestPlayersOnly" class="toggle-label">베스트만</label>
+                        </div>
                     </div>
                 </div>
                 
