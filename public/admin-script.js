@@ -54,10 +54,7 @@ async function loadGames() {
     hideMessages();
     
     try {
-        const response = await fetch('/api/data');
-        if (!response.ok) throw new Error('데이터 로드 실패');
-        
-        const data = await response.json();
+        const data = await window.boardGameAPI.getAllGames();
         allGames = data;
         currentGames = data;
         
@@ -140,17 +137,7 @@ function renderGames() {
 // 통계 업데이트
 function updateStats() {
     const totalGames = allGames.length;
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    
-    const recentlyAdded = allGames.filter(game => {
-        if (!game.createdAt) return false;
-        const gameDate = game.createdAt.toDate ? game.createdAt.toDate() : new Date(game.createdAt);
-        return gameDate > sevenDaysAgo;
-    }).length;
-    
     document.getElementById('totalGames').textContent = totalGames;
-    document.getElementById('recentlyAdded').textContent = recentlyAdded;
 }
 
 // 게임 검색
@@ -222,6 +209,8 @@ function editGame(gameId) {
     document.getElementById('gamePlayTime').value = game.playTime || '';
     document.getElementById('gameGenre').value = game.genre || '';
     document.getElementById('gameBuyer').value = game.buyer || '';
+    document.getElementById('gameImageUrl').value = game.imageUrl || '';
+    document.getElementById('gameYoutubeUrl').value = game.youtubeUrl || '';
     
     document.getElementById('gameModal').classList.remove('hidden');
 }
@@ -260,7 +249,9 @@ async function saveGame() {
         bestPlayers: document.getElementById('gameBestPlayers').value.trim(),
         playTime: parseInt(document.getElementById('gamePlayTime').value) || null,
         genre: document.getElementById('gameGenre').value.trim(),
-        buyer: document.getElementById('gameBuyer').value.trim()
+        buyer: document.getElementById('gameBuyer').value.trim(),
+        imageUrl: document.getElementById('gameImageUrl').value.trim(),
+        youtubeUrl: document.getElementById('gameYoutubeUrl').value.trim()
     };
     
     // 필수 필드 검증
@@ -284,27 +275,15 @@ async function saveGame() {
     showLoading(true);
     
     try {
-        let response;
+        let result;
         
         if (editingGameId) {
             // 수정
-            response = await fetch(`/api/data/${editingGameId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
+            result = await window.boardGameAPI.updateGame(editingGameId, formData);
         } else {
             // 추가
-            response = await fetch('/api/data', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
+            result = await window.boardGameAPI.addGame(formData);
         }
-        
-        if (!response.ok) throw new Error('저장 실패');
-        
-        const result = await response.json();
         
         closeModal();
         showSuccess(editingGameId ? '게임이 수정되었습니다.' : '새 게임이 추가되었습니다.');
@@ -325,11 +304,7 @@ async function confirmDelete() {
     showLoading(true);
     
     try {
-        const response = await fetch(`/api/data/${gameToDelete}`, {
-            method: 'DELETE'
-        });
-        
-        if (!response.ok) throw new Error('삭제 실패');
+        await window.boardGameAPI.deleteGame(gameToDelete);
         
         closeDeleteModal();
         showSuccess('게임이 삭제되었습니다.');
@@ -344,6 +319,20 @@ async function confirmDelete() {
 }
 
 // 유틸리티 함수들
+function formatPlayerInfo(game) {
+    const min = game.minPlayers;
+    const max = game.maxPlayers;
+    const best = game.bestPlayers;
+    
+    let result = formatPlayerCount(min, max);
+    
+    if (best) {
+        result += ` (베스트: ${best})`;
+    }
+    
+    return result;
+}
+
 function formatPlayerCount(min, max) {
     if (!min && !max) return '-';
     if (!max) return `${min}명+`;
@@ -409,10 +398,130 @@ function hideMessages() {
     hideSuccess();
 }
 
-// ESC 키로 모달 닫기
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeModal();
-        closeDeleteModal();
+// 대량 등록 모달 관련
+let bulkGameData = [];
+
+function openBulkModal() {
+    document.getElementById('bulkModal').classList.remove('hidden');
+    document.getElementById('bulkData').value = '';
+    document.getElementById('bulkPreview').classList.add('hidden');
+    document.getElementById('bulkSaveBtn').disabled = true;
+    bulkGameData = [];
+}
+
+function closeBulkModal() {
+    document.getElementById('bulkModal').classList.add('hidden');
+    bulkGameData = [];
+}
+
+function previewBulkData() {
+    const csvData = document.getElementById('bulkData').value.trim();
+    
+    if (!csvData) {
+        showError('CSV 데이터를 입력해주세요.');
+        return;
     }
-});
+    
+    try {
+        const lines = csvData.split('\n').filter(line => line.trim());
+        if (lines.length < 2) {
+            showError('헤더와 최소 1개의 데이터 행이 필요합니다.');
+            return;
+        }
+        
+        // 헤더 확인
+        const headers = lines[0].split(',').map(h => h.trim());
+        const expectedHeaders = ['name', 'difficulty', 'minPlayers', 'maxPlayers', 'bestPlayers', 'playTime', 'genre', 'buyer', 'imageUrl', 'youtubeUrl'];
+        
+        // 필수 헤더 체크 (name만 필수)
+        if (!headers.includes('name')) {
+            showError('name 컬럼은 필수입니다.');
+            return;
+        }
+        
+        bulkGameData = [];
+        const previewList = document.getElementById('previewList');
+        previewList.innerHTML = '';
+        
+        // 데이터 파싱
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',').map(v => v.trim());
+            const gameData = {};
+            
+            headers.forEach((header, index) => {
+                const value = values[index] || '';
+                
+                if (header === 'difficulty' && value) {
+                    gameData[header] = parseFloat(value) || null;
+                } else if (['minPlayers', 'maxPlayers', 'playTime'].includes(header) && value) {
+                    gameData[header] = parseInt(value) || null;
+                } else if (value) {
+                    gameData[header] = value;
+                }
+            });
+            
+            // 필수 데이터 체크
+            if (gameData.name) {
+                bulkGameData.push(gameData);
+                
+                // 미리보기 추가
+                const previewItem = document.createElement('div');
+                previewItem.className = 'preview-item';
+                previewItem.textContent = `${gameData.name} (난이도: ${gameData.difficulty || '-'}, 인원: ${formatPlayerInfo(gameData)})`;
+                previewList.appendChild(previewItem);
+            }
+        }
+        
+        document.getElementById('previewCount').textContent = bulkGameData.length;
+        document.getElementById('bulkPreview').classList.remove('hidden');
+        document.getElementById('bulkSaveBtn').disabled = bulkGameData.length === 0;
+        
+        if (bulkGameData.length === 0) {
+            showError('유효한 게임 데이터가 없습니다.');
+        }
+        
+    } catch (error) {
+        console.error('CSV 파싱 오류:', error);
+        showError('CSV 데이터 형식이 올바르지 않습니다.');
+    }
+}
+
+async function saveBulkData() {
+    if (bulkGameData.length === 0) {
+        showError('등록할 데이터가 없습니다.');
+        return;
+    }
+    
+    showLoading(true);
+    
+    try {
+        let successCount = 0;
+        let errorCount = 0;
+        
+        for (const gameData of bulkGameData) {
+            try {
+                await window.boardGameAPI.addGame(gameData);
+                successCount++;
+            } catch (error) {
+                console.error(`게임 "${gameData.name}" 등록 실패:`, error);
+                errorCount++;
+            }
+        }
+        
+        closeBulkModal();
+        
+        if (errorCount === 0) {
+            showSuccess(`${successCount}개의 게임이 성공적으로 등록되었습니다.`);
+        } else {
+            showSuccess(`${successCount}개 성공, ${errorCount}개 실패했습니다.`);
+        }
+        
+        await loadGames(); // 데이터 새로고침
+        
+    } catch (error) {
+        console.error('대량 등록 실패:', error);
+        showError('대량 등록에 실패했습니다.');
+    }
+    
+    showLoading(false);
+}

@@ -12,6 +12,7 @@
             <h1>🎲 보드게임 데이터베이스 관리자</h1>
             <div class="header-controls">
                 <a href="index.html" class="view-btn">📋 사용자 페이지</a>
+                <button class="bulk-btn" onclick="openBulkModal()">📦 대량 등록</button>
                 <button class="add-btn" onclick="openModal()">➕ 새 게임 추가</button>
             </div>
         </header>
@@ -20,10 +21,6 @@
             <div class="stat-card">
                 <div class="stat-number" id="totalGames">0</div>
                 <div class="stat-label">총 게임 수</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="recentlyAdded">0</div>
-                <div class="stat-label">최근 7일 추가</div>
             </div>
         </div>
 
@@ -117,6 +114,16 @@
                     <label for="gameBuyer">구매자</label>
                     <input type="text" id="gameBuyer" name="buyer" placeholder="구매자 이름">
                 </div>
+                
+                <div class="form-group">
+                    <label for="gameImageUrl">게임 이미지 URL</label>
+                    <input type="url" id="gameImageUrl" name="imageUrl" placeholder="https://example.com/image.jpg">
+                </div>
+                
+                <div class="form-group">
+                    <label for="gameYoutubeUrl">룰 설명 유튜브 링크</label>
+                    <input type="url" id="gameYoutubeUrl" name="youtubeUrl" placeholder="https://youtube.com/watch?v=...">
+                </div>
             </form>
             
             <div class="modal-footer">
@@ -147,6 +154,44 @@
         </div>
     </div>
 
+    <!-- 대량 등록 모달 -->
+    <div class="modal hidden" id="bulkModal">
+        <div class="modal-content bulk-modal">
+            <div class="modal-header">
+                <h2>대량 게임 등록</h2>
+                <button class="close-btn" onclick="closeBulkModal()">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="bulk-info">
+                    <p><strong>CSV 형식으로 여러 게임을 한번에 등록할 수 있습니다.</strong></p>
+                    <p>첫 번째 줄은 헤더이고, 각 열은 다음과 같습니다:</p>
+                    <code>name,difficulty,minPlayers,maxPlayers,bestPlayers,playTime,genre,buyer,imageUrl,youtubeUrl</code>
+                </div>
+                
+                <div class="form-group">
+                    <label for="bulkData">CSV 데이터:</label>
+                    <textarea id="bulkData" rows="10" placeholder="name,difficulty,minPlayers,maxPlayers,bestPlayers,playTime,genre,buyer,imageUrl,youtubeUrl
+스플렌더,2.3,2,4,3,30,전략,김철수,https://example.com/splendor.jpg,https://youtube.com/watch?v=abc
+킹 오브 도쿄,2.1,2,6,4,20,파티,이영희,https://example.com/kot.jpg,https://youtube.com/watch?v=def"></textarea>
+                </div>
+                
+                <div class="bulk-preview hidden" id="bulkPreview">
+                    <h4>미리보기:</h4>
+                    <div class="preview-count">등록될 게임 수: <span id="previewCount">0</span>개</div>
+                    <div class="preview-list" id="previewList"></div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" onclick="previewBulkData()" class="preview-btn">📋 미리보기</button>
+                <button type="button" onclick="closeBulkModal()" class="cancel-btn">취소</button>
+                <button type="button" onclick="saveBulkData()" class="save-btn" id="bulkSaveBtn" disabled>대량 등록</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="firebase-config.js"></script>
     <script src="admin-script.js"></script>
 </body>
 </html>

@@ -81,6 +81,24 @@ header h1 {
     box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
 }
 
+.bulk-btn {
+    background: linear-gradient(45deg, #ff9800, #f57c00);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+}
+
+.bulk-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 152, 0, 0.4);
+}
+
 /* 통계 카드 */
 .stats {
     display: grid;
@@ -331,6 +349,70 @@ button:hover {
 
 .modal-content.small {
     max-width: 400px;
+}
+
+.modal-content.bulk-modal {
+    max-width: 800px;
+    max-height: 95vh;
+}
+
+.bulk-info {
+    background: rgba(102, 126, 234, 0.1);
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.bulk-info code {
+    background: rgba(255, 255, 255, 0.8);
+    padding: 5px 8px;
+    border-radius: 5px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    display: block;
+    margin-top: 10px;
+    word-break: break-all;
+}
+
+.bulk-preview {
+    background: rgba(76, 175, 80, 0.1);
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 20px;
+}
+
+.preview-count {
+    font-weight: 600;
+    color: #4CAF50;
+    margin-bottom: 10px;
+}
+
+.preview-list {
+    max-height: 200px;
+    overflow-y: auto;
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.preview-item {
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+}
+
+.preview-item:last-child {
+    border-bottom: none;
+}
+
+.preview-btn {
+    background: linear-gradient(45deg, #2196F3, #1976D2);
+    color: white;
+}
+
+.preview-btn:hover {
+    box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
 }
 
 .modal-header {

@@ -22,22 +22,46 @@
 
         <div class="controls">
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="보드게임 검색...">
-                <select id="searchField" title="검색 필드 선택" aria-label="검색할 필드">
-                    <option value="">전체 필드</option>
-                </select>
+                <input type="text" id="searchInput" placeholder="게임 이름으로 검색...">
                 <button onclick="searchData()">🔍 검색</button>
+                <button onclick="clearSearch()" class="clear-btn">🔄 초기화</button>
             </div>
             
             <div class="filter-box">
-                <select id="filterField" title="필터 필드 선택" aria-label="필터할 필드">
-                    <option value="">필터 선택</option>
-                </select>
-                <select id="filterValue" title="필터 값 선택" aria-label="필터 값">
-                    <option value="">값 선택</option>
-                </select>
-                <button onclick="filterData()">📊 필터</button>
-                <button onclick="clearFilters()" class="clear-btn">🔄 초기화</button>
+                <div class="filter-group">
+                    <label for="playersFilter">플레이 인원:</label>
+                    <input type="number" id="playersFilter" min="1" max="20" placeholder="인원 수">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="bestPlayersOnly"> 베스트 인원만
+                    </label>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="playTimeFilter">플레이 시간 (분):</label>
+                    <select id="playTimeFilter">
+                        <option value="">전체</option>
+                        <option value="0-30">30분 이하</option>
+                        <option value="31-60">31-60분</option>
+                        <option value="61-120">61-120분</option>
+                        <option value="121-">120분 이상</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="difficultyFilter">난이도:</label>
+                    <select id="difficultyFilter">
+                        <option value="">전체</option>
+                        <option value="0-1.5">쉬움 (0-1.5)</option>
+                        <option value="1.6-2.5">보통 (1.6-2.5)</option>
+                        <option value="2.6-3.5">어려움 (2.6-3.5)</option>
+                        <option value="3.6-5">매우 어려움 (3.6-5)</option>
+                    </select>
+                </div>
+                
+                <div class="filter-actions">
+                    <button onclick="applyFilters()">📊 필터 적용</button>
+                    <button onclick="clearAllFilters()" class="clear-btn">🔄 필터 초기화</button>
+                </div>
             </div>
         </div>
 
@@ -73,6 +97,51 @@
         </div>
     </div>
 
+    <!-- 게임 상세 모달 -->
+    <div class="game-detail-modal hidden" id="gameDetailModal" onclick="closeGameModal()">
+        <div class="game-detail-content" onclick="event.stopPropagation()">
+            <button class="modal-close-btn" onclick="closeGameModal()">&times;</button>
+            
+            <div class="modal-game-image">
+                <img id="modalGameImage" src="" alt="게임 이미지">
+            </div>
+            
+            <div class="game-detail-info">
+                <h2 id="modalGameName">게임명</h2>
+                
+                <div class="detail-field">
+                    <span class="detail-label">난이도:</span>
+                    <span class="detail-value" id="modalDifficulty">-</span>
+                </div>
+                
+                <div class="detail-field">
+                    <span class="detail-label">플레이인원:</span>
+                    <span class="detail-value" id="modalPlayers">-</span>
+                </div>
+                
+                <div class="detail-field">
+                    <span class="detail-label">플레이 시간:</span>
+                    <span class="detail-value" id="modalPlayTime">-</span>
+                </div>
+                
+                <div class="detail-field">
+                    <span class="detail-label">장르/테마:</span>
+                    <span class="detail-value" id="modalGenre">-</span>
+                </div>
+                
+                <div class="detail-field">
+                    <span class="detail-label">구매자:</span>
+                    <span class="detail-value" id="modalBuyer">-</span>
+                </div>
+                
+                <a id="modalYoutubeLink" href="#" target="_blank" class="youtube-link">
+                    📺 룰 설명 영상 보기
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="firebase-config.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
