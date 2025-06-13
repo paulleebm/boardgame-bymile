@@ -23,17 +23,17 @@
         <div class="controls">
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="보드게임 검색...">
-                <select id="searchField">
+                <select id="searchField" title="검색 필드 선택" aria-label="검색할 필드">
                     <option value="">전체 필드</option>
                 </select>
                 <button onclick="searchData()">🔍 검색</button>
             </div>
             
             <div class="filter-box">
-                <select id="filterField">
+                <select id="filterField" title="필터 필드 선택" aria-label="필터할 필드">
                     <option value="">필터 선택</option>
                 </select>
-                <select id="filterValue">
+                <select id="filterValue" title="필터 값 선택" aria-label="필터 값">
                     <option value="">값 선택</option>
                 </select>
                 <button onclick="filterData()">📊 필터</button>
@@ -55,7 +55,7 @@
         </div>
 
         <!-- 테이블 뷰 -->
-        <div id="tableView" class="table-container" style="display: none;">
+        <div id="tableView" class="table-container hidden">
             <table id="dataTable">
                 <thead id="tableHead"></thead>
                 <tbody id="tableBody"></tbody>
@@ -67,7 +67,7 @@
             데이터를 불러오는 중...
         </div>
 
-        <div class="error-message" id="errorMessage" style="display: none;">
+        <div class="error-message hidden" id="errorMessage">
             <span id="errorText"></span>
             <button onclick="hideError()">닫기</button>
         </div>

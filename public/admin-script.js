@@ -201,7 +201,7 @@ function openModal() {
     document.getElementById('modalTitle').textContent = '새 게임 추가';
     document.getElementById('saveBtn').textContent = '추가';
     clearForm();
-    document.getElementById('gameModal').style.display = 'flex';
+    document.getElementById('gameModal').classList.remove('hidden');
 }
 
 // 게임 수정
@@ -223,25 +223,25 @@ function editGame(gameId) {
     document.getElementById('gameGenre').value = game.genre || '';
     document.getElementById('gameBuyer').value = game.buyer || '';
     
-    document.getElementById('gameModal').style.display = 'flex';
+    document.getElementById('gameModal').classList.remove('hidden');
 }
 
 // 게임 삭제 (확인 모달)
 function deleteGame(gameId, gameName) {
     gameToDelete = gameId;
     document.getElementById('deleteGameName').textContent = gameName;
-    document.getElementById('deleteModal').style.display = 'flex';
+    document.getElementById('deleteModal').classList.remove('hidden');
 }
 
 // 모달 닫기
 function closeModal() {
-    document.getElementById('gameModal').style.display = 'none';
+    document.getElementById('gameModal').classList.add('hidden');
     clearForm();
     editingGameId = null;
 }
 
 function closeDeleteModal() {
-    document.getElementById('deleteModal').style.display = 'none';
+    document.getElementById('deleteModal').classList.add('hidden');
     gameToDelete = null;
 }
 
@@ -380,7 +380,7 @@ function showError(message) {
     const errorText = document.getElementById('errorText');
     
     errorText.textContent = message;
-    errorMessage.style.display = 'flex';
+    errorMessage.classList.remove('hidden');
     
     setTimeout(hideError, 5000);
 }
@@ -391,17 +391,17 @@ function showSuccess(message) {
     const successText = document.getElementById('successText');
     
     successText.textContent = message;
-    successMessage.style.display = 'flex';
+    successMessage.classList.remove('hidden');
     
     setTimeout(hideSuccess, 3000);
 }
 
 function hideError() {
-    document.getElementById('errorMessage').style.display = 'none';
+    document.getElementById('errorMessage').classList.add('hidden');
 }
 
 function hideSuccess() {
-    document.getElementById('successMessage').style.display = 'none';
+    document.getElementById('successMessage').classList.add('hidden');
 }
 
 function hideMessages() {

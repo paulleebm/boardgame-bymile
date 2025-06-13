@@ -56,13 +56,13 @@ function toggleView(view) {
     const tableBtn = document.getElementById('tableViewBtn');
     
     if (view === 'grid') {
-        gridView.style.display = 'block';
-        tableView.style.display = 'none';
+        gridView.classList.remove('hidden');
+        tableView.classList.add('hidden');
         gridBtn.classList.add('active');
         tableBtn.classList.remove('active');
     } else {
-        gridView.style.display = 'none';
-        tableView.style.display = 'block';
+        gridView.classList.add('hidden');
+        tableView.classList.remove('hidden');
         tableBtn.classList.add('active');
         gridBtn.classList.remove('active');
     }
@@ -303,7 +303,7 @@ function showError(message) {
     const errorText = document.getElementById('errorText');
     
     errorText.textContent = message;
-    errorMessage.style.display = 'flex';
+    errorMessage.classList.remove('hidden');
     
     // 5초 후 자동으로 숨김
     setTimeout(hideError, 5000);
@@ -312,7 +312,7 @@ function showError(message) {
 // 에러 메시지 숨김
 function hideError() {
     const errorMessage = document.getElementById('errorMessage');
-    errorMessage.style.display = 'none';
+    errorMessage.classList.add('hidden');
 }
 
 // 마지막 업데이트 시간 표시
