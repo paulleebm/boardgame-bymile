@@ -157,13 +157,6 @@ function searchGames() {
     renderGames();
 }
 
-// 검색 초기화
-function clearSearch() {
-    document.getElementById('searchInput').value = '';
-    currentGames = allGames;
-    renderGames();
-}
-
 // 게임 정렬
 function sortGames() {
     const sortBy = document.getElementById('sortBy').value;

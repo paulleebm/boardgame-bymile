@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- 사파리 상태바 및 브라우저 UI 색상 설정 -->
-    <meta name="theme-color" content="#667eea">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="msapplication-navbutton-color" content="#667eea">
@@ -38,30 +37,15 @@
             
             <div class="filter-box">
                 <div class="filter-group players-filter">
-                    <label for="playersFilter">플레이 인원:</label>
+                    <div class="players-label-group">
+                        <label id="playersLabel" for="playersFilter">플레이 인원:</label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="bestPlayersOnly" class="toggle-input" aria-label="베스트 인원으로 필터링">
+                            <label for="bestPlayersOnly" class="toggle-label" title="베스트 인원 필터 토글"></label>
+                        </div>
+                    </div>
                     <div class="players-input-group">
                         <input type="number" id="playersFilter" min="1" max="20" placeholder="인원 수">
-                        <div class="toggle-switch">
-                            <input type="checkbox" id="bestPlayersOnly" class="toggle-input">
-                            <label for="bestPlayersOnly" class="toggle-label">베스트만</label>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="filter-group">
-                    <label>플레이 시간 (분):</label>
-                    <div class="slider-container">
-                        <div class="slider-track">
-                            <div class="slider-range" id="timeRange"></div>
-                            <div class="slider-handle min-handle" id="timeMinHandle" data-slider="time" data-type="min"></div>
-                            <div class="slider-handle max-handle" id="timeMaxHandle" data-slider="time" data-type="max"></div>
-                        </div>
-                        <input type="range" id="timeMin" class="slider-input" min="10" max="300" value="10" step="10" aria-label="최소 플레이 시간" title="최소 플레이 시간">
-                        <input type="range" id="timeMax" class="slider-input" min="10" max="300" value="300" step="10" aria-label="최대 플레이 시간" title="최대 플레이 시간">
-                    </div>
-                    <div class="slider-values">
-                        <span id="timeMinValue">10분</span>
-                        <span id="timeMaxValue">300분+</span>
                     </div>
                 </div>
                 
@@ -70,8 +54,8 @@
                     <div class="slider-container">
                         <div class="slider-track">
                             <div class="slider-range" id="difficultyRange"></div>
-                            <div class="slider-handle min-handle" id="difficultyMinHandle" data-slider="difficulty" data-type="min"></div>
-                            <div class="slider-handle max-handle" id="difficultyMaxHandle" data-slider="difficulty" data-type="max"></div>
+                            <div class="slider-handle min-handle" id="difficultyMinHandle" data-slider="difficulty" data-type="min" role="slider" aria-label="최소 난이도" aria-valuenow="1" aria-valuemin="1" aria-valuemax="5" tabindex="0"></div>
+                            <div class="slider-handle max-handle" id="difficultyMaxHandle" data-slider="difficulty" data-type="max" role="slider" aria-label="최대 난이도" aria-valuenow="5" aria-valuemin="1" aria-valuemax="5" tabindex="0"></div>
                         </div>
                         <input type="range" id="difficultyMin" class="slider-input" min="1" max="5" value="1" step="0.1" aria-label="최소 난이도" title="최소 난이도">
                         <input type="range" id="difficultyMax" class="slider-input" min="1" max="5" value="5" step="0.1" aria-label="최대 난이도" title="최대 난이도">
@@ -79,6 +63,23 @@
                     <div class="slider-values">
                         <span id="difficultyMinValue">1.0</span>
                         <span id="difficultyMaxValue">5.0</span>
+                    </div>
+                </div>
+                
+                <div class="filter-group">
+                    <label>플레이 시간 (분):</label>
+                    <div class="slider-container">
+                        <div class="slider-track">
+                            <div class="slider-range" id="timeRange"></div>
+                            <div class="slider-handle min-handle" id="timeMinHandle" data-slider="time" data-type="min" role="slider" aria-label="최소 플레이 시간" aria-valuenow="10" aria-valuemin="10" aria-valuemax="120" tabindex="0"></div>
+                            <div class="slider-handle max-handle" id="timeMaxHandle" data-slider="time" data-type="max" role="slider" aria-label="최대 플레이 시간" aria-valuenow="120" aria-valuemin="10" aria-valuemax="120" tabindex="0"></div>
+                        </div>
+                        <input type="range" id="timeMin" class="slider-input" min="10" max="120" value="10" step="5" aria-label="최소 플레이 시간" title="최소 플레이 시간">
+                        <input type="range" id="timeMax" class="slider-input" min="10" max="120" value="120" step="5" aria-label="최대 플레이 시간" title="최대 플레이 시간">
+                    </div>
+                    <div class="slider-values">
+                        <span id="timeMinValue">10분</span>
+                        <span id="timeMaxValue">120분+</span>
                     </div>
                 </div>
             </div>
@@ -89,24 +90,24 @@
             <div class="grid-header">
                 <h2>보드게임 목록</h2>
             </div>
-            <div id="gameGrid" class="game-grid"></div>
+            <div id="gameGrid" class="game-grid" role="grid" aria-label="보드게임 목록"></div>
         </div>
 
-        <div class="loading" id="loading">
+        <div class="loading" id="loading" aria-live="polite">
             <div class="spinner"></div>
             데이터를 불러오는 중...
         </div>
 
-        <div class="error-message hidden" id="errorMessage">
+        <div class="error-message hidden" id="errorMessage" role="alert" aria-live="assertive">
             <span id="errorText"></span>
             <button onclick="hideError()">닫기</button>
         </div>
     </div>
 
     <!-- 게임 상세 모달 -->
-    <div class="game-detail-modal hidden" id="gameDetailModal" onclick="closeGameModal()">
+    <div class="game-detail-modal hidden" id="gameDetailModal" onclick="closeGameModal()" role="dialog" aria-modal="true" aria-labelledby="modalGameName">
         <div class="game-detail-content" onclick="event.stopPropagation()">
-            <button class="modal-close-btn" onclick="closeGameModal()">&times;</button>
+            <button class="modal-close-btn" onclick="closeGameModal()" aria-label="모달 닫기">&times;</button>
             
             <div class="modal-game-image">
                 <img id="modalGameImage" src="" alt="게임 이미지">

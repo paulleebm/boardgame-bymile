@@ -7,6 +7,7 @@ const DEFAULT_IMAGE_URL = 'https://placehold.co/300x300/667eea/ffffff?text=No+Im
 // 페이지 로드 시 실행
 document.addEventListener('DOMContentLoaded', function() {
     initializeSliders();
+    setupBestToggle();
     loadData();
     
     // 5분마다 자동 새로고침
@@ -15,11 +16,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 슬라이더 초기화
 function initializeSliders() {
-    initializeCustomSlider('time', 10, 300, 10);
     initializeCustomSlider('difficulty', 1, 5, 0.1);
+    initializeCustomSlider('time', 10, 120, 5); // 5분 단위
 }
 
-// 커스텀 슬라이더 초기화
+// 베스트 토글 설정
+function setupBestToggle() {
+    const bestToggle = document.getElementById('bestPlayersOnly');
+    const playersLabel = document.getElementById('playersLabel');
+    
+    bestToggle.addEventListener('change', function() {
+        if (this.checked) {
+            playersLabel.textContent = '베스트 인원:';
+        } else {
+            playersLabel.textContent = '플레이 인원:';
+        }
+        searchAndFilter();
+    });
+}
+
+// 커스텀 슬라이더 초기화 (난이도 & 시간용)
 function initializeCustomSlider(type, min, max, step) {
     const minHandle = document.getElementById(`${type}MinHandle`);
     const maxHandle = document.getElementById(`${type}MaxHandle`);
@@ -44,20 +60,33 @@ function initializeCustomSlider(type, min, max, step) {
         return Math.round(value / step) * step;
     }
     
-    // 마우스 위치를 백분율로 변환
+    // 마우스/터치 위치를 백분율로 변환
     function getPercentFromEvent(event) {
         const rect = track.getBoundingClientRect();
-        const percent = ((event.clientX - rect.left) / rect.width) * 100;
+        const clientX = event.clientX || (event.touches && event.touches[0] ? event.touches[0].clientX : 0);
+        const percent = ((clientX - rect.left) / rect.width) * 100;
         return Math.max(0, Math.min(100, percent));
     }
     
     // UI 업데이트
     function updateUI() {
-        const minValue = parseFloat(minInput.value);
-        const maxValue = parseFloat(maxInput.value);
+        const minValue = type === 'time' ? parseInt(minInput.value) : parseFloat(minInput.value);
+        const maxValue = type === 'time' ? parseInt(maxInput.value) : parseFloat(maxInput.value);
         
         const minPercent = valueToPercent(minValue);
         const maxPercent = valueToPercent(maxValue);
+        
+        // 드래그 중일 때는 트랜지션 비활성화
+        if (isDragging) {
+            minHandle.style.transition = 'none';
+            maxHandle.style.transition = 'none';
+            range.style.transition = 'none';
+        } else {
+            // 드래그가 끝나면 트랜지션 복원 (호버 효과용)
+            minHandle.style.transition = 'transform 0.3s ease, box-shadow 0.3s ease';
+            maxHandle.style.transition = 'transform 0.3s ease, box-shadow 0.3s ease';
+            range.style.transition = 'none';
+        }
         
         // 핸들 위치 업데이트
         minHandle.style.left = minPercent + '%';
@@ -79,8 +108,8 @@ function initializeCustomSlider(type, min, max, step) {
     
     // 값 제한 (핸들이 교차하지 않도록)
     function constrainValues() {
-        let minValue = parseFloat(minInput.value);
-        let maxValue = parseFloat(maxInput.value);
+        let minValue = type === 'time' ? parseInt(minInput.value) : parseFloat(minInput.value);
+        let maxValue = type === 'time' ? parseInt(maxInput.value) : parseFloat(maxInput.value);
         
         if (minValue > maxValue) {
             if (currentHandle === minHandle) {
@@ -93,8 +122,8 @@ function initializeCustomSlider(type, min, max, step) {
         }
     }
     
-    // 마우스 다운 이벤트
-    function onMouseDown(event, handle) {
+    // 드래그 시작 (마우스/터치)
+    function startDrag(event, handle) {
         isDragging = true;
         currentHandle = handle;
         
@@ -103,44 +132,60 @@ function initializeCustomSlider(type, min, max, step) {
         maxHandle.style.zIndex = '3';
         handle.style.zIndex = '10';
         
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
+        // 이벤트 리스너 등록
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', endDrag);
+        document.addEventListener('touchmove', onMove, { passive: false });
+        document.addEventListener('touchend', endDrag);
+        
         event.preventDefault();
     }
     
-    // 마우스 이동 이벤트
-    function onMouseMove(event) {
+    // 드래그 중 (마우스/터치)
+    function onMove(event) {
         if (!isDragging || !currentHandle) return;
         
         const percent = getPercentFromEvent(event);
         const value = percentToValue(percent);
         
         if (currentHandle === minHandle) {
-            minInput.value = Math.min(value, parseFloat(maxInput.value));
+            const maxValue = type === 'time' ? parseInt(maxInput.value) : parseFloat(maxInput.value);
+            minInput.value = Math.min(value, maxValue);
         } else {
-            maxInput.value = Math.max(value, parseFloat(minInput.value));
+            const minValue = type === 'time' ? parseInt(minInput.value) : parseFloat(minInput.value);
+            maxInput.value = Math.max(value, minValue);
         }
         
         updateUI();
         searchAndFilter(); // 실시간 필터링
+        
+        // 터치 이벤트의 기본 동작 방지 (스크롤 등)
+        event.preventDefault();
     }
     
-    // 마우스 업 이벤트
-    function onMouseUp() {
+    // 드래그 끝
+    function endDrag() {
         isDragging = false;
         currentHandle = null;
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
+        
+        // 이벤트 리스너 제거
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', endDrag);
+        document.removeEventListener('touchmove', onMove);
+        document.removeEventListener('touchend', endDrag);
+        
+        // 트랜지션 복원
+        updateUI();
     }
     
-    // 트랙 클릭 이벤트
+    // 트랙 클릭/터치 이벤트
     function onTrackClick(event) {
         if (isDragging) return;
         
         const percent = getPercentFromEvent(event);
         const value = percentToValue(percent);
-        const minValue = parseFloat(minInput.value);
-        const maxValue = parseFloat(maxInput.value);
+        const minValue = type === 'time' ? parseInt(minInput.value) : parseFloat(minInput.value);
+        const maxValue = type === 'time' ? parseInt(maxInput.value) : parseFloat(maxInput.value);
         
         // 가까운 핸들로 이동
         const distToMin = Math.abs(value - minValue);
@@ -156,10 +201,22 @@ function initializeCustomSlider(type, min, max, step) {
         searchAndFilter();
     }
     
-    // 이벤트 리스너 등록
-    minHandle.addEventListener('mousedown', (e) => onMouseDown(e, minHandle));
-    maxHandle.addEventListener('mousedown', (e) => onMouseDown(e, maxHandle));
+    // 마우스 이벤트 리스너
+    minHandle.addEventListener('mousedown', (e) => startDrag(e, minHandle));
+    maxHandle.addEventListener('mousedown', (e) => startDrag(e, maxHandle));
+    
+    // 터치 이벤트 리스너
+    minHandle.addEventListener('touchstart', (e) => startDrag(e, minHandle));
+    maxHandle.addEventListener('touchstart', (e) => startDrag(e, maxHandle));
+    
+    // 트랙 클릭/터치 이벤트
     track.addEventListener('click', onTrackClick);
+    track.addEventListener('touchstart', (e) => {
+        // 터치가 핸들이 아닌 트랙에서 시작된 경우에만 처리
+        if (e.target === track) {
+            onTrackClick(e);
+        }
+    });
     
     // 키보드 접근성을 위한 input 이벤트
     minInput.addEventListener('input', () => {
@@ -285,18 +342,7 @@ function searchAndFilter() {
         });
     }
     
-    // 3. 플레이 시간 필터
-    const timeMin = parseInt(document.getElementById('timeMin').value);
-    const timeMax = parseInt(document.getElementById('timeMax').value);
-    
-    if (timeMin > 10 || timeMax < 300) {
-        filteredData = filteredData.filter(game => {
-            const playTime = game.playTime || 0;
-            return playTime >= timeMin && playTime <= timeMax;
-        });
-    }
-    
-    // 4. 난이도 필터
+    // 3. 난이도 필터
     const difficultyMin = parseFloat(document.getElementById('difficultyMin').value);
     const difficultyMax = parseFloat(document.getElementById('difficultyMax').value);
     
@@ -304,6 +350,17 @@ function searchAndFilter() {
         filteredData = filteredData.filter(game => {
             const difficulty = parseFloat(game.difficulty) || 0;
             return difficulty >= difficultyMin && difficulty <= difficultyMax;
+        });
+    }
+    
+    // 4. 플레이 시간 필터
+    const timeMin = parseInt(document.getElementById('timeMin').value);
+    const timeMax = parseInt(document.getElementById('timeMax').value);
+    
+    if (timeMin > 10 || timeMax < 120) {
+        filteredData = filteredData.filter(game => {
+            const playTime = game.playTime || 0;
+            return playTime >= timeMin && playTime <= timeMax;
         });
     }
     
@@ -317,11 +374,14 @@ function clearAll() {
     document.getElementById('playersFilter').value = '';
     document.getElementById('bestPlayersOnly').checked = false;
     
+    // 라벨 초기화
+    document.getElementById('playersLabel').textContent = '플레이 인원:';
+    
     // 슬라이더 초기화
-    document.getElementById('timeMin').value = 10;
-    document.getElementById('timeMax').value = 300;
     document.getElementById('difficultyMin').value = 1;
     document.getElementById('difficultyMax').value = 5;
+    document.getElementById('timeMin').value = 10;
+    document.getElementById('timeMax').value = 120;
     
     // 슬라이더 UI 업데이트
     initializeSliders();
