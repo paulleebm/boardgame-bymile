@@ -105,7 +105,7 @@ function renderGames() {
                 </div>
                 <div class="game-field">
                     <span class="field-label">베스트 인원:</span>
-                    <span class="field-value">${game.bestPlayers || '-'}</span>
+                    <span class="field-value">${formatBestPlayers(game.bestPlayers)}</span>
                 </div>
                 <div class="game-field">
                     <span class="field-label">플레이 시간:</span>
@@ -318,19 +318,215 @@ async function confirmDelete() {
     showLoading(false);
 }
 
+// 대량 등록 모달 관련
+let bulkGameData = [];
+
+function openBulkModal() {
+    document.getElementById('bulkModal').classList.remove('hidden');
+    document.getElementById('bulkData').value = '';
+    document.getElementById('bulkPreview').classList.add('hidden');
+    document.getElementById('bulkSaveBtn').disabled = true;
+    bulkGameData = [];
+}
+
+function closeBulkModal() {
+    document.getElementById('bulkModal').classList.add('hidden');
+    bulkGameData = [];
+}
+
+function previewBulkData() {
+    const csvData = document.getElementById('bulkData').value.trim();
+    
+    if (!csvData) {
+        showError('CSV 데이터를 입력해주세요.');
+        return;
+    }
+    
+    try {
+        // 개선된 CSV 파싱 - 따옴표 안의 쉼표 처리
+        const lines = csvData.split('\n').filter(line => line.trim());
+        if (lines.length < 2) {
+            showError('헤더와 최소 1개의 데이터 행이 필요합니다.');
+            return;
+        }
+        
+        // 헤더 파싱
+        const headers = parseCSVLine(lines[0]);
+        const expectedHeaders = ['name', 'difficulty', 'minPlayers', 'maxPlayers', 'bestPlayers', 'playTime', 'genre', 'buyer', 'imageUrl', 'youtubeUrl'];
+        
+        // 필수 헤더 체크 (name만 필수)
+        if (!headers.includes('name')) {
+            showError('name 컬럼은 필수입니다.');
+            return;
+        }
+        
+        bulkGameData = [];
+        const previewList = document.getElementById('previewList');
+        previewList.innerHTML = '';
+        
+        // 데이터 파싱
+        for (let i = 1; i < lines.length; i++) {
+            const values = parseCSVLine(lines[i]);
+            const gameData = {};
+            
+            headers.forEach((header, index) => {
+                let value = values[index] || '';
+                
+                // 모든 값에서 추가 따옴표 제거
+                value = value.replace(/^["']|["']$/g, '').trim();
+                
+                if (header === 'difficulty' && value) {
+                    gameData[header] = parseFloat(value) || null;
+                } else if (['minPlayers', 'maxPlayers', 'playTime'].includes(header) && value) {
+                    gameData[header] = parseInt(value) || null;
+                } else if (value) {
+                    gameData[header] = value;
+                }
+            });
+            
+            // 필수 데이터 체크
+            if (gameData.name) {
+                bulkGameData.push(gameData);
+                
+                // 미리보기 추가
+                const previewItem = document.createElement('div');
+                previewItem.className = 'preview-item';
+                previewItem.textContent = `${gameData.name} (난이도: ${gameData.difficulty || '-'}, 인원: ${formatPlayerInfoForAdmin(gameData)})`;
+                previewList.appendChild(previewItem);
+            }
+        }
+        
+        document.getElementById('previewCount').textContent = bulkGameData.length;
+        document.getElementById('bulkPreview').classList.remove('hidden');
+        document.getElementById('bulkSaveBtn').disabled = bulkGameData.length === 0;
+        
+        if (bulkGameData.length === 0) {
+            showError('유효한 게임 데이터가 없습니다.');
+        }
+        
+    } catch (error) {
+        console.error('CSV 파싱 오류:', error);
+        showError('CSV 데이터 형식이 올바르지 않습니다.');
+    }
+}
+
+// 개선된 CSV 라인 파서 - 따옴표 안의 쉼표 처리
+function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    let i = 0;
+    
+    while (i < line.length) {
+        const char = line[i];
+        
+        if (char === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+                // 연속된 따옴표는 하나의 따옴표로 처리
+                current += '"';
+                i += 2;
+            } else {
+                // 따옴표 상태 토글 (따옴표 자체는 결과에 포함하지 않음)
+                inQuotes = !inQuotes;
+                i++;
+            }
+        } else if (char === ',' && !inQuotes) {
+            // 따옴표 밖의 쉼표는 구분자
+            result.push(current.trim());
+            current = '';
+            i++;
+        } else {
+            current += char;
+            i++;
+        }
+    }
+    
+    // 마지막 필드 추가
+    result.push(current.trim());
+    
+    // 모든 필드에서 남은 따옴표 제거
+    return result.map(field => field.replace(/^["']|["']$/g, ''));
+}
+
+async function saveBulkData() {
+    if (bulkGameData.length === 0) {
+        showError('등록할 데이터가 없습니다.');
+        return;
+    }
+    
+    showLoading(true);
+    
+    try {
+        let successCount = 0;
+        let errorCount = 0;
+        
+        for (const gameData of bulkGameData) {
+            try {
+                await window.boardGameAPI.addGame(gameData);
+                successCount++;
+            } catch (error) {
+                console.error(`게임 "${gameData.name}" 등록 실패:`, error);
+                errorCount++;
+            }
+        }
+        
+        closeBulkModal();
+        
+        if (errorCount === 0) {
+            showSuccess(`${successCount}개의 게임이 성공적으로 등록되었습니다.`);
+        } else {
+            showSuccess(`${successCount}개 성공, ${errorCount}개 실패했습니다.`);
+        }
+        
+        await loadGames(); // 데이터 새로고침
+        
+    } catch (error) {
+        console.error('대량 등록 실패:', error);
+        showError('대량 등록에 실패했습니다.');
+    }
+    
+    showLoading(false);
+}
+
 // 유틸리티 함수들
-function formatPlayerInfo(game) {
+function formatPlayerInfoForAdmin(game) {
     const min = game.minPlayers;
     const max = game.maxPlayers;
     const best = game.bestPlayers;
     
     let result = formatPlayerCount(min, max);
     
-    if (best) {
-        result += ` (베스트: ${best})`;
+    if (best && best.toString().trim()) {
+        let bestStr = best.toString().trim();
+        // 모든 종류의 따옴표 제거 (앞뒤 + 중간)
+        bestStr = bestStr.replace(/["'`]/g, '');
+        
+        if (bestStr) {
+            if (bestStr.includes(',') || bestStr.includes(';')) {
+                result += ` (베스트: ${bestStr})`;
+            } else {
+                result += ` (베스트: ${bestStr}명)`;
+            }
+        }
     }
     
     return result;
+}
+
+function formatBestPlayers(bestPlayers) {
+    if (!bestPlayers) return '-';
+    
+    let bestStr = bestPlayers.toString().trim();
+    // 모든 종류의 따옴표 제거 (앞뒤 + 중간)
+    bestStr = bestStr.replace(/["'`]/g, '');
+    
+    if (!bestStr) return '-';
+    
+    if (bestStr.includes(',') || bestStr.includes(';')) {
+        return bestStr;
+    } else {
+        return bestStr + '명';
+    }
 }
 
 function formatPlayerCount(min, max) {
@@ -396,132 +592,4 @@ function hideSuccess() {
 function hideMessages() {
     hideError();
     hideSuccess();
-}
-
-// 대량 등록 모달 관련
-let bulkGameData = [];
-
-function openBulkModal() {
-    document.getElementById('bulkModal').classList.remove('hidden');
-    document.getElementById('bulkData').value = '';
-    document.getElementById('bulkPreview').classList.add('hidden');
-    document.getElementById('bulkSaveBtn').disabled = true;
-    bulkGameData = [];
-}
-
-function closeBulkModal() {
-    document.getElementById('bulkModal').classList.add('hidden');
-    bulkGameData = [];
-}
-
-function previewBulkData() {
-    const csvData = document.getElementById('bulkData').value.trim();
-    
-    if (!csvData) {
-        showError('CSV 데이터를 입력해주세요.');
-        return;
-    }
-    
-    try {
-        const lines = csvData.split('\n').filter(line => line.trim());
-        if (lines.length < 2) {
-            showError('헤더와 최소 1개의 데이터 행이 필요합니다.');
-            return;
-        }
-        
-        // 헤더 확인
-        const headers = lines[0].split(',').map(h => h.trim());
-        const expectedHeaders = ['name', 'difficulty', 'minPlayers', 'maxPlayers', 'bestPlayers', 'playTime', 'genre', 'buyer', 'imageUrl', 'youtubeUrl'];
-        
-        // 필수 헤더 체크 (name만 필수)
-        if (!headers.includes('name')) {
-            showError('name 컬럼은 필수입니다.');
-            return;
-        }
-        
-        bulkGameData = [];
-        const previewList = document.getElementById('previewList');
-        previewList.innerHTML = '';
-        
-        // 데이터 파싱
-        for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',').map(v => v.trim());
-            const gameData = {};
-            
-            headers.forEach((header, index) => {
-                const value = values[index] || '';
-                
-                if (header === 'difficulty' && value) {
-                    gameData[header] = parseFloat(value) || null;
-                } else if (['minPlayers', 'maxPlayers', 'playTime'].includes(header) && value) {
-                    gameData[header] = parseInt(value) || null;
-                } else if (value) {
-                    gameData[header] = value;
-                }
-            });
-            
-            // 필수 데이터 체크
-            if (gameData.name) {
-                bulkGameData.push(gameData);
-                
-                // 미리보기 추가
-                const previewItem = document.createElement('div');
-                previewItem.className = 'preview-item';
-                previewItem.textContent = `${gameData.name} (난이도: ${gameData.difficulty || '-'}, 인원: ${formatPlayerInfo(gameData)})`;
-                previewList.appendChild(previewItem);
-            }
-        }
-        
-        document.getElementById('previewCount').textContent = bulkGameData.length;
-        document.getElementById('bulkPreview').classList.remove('hidden');
-        document.getElementById('bulkSaveBtn').disabled = bulkGameData.length === 0;
-        
-        if (bulkGameData.length === 0) {
-            showError('유효한 게임 데이터가 없습니다.');
-        }
-        
-    } catch (error) {
-        console.error('CSV 파싱 오류:', error);
-        showError('CSV 데이터 형식이 올바르지 않습니다.');
-    }
-}
-
-async function saveBulkData() {
-    if (bulkGameData.length === 0) {
-        showError('등록할 데이터가 없습니다.');
-        return;
-    }
-    
-    showLoading(true);
-    
-    try {
-        let successCount = 0;
-        let errorCount = 0;
-        
-        for (const gameData of bulkGameData) {
-            try {
-                await window.boardGameAPI.addGame(gameData);
-                successCount++;
-            } catch (error) {
-                console.error(`게임 "${gameData.name}" 등록 실패:`, error);
-                errorCount++;
-            }
-        }
-        
-        closeBulkModal();
-        
-        if (errorCount === 0) {
-            showSuccess(`${successCount}개의 게임이 성공적으로 등록되었습니다.`);
-        } else {
-            showSuccess(`${successCount}개 성공, ${errorCount}개 실패했습니다.`);
-        }
-        
-        await loadGames(); // 데이터 새로고침
-        
-    } catch (error) {
-        console.error('대량 등록 실패:', error);
-        showError('대량 등록에 실패했습니다.');
-    }
-    
-    showLoading(false);
 }

@@ -11,10 +11,10 @@
         <header>
             <h1>🎲 꿈엘청 보드게임 동아리</h1>
             <div class="header-info">
-                <div class="last-update">
+                <div class="last-update desktop-only">
                     마지막 업데이트: <span id="lastUpdate">-</span>
                 </div>
-                <div class="header-controls">
+                <div class="header-controls desktop-only">
                     <a href="admin.html" class="admin-btn">⚙️ 관리자</a>
                 </div>
             </div>
@@ -22,40 +22,55 @@
 
         <div class="controls">
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="게임 이름으로 검색...">
-                <button onclick="searchAndFilter()">🔍 검색 및 필터</button>
-                <button onclick="clearAll()" class="clear-btn">🔄 초기화</button>
+                <div class="search-input-group">
+                    <input type="text" id="searchInput" placeholder="게임 이름으로 검색...">
+                    <button onclick="searchAndFilter()" class="search-btn" title="검색">🔍</button>
+                </div>
             </div>
             
             <div class="filter-box">
-                <div class="filter-group">
+                <div class="filter-group players-filter">
                     <label for="playersFilter">플레이 인원:</label>
-                    <input type="number" id="playersFilter" min="1" max="20" placeholder="인원 수">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="bestPlayersOnly"> 베스트 인원만
-                    </label>
+                    <div class="players-input-group">
+                        <input type="number" id="playersFilter" min="1" max="20" placeholder="인원 수">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="bestPlayersOnly"> 베스트만
+                        </label>
+                    </div>
                 </div>
                 
                 <div class="filter-group">
-                    <label for="playTimeFilter">플레이 시간 (분):</label>
-                    <select id="playTimeFilter">
-                        <option value="">전체</option>
-                        <option value="0-30">30분 이하</option>
-                        <option value="31-60">31-60분</option>
-                        <option value="61-120">61-120분</option>
-                        <option value="121-">120분 이상</option>
-                    </select>
+                    <label>플레이 시간 (분):</label>
+                    <div class="slider-container">
+                        <div class="slider-track">
+                            <div class="slider-range" id="timeRange"></div>
+                            <div class="slider-handle min-handle" id="timeMinHandle" data-slider="time" data-type="min"></div>
+                            <div class="slider-handle max-handle" id="timeMaxHandle" data-slider="time" data-type="max"></div>
+                        </div>
+                        <input type="range" id="timeMin" class="slider-input" min="10" max="300" value="10" step="10" aria-label="최소 플레이 시간" title="최소 플레이 시간">
+                        <input type="range" id="timeMax" class="slider-input" min="10" max="300" value="300" step="10" aria-label="최대 플레이 시간" title="최대 플레이 시간">
+                    </div>
+                    <div class="slider-values">
+                        <span id="timeMinValue">10분</span>
+                        <span id="timeMaxValue">300분+</span>
+                    </div>
                 </div>
                 
                 <div class="filter-group">
-                    <label for="difficultyFilter">난이도:</label>
-                    <select id="difficultyFilter">
-                        <option value="">전체</option>
-                        <option value="0-1.5">쉬움 (0-1.5)</option>
-                        <option value="1.6-2.5">보통 (1.6-2.5)</option>
-                        <option value="2.6-3.5">어려움 (2.6-3.5)</option>
-                        <option value="3.6-5">매우 어려움 (3.6-5)</option>
-                    </select>
+                    <label>난이도:</label>
+                    <div class="slider-container">
+                        <div class="slider-track">
+                            <div class="slider-range" id="difficultyRange"></div>
+                            <div class="slider-handle min-handle" id="difficultyMinHandle" data-slider="difficulty" data-type="min"></div>
+                            <div class="slider-handle max-handle" id="difficultyMaxHandle" data-slider="difficulty" data-type="max"></div>
+                        </div>
+                        <input type="range" id="difficultyMin" class="slider-input" min="1" max="5" value="1" step="0.1" aria-label="최소 난이도" title="최소 난이도">
+                        <input type="range" id="difficultyMax" class="slider-input" min="1" max="5" value="5" step="0.1" aria-label="최대 난이도" title="최대 난이도">
+                    </div>
+                    <div class="slider-values">
+                        <span id="difficultyMinValue">1.0</span>
+                        <span id="difficultyMaxValue">5.0</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -64,27 +79,8 @@
         <div id="gridView" class="grid-container">
             <div class="grid-header">
                 <h2>보드게임 목록</h2>
-                <div class="view-toggle">
-                    <button onclick="toggleView('grid')" id="gridViewBtn" class="view-toggle-btn active" title="그리드 보기">⊞</button>
-                    <button onclick="toggleView('table')" id="tableViewBtn" class="view-toggle-btn" title="테이블 보기">☰</button>
-                </div>
             </div>
             <div id="gameGrid" class="game-grid"></div>
-        </div>
-
-        <!-- 테이블 뷰 -->
-        <div id="tableView" class="table-container hidden">
-            <div class="table-header">
-                <h2>보드게임 목록</h2>
-                <div class="view-toggle">
-                    <button onclick="toggleView('grid')" id="gridViewBtn2" class="view-toggle-btn" title="그리드 보기">⊞</button>
-                    <button onclick="toggleView('table')" id="tableViewBtn2" class="view-toggle-btn active" title="테이블 보기">☰</button>
-                </div>
-            </div>
-            <table id="dataTable">
-                <thead id="tableHead"></thead>
-                <tbody id="tableBody"></tbody>
-            </table>
         </div>
 
         <div class="loading" id="loading">
