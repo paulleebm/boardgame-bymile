@@ -1,0 +1,19 @@
+{
+  "name": "boardgame-bymile",
+  "version": "1.0.0",
+  "description": "보드게임 데이터 관리 시스템",
+  "scripts": {
+    "deploy": "firebase deploy",
+    "deploy:hosting": "firebase deploy --only hosting",
+    "deploy:functions": "firebase deploy --only functions",
+    "serve": "firebase serve",
+    "emulators": "firebase emulators:start",
+    "build": "cd functions && npm install"
+  },
+  "devDependencies": {
+    "firebase-tools": "^13.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
