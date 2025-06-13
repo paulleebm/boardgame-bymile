@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>보드게임 데이터 관리 시스템</title>
+    <title>꿈엘청 보드게임 동아리</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🎲 보드게임 데이터베이스</h1>
+            <h1>🎲 꿈엘청 보드게임 동아리</h1>
             <div class="header-info">
                 <div class="last-update">
                     마지막 업데이트: <span id="lastUpdate">-</span>
@@ -23,8 +23,8 @@
         <div class="controls">
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="게임 이름으로 검색...">
-                <button onclick="searchData()">🔍 검색</button>
-                <button onclick="clearSearch()" class="clear-btn">🔄 초기화</button>
+                <button onclick="searchAndFilter()">🔍 검색 및 필터</button>
+                <button onclick="clearAll()" class="clear-btn">🔄 초기화</button>
             </div>
             
             <div class="filter-box">
@@ -57,29 +57,30 @@
                         <option value="3.6-5">매우 어려움 (3.6-5)</option>
                     </select>
                 </div>
-                
-                <div class="filter-actions">
-                    <button onclick="applyFilters()">📊 필터 적용</button>
-                    <button onclick="clearAllFilters()" class="clear-btn">🔄 필터 초기화</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="data-info">
-            <span id="totalCount">총 0개</span>
-            <div class="view-controls">
-                <button onclick="toggleView('grid')" id="gridViewBtn" class="view-btn active">🔲 그리드</button>
-                <button onclick="toggleView('table')" id="tableViewBtn" class="view-btn">📋 테이블</button>
             </div>
         </div>
 
         <!-- 그리드 뷰 -->
         <div id="gridView" class="grid-container">
+            <div class="grid-header">
+                <h2>보드게임 목록</h2>
+                <div class="view-toggle">
+                    <button onclick="toggleView('grid')" id="gridViewBtn" class="view-toggle-btn active" title="그리드 보기">⊞</button>
+                    <button onclick="toggleView('table')" id="tableViewBtn" class="view-toggle-btn" title="테이블 보기">☰</button>
+                </div>
+            </div>
             <div id="gameGrid" class="game-grid"></div>
         </div>
 
         <!-- 테이블 뷰 -->
         <div id="tableView" class="table-container hidden">
+            <div class="table-header">
+                <h2>보드게임 목록</h2>
+                <div class="view-toggle">
+                    <button onclick="toggleView('grid')" id="gridViewBtn2" class="view-toggle-btn" title="그리드 보기">⊞</button>
+                    <button onclick="toggleView('table')" id="tableViewBtn2" class="view-toggle-btn active" title="테이블 보기">☰</button>
+                </div>
+            </div>
             <table id="dataTable">
                 <thead id="tableHead"></thead>
                 <tbody id="tableBody"></tbody>

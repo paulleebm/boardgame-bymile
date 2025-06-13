@@ -41,19 +41,23 @@ function toggleView(view) {
     
     const gridView = document.getElementById('gridView');
     const tableView = document.getElementById('tableView');
-    const gridBtn = document.getElementById('gridViewBtn');
-    const tableBtn = document.getElementById('tableViewBtn');
+    
+    // 모든 토글 버튼 업데이트
+    const allGridBtns = [document.getElementById('gridViewBtn'), document.getElementById('gridViewBtn2')];
+    const allTableBtns = [document.getElementById('tableViewBtn'), document.getElementById('tableViewBtn2')];
     
     if (view === 'grid') {
         gridView.classList.remove('hidden');
         tableView.classList.add('hidden');
-        gridBtn.classList.add('active');
-        tableBtn.classList.remove('active');
+        
+        allGridBtns.forEach(btn => btn && btn.classList.add('active'));
+        allTableBtns.forEach(btn => btn && btn.classList.remove('active'));
     } else {
         gridView.classList.add('hidden');
         tableView.classList.remove('hidden');
-        tableBtn.classList.add('active');
-        gridBtn.classList.remove('active');
+        
+        allGridBtns.forEach(btn => btn && btn.classList.remove('active'));
+        allTableBtns.forEach(btn => btn && btn.classList.add('active'));
     }
     
     renderData();
@@ -67,7 +71,7 @@ function renderData() {
         renderTableView();
     }
     
-    updateDataCount();
+    // updateDataCount(); // 제거됨
 }
 
 // 그리드 뷰 렌더링 (카드 형태)
@@ -142,50 +146,23 @@ function renderTableView() {
     }
 }
 
-// 검색 기능 (게임 이름만)
-async function searchData() {
-    const searchInput = document.getElementById('searchInput').value.trim();
-    
-    if (!searchInput) {
-        clearSearch();
-        return;
-    }
-    
-    showLoading(true);
-    
-    try {
-        // 게임 이름으로만 검색
-        const searchTerm = searchInput.toLowerCase();
-        const filteredData = allData.filter(game => 
-            game.name && game.name.toLowerCase().includes(searchTerm)
-        );
-        
-        currentData = filteredData;
-        renderData();
-        
-    } catch (error) {
-        console.error('검색 실패:', error);
-        showError('검색에 실패했습니다.');
-    }
-    
-    showLoading(false);
-}
-
-// 검색 초기화
-function clearSearch() {
-    document.getElementById('searchInput').value = '';
-    currentData = allData;
-    renderData();
-}
-
-// 필터 적용
-function applyFilters() {
+// 통합된 검색 및 필터 기능
+function searchAndFilter() {
     showLoading(true);
     
     try {
         let filteredData = [...allData];
         
-        // 플레이 인원 필터
+        // 1. 게임 이름 검색
+        const searchInput = document.getElementById('searchInput').value.trim();
+        if (searchInput) {
+            const searchTerm = searchInput.toLowerCase();
+            filteredData = filteredData.filter(game => 
+                game.name && game.name.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        // 2. 플레이 인원 필터
         const playersFilter = document.getElementById('playersFilter').value;
         const bestPlayersOnly = document.getElementById('bestPlayersOnly').checked;
         
@@ -208,7 +185,7 @@ function applyFilters() {
             });
         }
         
-        // 플레이 시간 필터
+        // 3. 플레이 시간 필터
         const playTimeFilter = document.getElementById('playTimeFilter').value;
         if (playTimeFilter) {
             filteredData = filteredData.filter(game => {
@@ -228,7 +205,7 @@ function applyFilters() {
             });
         }
         
-        // 난이도 필터
+        // 4. 난이도 필터
         const difficultyFilter = document.getElementById('difficultyFilter').value;
         if (difficultyFilter) {
             filteredData = filteredData.filter(game => {
@@ -252,15 +229,16 @@ function applyFilters() {
         renderData();
         
     } catch (error) {
-        console.error('필터링 실패:', error);
-        showError('필터링에 실패했습니다.');
+        console.error('검색/필터링 실패:', error);
+        showError('검색/필터링에 실패했습니다.');
     }
     
     showLoading(false);
 }
 
-// 모든 필터 초기화
-function clearAllFilters() {
+// 모든 검색 및 필터 초기화
+function clearAll() {
+    document.getElementById('searchInput').value = '';
     document.getElementById('playersFilter').value = '';
     document.getElementById('bestPlayersOnly').checked = false;
     document.getElementById('playTimeFilter').value = '';
@@ -270,11 +248,11 @@ function clearAllFilters() {
     renderData();
 }
 
-// 데이터 개수 업데이트
-function updateDataCount() {
-    const totalCount = document.getElementById('totalCount');
-    totalCount.textContent = `총 ${currentData.length}개`;
-}
+// 데이터 개수 업데이트 (제거됨 - 필요시 사용)
+// function updateDataCount() {
+//     const totalCount = document.getElementById('totalCount');
+//     totalCount.textContent = `총 ${currentData.length}개`;
+// }
 
 // 로딩 표시/숨김
 function showLoading(show) {
