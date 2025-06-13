@@ -269,7 +269,7 @@ button:hover {
 
 .game-image {
     width: 100%;
-    height: 200px;
+    aspect-ratio: 1 / 1;
     overflow: hidden;
 }
 
@@ -374,7 +374,7 @@ td {
 
 .modal-game-image {
     width: 100%;
-    height: 300px;
+    aspect-ratio: 1 / 1;
     overflow: hidden;
     border-radius: 20px 20px 0 0;
 }
@@ -435,6 +435,22 @@ td {
     box-shadow: 0 6px 20px rgba(255, 0, 0, 0.4);
 }
 
+.youtube-table-btn {
+    display: inline-block;
+    background: linear-gradient(45deg, #ff0000, #cc0000);
+    color: white;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    transition: all 0.3s ease;
+}
+
+.youtube-table-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3);
+}
+
 .modal-close-btn {
     position: absolute;
     top: 15px;
@@ -445,6 +461,7 @@ td {
     border-radius: 50%;
     width: 40px;
     height: 40px;
+    aspect-ratio: 1 / 1;
     font-size: 20px;
     cursor: pointer;
     display: flex;
