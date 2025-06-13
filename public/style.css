@@ -47,6 +47,11 @@ header h1 {
     gap: 10px;
 }
 
+.header-controls {
+    display: flex;
+    gap: 10px;
+}
+
 .last-update {
     color: #666;
     font-size: 14px;
@@ -55,21 +60,21 @@ header h1 {
     border-radius: 20px;
 }
 
-.refresh-btn {
-    background: linear-gradient(45deg, #4CAF50, #45a049);
+.admin-btn {
+    background: linear-gradient(45deg, #e74c3c, #c0392b);
     color: white;
-    border: none;
+    text-decoration: none;
     padding: 8px 16px;
     border-radius: 20px;
-    cursor: pointer;
     font-size: 12px;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+    font-weight: 600;
 }
 
-.refresh-btn:hover {
+.admin-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
 }
 
 .controls {

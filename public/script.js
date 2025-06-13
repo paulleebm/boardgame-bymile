@@ -5,10 +5,7 @@ let currentView = 'grid';
 
 // 페이지 로드 시 실행
 document.addEventListener('DOMContentLoaded', function() {
-    // Firebase 초기화 확인
-    firebase.auth().onAuthStateChanged(() => {
-        loadData();
-    });
+    loadData();
     
     // 5분마다 자동 새로고침
     setInterval(loadData, 300000);
@@ -29,8 +26,11 @@ async function loadData() {
         currentData = data;
         
         if (data.length > 0) {
+            // Firestore의 시스템 필드들 제외
             headers = Object.keys(data[0]).filter(key => 
-                key !== 'id' && key !== 'timestamp'
+                key !== 'id' && 
+                key !== 'createdAt' && 
+                key !== 'updatedAt'
             );
             setupFilters();
         }
@@ -41,28 +41,6 @@ async function loadData() {
     } catch (error) {
         console.error('데이터 로드 실패:', error);
         showError('데이터를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.');
-    }
-    
-    showLoading(false);
-}
-
-// 데이터 강제 업데이트
-async function forceUpdate() {
-    showLoading(true);
-    
-    try {
-        const response = await fetch('/api/update', { method: 'POST' });
-        if (!response.ok) throw new Error('업데이트 실패');
-        
-        const result = await response.json();
-        console.log('데이터 업데이트 완료:', result);
-        
-        // 업데이트 후 데이터 다시 로드
-        await loadData();
-        
-    } catch (error) {
-        console.error('데이터 업데이트 실패:', error);
-        showError('데이터 업데이트에 실패했습니다.');
     }
     
     showLoading(false);
@@ -113,19 +91,35 @@ function renderGridView() {
     }
     
     gameGrid.innerHTML = currentData.map(item => {
-        const title = item[headers[0]] || '제목 없음';
+        const title = item.name || item[headers[0]] || '제목 없음';
         
         return `
             <div class="game-card">
                 <h3>${title}</h3>
-                ${headers.slice(1).map(header => {
-                    const value = item[header] || '-';
-                    return `
+                ${headers.filter(h => h !== 'name').map(header => {
+                    let value = item[header] || '-';
+                    
+                    // 특별한 포맷팅
+                    if (header === 'difficulty' && value !== '-') {
+                        value = parseFloat(value).toFixed(1);
+                    } else if (header === 'minPlayers' || header === 'maxPlayers') {
+                        const min = item.minPlayers;
+                        const max = item.maxPlayers;
+                        if (header === 'minPlayers' && max) return ''; // maxPlayers에서 처리
+                        if (header === 'maxPlayers') {
+                            value = formatPlayerCount(min, max);
+                            header = '플레이인원';
+                        }
+                    } else if (header === 'playTime' && value !== '-') {
+                        value = value + '분';
+                    }
+                    
+                    return value && header !== 'minPlayers' ? `
                         <div class="field">
-                            <span class="field-label">${header}:</span>
+                            <span class="field-label">${getKoreanLabel(header)}:</span>
                             <span class="field-value">${value}</span>
                         </div>
-                    `;
+                    ` : '';
                 }).join('')}
             </div>
         `;
@@ -141,7 +135,7 @@ function renderTableView() {
     if (headers.length > 0) {
         tableHead.innerHTML = `
             <tr>
-                ${headers.map(header => `<th>${header}</th>`).join('')}
+                ${headers.map(header => `<th>${getKoreanLabel(header)}</th>`).join('')}
             </tr>
         `;
     }
@@ -150,7 +144,23 @@ function renderTableView() {
     if (currentData.length > 0) {
         tableBody.innerHTML = currentData.map(row => `
             <tr>
-                ${headers.map(header => `<td>${row[header] || ''}</td>`).join('')}
+                ${headers.map(header => {
+                    let value = row[header] || '';
+                    
+                    // 특별한 포맷팅
+                    if (header === 'difficulty' && value) {
+                        value = parseFloat(value).toFixed(1);
+                    } else if (header === 'minPlayers' || header === 'maxPlayers') {
+                        if (header === 'minPlayers' && row.maxPlayers) return ''; // maxPlayers에서 처리
+                        if (header === 'maxPlayers') {
+                            value = formatPlayerCount(row.minPlayers, row.maxPlayers);
+                        }
+                    } else if (header === 'playTime' && value) {
+                        value = value + '분';
+                    }
+                    
+                    return header !== 'minPlayers' ? `<td>${value}</td>` : '';
+                }).join('')}
             </tr>
         `).join('');
     } else {
@@ -171,11 +181,11 @@ function setupFilters() {
     
     // 검색 필드 옵션
     searchField.innerHTML = '<option value="">전체 필드</option>' + 
-        headers.map(header => `<option value="${header}">${header}</option>`).join('');
+        headers.map(header => `<option value="${header}">${getKoreanLabel(header)}</option>`).join('');
     
     // 필터 필드 옵션
     filterField.innerHTML = '<option value="">필터 선택</option>' + 
-        headers.map(header => `<option value="${header}">${header}</option>`).join('');
+        headers.map(header => `<option value="${header}">${getKoreanLabel(header)}</option>`).join('');
     
     // 필터 필드 변경 시 값 옵션 업데이트
     filterField.addEventListener('change', updateFilterValues);
@@ -317,6 +327,29 @@ function updateLastUpdateTime() {
         minute: '2-digit',
         second: '2-digit'
     });
+}
+
+// 유틸리티 함수들
+function formatPlayerCount(min, max) {
+    if (!min && !max) return '-';
+    if (!max) return `${min}명+`;
+    if (!min) return `~${max}명`;
+    if (min === max) return `${min}명`;
+    return `${min}-${max}명`;
+}
+
+function getKoreanLabel(field) {
+    const labels = {
+        'name': '게임명',
+        'difficulty': '난이도',
+        'minPlayers': '최소 인원',
+        'maxPlayers': '플레이인원',
+        'bestPlayers': '베스트 인원',
+        'playTime': '플레이 시간',
+        'genre': '장르/테마',
+        'buyer': '구매자'
+    };
+    return labels[field] || field;
 }
 
 // 엔터키로 검색
