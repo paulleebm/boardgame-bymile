@@ -37,25 +37,17 @@
                 </div>
                 
                 <div class="filter-group">
-                    <label for="playTimeFilter">플레이 시간 (분):</label>
-                    <select id="playTimeFilter">
-                        <option value="">전체</option>
-                        <option value="0-30">30분 이하</option>
-                        <option value="31-60">31-60분</option>
-                        <option value="61-120">61-120분</option>
-                        <option value="121-">120분 이상</option>
-                    </select>
+                    <label for="playTimeMin">플레이 시간 (분):</label>
+                    <input type="range" id="playTimeMin" min="0" max="180" value="0" step="10">
+                    <input type="range" id="playTimeMax" min="0" max="180" value="180" step="10">
+                    <span id="playTimeValue">0 - 180</span>
                 </div>
                 
                 <div class="filter-group">
-                    <label for="difficultyFilter">난이도:</label>
-                    <select id="difficultyFilter">
-                        <option value="">전체</option>
-                        <option value="0-1.5">쉬움 (0-1.5)</option>
-                        <option value="1.6-2.5">보통 (1.6-2.5)</option>
-                        <option value="2.6-3.5">어려움 (2.6-3.5)</option>
-                        <option value="3.6-5">매우 어려움 (3.6-5)</option>
-                    </select>
+                    <label for="difficultyMin">난이도:</label>
+                    <input type="range" id="difficultyMin" min="0" max="5" step="0.1" value="0">
+                    <input type="range" id="difficultyMax" min="0" max="5" step="0.1" value="5">
+                    <span id="difficultyValue">0 - 5</span>
                 </div>
             </div>
         </div>

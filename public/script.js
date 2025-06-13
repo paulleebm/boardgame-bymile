@@ -8,7 +8,13 @@ const fieldOrder = ['name', 'difficulty', 'players', 'playTime', 'genre', 'buyer
 // 페이지 로드 시 실행
 document.addEventListener('DOMContentLoaded', function() {
     loadData();
-    
+    updateSliderLabels();
+
+    document.getElementById('playTimeMin').addEventListener('input', updateSliderLabels);
+    document.getElementById('playTimeMax').addEventListener('input', updateSliderLabels);
+    document.getElementById('difficultyMin').addEventListener('input', updateSliderLabels);
+    document.getElementById('difficultyMax').addEventListener('input', updateSliderLabels);
+
     // 5분마다 자동 새로고침
     setInterval(loadData, 300000);
 });
@@ -105,8 +111,8 @@ function renderTableView() {
     const tableHead = document.getElementById('tableHead');
     const tableBody = document.getElementById('tableBody');
     
-    // 정해진 순서로 헤더 생성 (이미지 추가)
-    const tableHeaders = ['이미지', '게임명', '난이도', '플레이인원', '플레이 시간', '장르/테마', '구매자'];
+    // 정해진 순서로 헤더 생성 (이미지 제거, 영상 추가)
+    const tableHeaders = ['게임명', '난이도', '플레이인원', '플레이 시간', '장르/테마', '구매자', '룰 영상'];
     
     tableHead.innerHTML = `
         <tr>
@@ -117,21 +123,18 @@ function renderTableView() {
     // 데이터 행 생성
     if (currentData.length > 0) {
         tableBody.innerHTML = currentData.map(row => {
-            const imageUrl = row.imageUrl || 'https://via.placeholder.com/60x40/667eea/ffffff?text=No+Image';
-            
+            const youtubeBtn = row.youtubeUrl ?
+                `<a href="${row.youtubeUrl}" target="_blank" class="youtube-table-btn">영상</a>` : '-';
+
             return `
-                <tr onclick="openGameModal('${row.id}')" style="cursor: pointer;">
-                    <td>
-                        <img src="${imageUrl}" alt="${row.name || ''}" 
-                             class="table-image" 
-                             onerror="this.src='https://via.placeholder.com/60x40/667eea/ffffff?text=No+Image'">
-                    </td>
+                <tr>
                     <td>${row.name || '-'}</td>
                     <td>${row.difficulty ? parseFloat(row.difficulty).toFixed(1) : '-'}</td>
                     <td>${formatPlayerInfo(row)}</td>
                     <td>${row.playTime ? row.playTime + '분' : '-'}</td>
                     <td>${row.genre || '-'}</td>
                     <td>${row.buyer || '-'}</td>
+                    <td>${youtubeBtn}</td>
                 </tr>
             `;
         }).join('');
@@ -185,43 +188,23 @@ function searchAndFilter() {
             });
         }
         
-        // 3. 플레이 시간 필터
-        const playTimeFilter = document.getElementById('playTimeFilter').value;
-        if (playTimeFilter) {
+        // 3. 플레이 시간 필터 (슬라이더)
+        const playTimeMin = parseInt(document.getElementById('playTimeMin').value, 10);
+        const playTimeMax = parseInt(document.getElementById('playTimeMax').value, 10);
+        if (playTimeMin > 0 || playTimeMax < 180) {
             filteredData = filteredData.filter(game => {
                 const playTime = game.playTime || 0;
-                switch (playTimeFilter) {
-                    case '0-30':
-                        return playTime <= 30;
-                    case '31-60':
-                        return playTime >= 31 && playTime <= 60;
-                    case '61-120':
-                        return playTime >= 61 && playTime <= 120;
-                    case '121-':
-                        return playTime >= 121;
-                    default:
-                        return true;
-                }
+                return playTime >= playTimeMin && playTime <= playTimeMax;
             });
         }
-        
-        // 4. 난이도 필터
-        const difficultyFilter = document.getElementById('difficultyFilter').value;
-        if (difficultyFilter) {
+
+        // 4. 난이도 필터 (슬라이더)
+        const difficultyMin = parseFloat(document.getElementById('difficultyMin').value);
+        const difficultyMax = parseFloat(document.getElementById('difficultyMax').value);
+        if (difficultyMin > 0 || difficultyMax < 5) {
             filteredData = filteredData.filter(game => {
                 const difficulty = parseFloat(game.difficulty) || 0;
-                switch (difficultyFilter) {
-                    case '0-1.5':
-                        return difficulty >= 0 && difficulty <= 1.5;
-                    case '1.6-2.5':
-                        return difficulty >= 1.6 && difficulty <= 2.5;
-                    case '2.6-3.5':
-                        return difficulty >= 2.6 && difficulty <= 3.5;
-                    case '3.6-5':
-                        return difficulty >= 3.6 && difficulty <= 5;
-                    default:
-                        return true;
-                }
+                return difficulty >= difficultyMin && difficulty <= difficultyMax;
             });
         }
         
@@ -241,8 +224,11 @@ function clearAll() {
     document.getElementById('searchInput').value = '';
     document.getElementById('playersFilter').value = '';
     document.getElementById('bestPlayersOnly').checked = false;
-    document.getElementById('playTimeFilter').value = '';
-    document.getElementById('difficultyFilter').value = '';
+    document.getElementById('playTimeMin').value = 0;
+    document.getElementById('playTimeMax').value = 180;
+    document.getElementById('difficultyMin').value = 0;
+    document.getElementById('difficultyMax').value = 5;
+    updateSliderLabels();
     
     currentData = allData;
     renderData();
@@ -346,4 +332,15 @@ function openGameModal(gameId) {
 // 게임 상세 모달 닫기
 function closeGameModal() {
     document.getElementById('gameDetailModal').classList.add('hidden');
+}
+
+// 슬라이더 값 표시 갱신
+function updateSliderLabels() {
+    const ptMin = document.getElementById('playTimeMin').value;
+    const ptMax = document.getElementById('playTimeMax').value;
+    document.getElementById('playTimeValue').textContent = `${ptMin} - ${ptMax}`;
+
+    const diffMin = document.getElementById('difficultyMin').value;
+    const diffMax = document.getElementById('difficultyMax').value;
+    document.getElementById('difficultyValue').textContent = `${diffMin} - ${diffMax}`;
 }
