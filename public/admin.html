@@ -11,6 +11,9 @@
         <header>
             <h1>🎲 관리자 페이지</h1>
             <div class="header-controls">
+                <div class="last-update">
+                    마지막 업데이트: <span id="lastUpdate">-</span>
+                </div>
                 <a href="index.html" class="view-btn">📋 사용자 페이지</a>
                 <button class="bulk-btn" onclick="openBulkModal()">📦 csv 등록</button>
                 <button class="add-btn" onclick="openModal()">➕ 새 게임 추가</button>
@@ -64,6 +67,7 @@
         </div>
     </div>
 
+    <!-- 나머지 모달들은 동일... -->
     <!-- 게임 추가/수정 모달 -->
     <div class="modal hidden" id="gameModal">
         <div class="modal-content">

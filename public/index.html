@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- 사파리 상태바 및 브라우저 UI 색상 설정 -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="msapplication-navbutton-color" content="#667eea">
     <meta name="msapplication-TileColor" content="#667eea">
@@ -18,11 +18,8 @@
         <header>
             <h1>🎲 꿈엘청 보드게임 동아리</h1>
             <div class="header-info">
-                <div class="last-update desktop-only">
-                    마지막 업데이트: <span id="lastUpdate">-</span>
-                </div>
                 <div class="header-controls desktop-only">
-                    <a href="admin.html" class="admin-btn">⚙️ 관리자</a>
+                    <button onclick="checkAdminPassword()" class="admin-btn">⚙️ 관리자</button>
                 </div>
             </div>
         </header>
@@ -54,20 +51,20 @@
                     <div class="slider-container">
                         <div class="slider-track">
                             <div class="slider-range" id="difficultyRange"></div>
-                            <div class="slider-handle min-handle" id="difficultyMinHandle" data-slider="difficulty" data-type="min" role="slider" aria-label="최소 난이도" aria-valuenow="1" aria-valuemin="1" aria-valuemax="5" tabindex="0"></div>
-                            <div class="slider-handle max-handle" id="difficultyMaxHandle" data-slider="difficulty" data-type="max" role="slider" aria-label="최대 난이도" aria-valuenow="5" aria-valuemin="1" aria-valuemax="5" tabindex="0"></div>
+                            <div class="slider-handle min-handle" id="difficultyMinHandle" data-slider="difficulty" data-type="min" role="slider" aria-label="최소 난이도" aria-valuenow="1" aria-valuemin="1" aria-valuemax="3" tabindex="0"></div>
+                            <div class="slider-handle max-handle" id="difficultyMaxHandle" data-slider="difficulty" data-type="max" role="slider" aria-label="최대 난이도" aria-valuenow="3" aria-valuemin="1" aria-valuemax="3" tabindex="0"></div>
                         </div>
-                        <input type="range" id="difficultyMin" class="slider-input" min="1" max="5" value="1" step="0.1" aria-label="최소 난이도" title="최소 난이도">
-                        <input type="range" id="difficultyMax" class="slider-input" min="1" max="5" value="5" step="0.1" aria-label="최대 난이도" title="최대 난이도">
+                        <input type="range" id="difficultyMin" class="slider-input" min="1" max="3" value="1" step="0.1" aria-label="최소 난이도" title="최소 난이도">
+                        <input type="range" id="difficultyMax" class="slider-input" min="1" max="3" value="3" step="0.1" aria-label="최대 난이도" title="최대 난이도">
                     </div>
                     <div class="slider-values">
                         <span id="difficultyMinValue">1.0</span>
-                        <span id="difficultyMaxValue">5.0</span>
+                        <span id="difficultyMaxValue">3.0+</span>
                     </div>
                 </div>
                 
                 <div class="filter-group">
-                    <label>플레이 시간 (분):</label>
+                    <label>플레이 시간:</label>
                     <div class="slider-container">
                         <div class="slider-track">
                             <div class="slider-range" id="timeRange"></div>
@@ -89,6 +86,23 @@
         <div id="gridView" class="grid-container">
             <div class="grid-header">
                 <h2>보드게임 목록</h2>
+                <div class="sort-controls">
+                    <!-- 커스텀 드롭다운 -->
+                    <div class="custom-dropdown" id="customDropdown">
+                        <div class="dropdown-selected" onclick="toggleDropdown()">
+                            <span id="selectedOption">가나다순</span>
+                            <span class="dropdown-arrow">▼</span>
+                        </div>
+                        <div class="dropdown-options hidden" id="dropdownOptions">
+                            <div class="dropdown-option" data-value="name" onclick="selectOption('name', '가나다순')">가나다순</div>
+                            <div class="dropdown-option" data-value="difficulty" onclick="selectOption('difficulty', '난이도순')">난이도순</div>
+                        </div>
+                    </div>
+                    
+                    <button id="sortOrderBtn" onclick="toggleSortOrder()" class="sort-order-btn" title="정렬 순서 변경" aria-label="정렬 순서 토글">
+                        <span id="sortOrderIcon">↑</span>
+                    </button>
+                </div>
             </div>
             <div id="gameGrid" class="game-grid" role="grid" aria-label="보드게임 목록"></div>
         </div>
@@ -148,7 +162,126 @@
         </div>
     </div>
 
+    <!-- 관리자 비밀번호 모달 -->
+    <div class="admin-password-modal hidden" id="adminPasswordModal" onclick="closeAdminPasswordModal()">
+        <div class="admin-password-content" onclick="event.stopPropagation()">
+            <div class="admin-password-header">
+                <h2>🔐 관리자 인증</h2>
+                <button class="modal-close-btn" onclick="closeAdminPasswordModal()" aria-label="모달 닫기">&times;</button>
+            </div>
+            
+            <div class="admin-password-body">
+                <p>관리자 페이지에 접근하려면 비밀번호를 입력하세요.</p>
+                <div class="password-input-group">
+                    <input type="password" id="adminPasswordInput" placeholder="비밀번호 입력" maxlength="50">
+                    <button onclick="verifyAdminPassword()" class="verify-btn">확인</button>
+                </div>
+                <div class="password-error hidden" id="passwordError">
+                    ❌ 비밀번호가 올바르지 않습니다.
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="firebase-config.js"></script>
     <script src="script.js"></script>
+    
+    <script>
+        // 관리자 비밀번호 설정 (실제 사용시 더 복잡한 비밀번호로 변경하세요)
+        const ADMIN_PASSWORD = 'admin2024';
+        
+        // 관리자 비밀번호 확인 모달 열기
+        function checkAdminPassword() {
+            document.getElementById('adminPasswordModal').classList.remove('hidden');
+            document.getElementById('adminPasswordInput').focus();
+            document.getElementById('passwordError').classList.add('hidden');
+        }
+        
+        // 관리자 비밀번호 모달 닫기
+        function closeAdminPasswordModal() {
+            document.getElementById('adminPasswordModal').classList.add('hidden');
+            document.getElementById('adminPasswordInput').value = '';
+            document.getElementById('passwordError').classList.add('hidden');
+        }
+        
+        // 비밀번호 검증
+        function verifyAdminPassword() {
+            const inputPassword = document.getElementById('adminPasswordInput').value;
+            const errorDiv = document.getElementById('passwordError');
+            
+            if (inputPassword === ADMIN_PASSWORD) {
+                // 비밀번호가 맞으면 관리자 페이지로 이동
+                window.location.href = 'admin.html';
+            } else {
+                // 틀리면 에러 메시지 표시
+                errorDiv.classList.remove('hidden');
+                document.getElementById('adminPasswordInput').value = '';
+                document.getElementById('adminPasswordInput').focus();
+                
+                // 3초 후 에러 메시지 자동 숨김
+                setTimeout(() => {
+                    errorDiv.classList.add('hidden');
+                }, 3000);
+            }
+        }
+        
+        // 커스텀 드롭다운 기능
+        function toggleDropdown() {
+            const dropdown = document.getElementById('dropdownOptions');
+            const arrow = document.querySelector('.dropdown-arrow');
+            
+            if (dropdown && arrow) {
+                dropdown.classList.toggle('hidden');
+                arrow.style.transform = dropdown.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+            }
+        }
+        
+        function selectOption(value, text) {
+            const selectedOption = document.getElementById('selectedOption');
+            const dropdown = document.getElementById('dropdownOptions');
+            const arrow = document.querySelector('.dropdown-arrow');
+            
+            if (selectedOption) {
+                selectedOption.textContent = text;
+            }
+            if (dropdown) {
+                dropdown.classList.add('hidden');
+            }
+            if (arrow) {
+                arrow.style.transform = 'rotate(0deg)';
+            }
+            
+            // 정렬 기준 변경 - 안전하게 함수 호출
+            if (typeof window.currentSortBy !== 'undefined' && typeof window.applySortingAndRender === 'function') {
+                window.currentSortBy = value;
+                window.applySortingAndRender();
+            }
+        }
+        
+        // 외부 클릭시 드롭다운 닫기
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('customDropdown');
+            const dropdownOptions = document.getElementById('dropdownOptions');
+            const arrow = document.querySelector('.dropdown-arrow');
+            
+            if (dropdown && !dropdown.contains(event.target)) {
+                if (dropdownOptions) {
+                    dropdownOptions.classList.add('hidden');
+                }
+                if (arrow) {
+                    arrow.style.transform = 'rotate(0deg)';
+                }
+            }
+        });
+        
+        // 엔터키로 비밀번호 확인
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('adminPasswordInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    verifyAdminPassword();
+                }
+            });
+        });
+    </script>
 </body>
 </html>

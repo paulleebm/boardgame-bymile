@@ -60,6 +60,7 @@ async function loadGames() {
         
         renderGames();
         updateStats();
+        updateLastUpdateTime();
         
     } catch (error) {
         console.error('게임 데이터 로드 실패:', error);
@@ -67,6 +68,22 @@ async function loadGames() {
     }
     
     showLoading(false);
+}
+
+// 마지막 업데이트 시간 표시 (관리자 페이지용)
+function updateLastUpdateTime() {
+    const lastUpdate = document.getElementById('lastUpdate');
+    if (lastUpdate) {
+        const now = new Date();
+        lastUpdate.textContent = now.toLocaleString('ko-KR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
 }
 
 // 게임 목록 렌더링

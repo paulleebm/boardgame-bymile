@@ -1,22 +1,99 @@
 let allData = [];
 let currentData = [];
 
+// 정렬 상태 관리
+let currentSortBy = 'name'; // 초기값: 가나다순
+let currentSortOrder = 'asc'; // 초기값: 오름차순
+
 // 기본 이미지 URL (더 안정적인 서비스 사용)
 const DEFAULT_IMAGE_URL = 'https://placehold.co/300x300/667eea/ffffff?text=No+Image';
 
 // 페이지 로드 시 실행
 document.addEventListener('DOMContentLoaded', function() {
+    // 슬라이더 초기값을 먼저 설정
+    document.getElementById('difficultyMin').value = 1;
+    document.getElementById('difficultyMax').value = 3;
+    document.getElementById('timeMin').value = 10;
+    document.getElementById('timeMax').value = 120;
+    
     initializeSliders();
     setupBestToggle();
+    setupSortingControls();
     loadData();
     
     // 5분마다 자동 새로고침
     setInterval(loadData, 300000);
 });
 
+// 정렬 컨트롤 설정
+function setupSortingControls() {
+    // 초기 상태 설정
+    updateSortOrderIcon();
+    
+    // 전역 함수로 노출 (HTML에서 호출하기 위해)
+    window.currentSortBy = currentSortBy;
+    window.applySortingAndRender = applySortingAndRender;
+    window.toggleSortOrder = toggleSortOrder;
+    
+    // 커스텀 드롭다운 초기화
+    const selectedOption = document.getElementById('selectedOption');
+    if (selectedOption) {
+        selectedOption.textContent = currentSortBy === 'name' ? '가나다순' : '난이도순';
+    }
+}
+
+// 정렬 순서 토글
+function toggleSortOrder() {
+    currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+    updateSortOrderIcon();
+    applySortingAndRender();
+}
+
+// 정렬 순서 아이콘 업데이트
+function updateSortOrderIcon() {
+    const sortOrderIcon = document.getElementById('sortOrderIcon');
+    const sortOrderBtn = document.getElementById('sortOrderBtn');
+    
+    if (currentSortOrder === 'asc') {
+        sortOrderIcon.textContent = '↑';
+        sortOrderBtn.title = '오름차순 → 내림차순으로 변경';
+    } else {
+        sortOrderIcon.textContent = '↓';
+        sortOrderBtn.title = '내림차순 → 오름차순으로 변경';
+    }
+}
+
+// 정렬 적용 및 렌더링
+function applySortingAndRender() {
+    sortGames();
+    renderGridView();
+}
+
+// 게임 정렬 함수
+function sortGames() {
+    currentData.sort((a, b) => {
+        let comparison = 0;
+        
+        if (currentSortBy === 'name') {
+            // 가나다순 정렬
+            const nameA = (a.name || '').toLowerCase();
+            const nameB = (b.name || '').toLowerCase();
+            comparison = nameA.localeCompare(nameB, 'ko-KR');
+        } else if (currentSortBy === 'difficulty') {
+            // 난이도순 정렬
+            const diffA = parseFloat(a.difficulty) || 0;
+            const diffB = parseFloat(b.difficulty) || 0;
+            comparison = diffA - diffB;
+        }
+        
+        // 정렬 순서 적용
+        return currentSortOrder === 'asc' ? comparison : -comparison;
+    });
+}
+
 // 슬라이더 초기화
 function initializeSliders() {
-    initializeCustomSlider('difficulty', 1, 5, 0.1);
+    initializeCustomSlider('difficulty', 1, 3, 0.1);
     initializeCustomSlider('time', 10, 120, 5); // 5분 단위
 }
 
@@ -102,7 +179,7 @@ function initializeCustomSlider(type, min, max, step) {
             maxValueEl.textContent = maxValue === max ? maxValue + '분+' : maxValue + '분';
         } else {
             minValueEl.textContent = minValue.toFixed(1);
-            maxValueEl.textContent = maxValue.toFixed(1);
+            maxValueEl.textContent = maxValue === max ? maxValue.toFixed(1) + '+' : maxValue.toFixed(1);
         }
     }
     
@@ -246,8 +323,8 @@ async function loadData() {
         allData = data;
         currentData = data;
         
-        renderGridView();
-        updateLastUpdateTime();
+        // 초기 정렬 적용
+        applySortingAndRender();
         
     } catch (error) {
         console.error('데이터 로드 실패:', error);
@@ -255,13 +332,6 @@ async function loadData() {
     }
     
     showLoading(false);
-}
-
-// 뷰 전환 함수 제거 (그리드 단일 모드)
-
-// 데이터 렌더링 (그리드 뷰만)
-function renderData() {
-    renderGridView();
 }
 
 // 그리드 뷰 렌더링 (카드 형태)
@@ -289,8 +359,6 @@ function renderGridView() {
         `;
     }).join('');
 }
-
-// 테이블 뷰 렌더링 함수 제거 (그리드 단일 모드)
 
 // 통합된 검색 및 필터 기능
 function searchAndFilter() {
@@ -346,10 +414,12 @@ function searchAndFilter() {
     const difficultyMin = parseFloat(document.getElementById('difficultyMin').value);
     const difficultyMax = parseFloat(document.getElementById('difficultyMax').value);
     
-    if (difficultyMin > 1 || difficultyMax < 5) {
+    if (difficultyMin > 1 || difficultyMax < 3) {
         filteredData = filteredData.filter(game => {
             const difficulty = parseFloat(game.difficulty) || 0;
-            return difficulty >= difficultyMin && difficulty <= difficultyMax;
+            // 최대값이 3일 때는 3 이상의 모든 난이도 포함
+            const maxDifficulty = difficultyMax === 3 ? 5 : difficultyMax;
+            return difficulty >= difficultyMin && difficulty <= maxDifficulty;
         });
     }
     
@@ -365,7 +435,7 @@ function searchAndFilter() {
     }
     
     currentData = filteredData;
-    renderGridView();
+    applySortingAndRender();
 }
 
 // 모든 검색 및 필터 초기화
@@ -379,15 +449,21 @@ function clearAll() {
     
     // 슬라이더 초기화
     document.getElementById('difficultyMin').value = 1;
-    document.getElementById('difficultyMax').value = 5;
+    document.getElementById('difficultyMax').value = 3;
     document.getElementById('timeMin').value = 10;
     document.getElementById('timeMax').value = 120;
+    
+    // 정렬 초기화
+    currentSortBy = 'name';
+    currentSortOrder = 'asc';
+    document.getElementById('sortBy').value = currentSortBy;
+    updateSortOrderIcon();
     
     // 슬라이더 UI 업데이트
     initializeSliders();
     
     currentData = allData;
-    renderGridView();
+    applySortingAndRender();
 }
 
 // 게임 상세 모달 열기
@@ -429,7 +505,7 @@ function closeGameModal() {
     document.getElementById('gameDetailModal').classList.add('hidden');
 }
 
-// 유틸리티 함수들
+// 개선된 formatPlayerInfo 함수
 function formatPlayerInfo(game) {
     const min = game.minPlayers;
     const max = game.maxPlayers;
@@ -440,14 +516,32 @@ function formatPlayerInfo(game) {
     if (best && best.toString().trim()) {
         let bestStr = best.toString().trim();
         // 따옴표 제거 (CSV에서 "4,5" 형태로 올 수 있음)
-        bestStr = bestStr.replace(/["']/g, '');
+        bestStr = bestStr.replace(/["'`]/g, '');
         
         if (bestStr) {
-            // 쉼표나 세미콜론으로 구분된 경우와 단일 값 모두 처리
-            if (bestStr.includes(',') || bestStr.includes(';')) {
-                result += ` (베스트: ${bestStr})`;
+            // 최소/최대 인원이 같고, 베스트 인원도 동일한 경우 처리
+            if (min && max && min === max) {
+                // 베스트 인원이 최소/최대와 같은지 확인
+                if (bestStr.includes(',') || bestStr.includes(';')) {
+                    // 여러 베스트 인원이 있는 경우
+                    result += ` (베스트: ${bestStr})`;
+                } else {
+                    const bestNum = parseInt(bestStr);
+                    if (bestNum === min) {
+                        // 베스트가 최소/최대와 동일한 경우 "전용 게임"으로 표기
+                        return `${min}인 전용 게임`;
+                    } else {
+                        // 베스트가 다른 경우 기존 표기
+                        result += ` (베스트: ${bestStr}명)`;
+                    }
+                }
             } else {
-                result += ` (베스트: ${bestStr}명)`;
+                // 최소/최대가 다른 경우 기존 베스트 표기
+                if (bestStr.includes(',') || bestStr.includes(';')) {
+                    result += ` (베스트: ${bestStr})`;
+                } else {
+                    result += ` (베스트: ${bestStr}명)`;
+                }
             }
         }
     }
@@ -485,22 +579,6 @@ function showError(message) {
 function hideError() {
     const errorMessage = document.getElementById('errorMessage');
     errorMessage.classList.add('hidden');
-}
-
-// 마지막 업데이트 시간 표시
-function updateLastUpdateTime() {
-    const lastUpdate = document.getElementById('lastUpdate');
-    if (lastUpdate) {
-        const now = new Date();
-        lastUpdate.textContent = now.toLocaleString('ko-KR', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
-    }
 }
 
 // 필터 변경 시 자동 적용을 위한 이벤트 리스너

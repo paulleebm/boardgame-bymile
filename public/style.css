@@ -74,6 +74,7 @@ body::after {
     padding: 20px;
 }
 
+/* ===== 헤더 스타일 ===== */
 header {
     background: rgba(255, 255, 255, 0.95);
     -webkit-backdrop-filter: blur(10px);
@@ -110,24 +111,18 @@ header h1 {
     gap: 10px;
 }
 
-.last-update {
-    color: #666;
-    font-size: 14px;
-    background: rgba(102, 126, 234, 0.1);
-    padding: 5px 10px;
-    border-radius: 20px;
-}
-
 .admin-btn {
     background: linear-gradient(45deg, #e74c3c, #c0392b);
     color: white;
-    text-decoration: none;
+    border: none;
     padding: 8px 16px;
     border-radius: 20px;
     font-size: 12px;
+    cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
     font-weight: 600;
+    text-decoration: none;
 }
 
 .admin-btn:hover {
@@ -135,6 +130,7 @@ header h1 {
     box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
 }
 
+/* ===== 컨트롤 영역 ===== */
 .controls {
     background: rgba(255, 255, 255, 0.95);
     -webkit-backdrop-filter: blur(10px);
@@ -209,6 +205,7 @@ header h1 {
     background: rgba(102, 126, 234, 0.2);
 }
 
+/* ===== 필터 박스 ===== */
 .filter-box {
     border-top: 1px solid rgba(102, 126, 234, 0.2);
     padding-top: 20px;
@@ -232,6 +229,7 @@ header h1 {
 .players-input-group input[type="number"] {
     width: 120px;
     flex-shrink: 0;
+    text-align: center;
 }
 
 .filter-group {
@@ -244,16 +242,6 @@ header h1 {
     font-weight: 600;
     color: #2c3e50;
     font-size: 14px;
-}
-
-.checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-weight: normal !important;
-    color: #666 !important;
-    font-size: 13px;
-    white-space: nowrap;
 }
 
 .search-box input, .filter-group input, .filter-group select {
@@ -272,13 +260,91 @@ header h1 {
 
 .filter-group input[type="number"] {
     width: 100px;
+    text-align: center;
 }
 
 .filter-group input, .filter-group select {
     padding: 12px 16px;
 }
 
-/* 슬라이더 스타일 */
+/* ===== 플레이어 필터 개선된 레이아웃 ===== */
+.players-label-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.players-label-group label {
+    margin-bottom: 0 !important;
+    transition: all 0.3s ease;
+}
+
+/* 토글 스위치 - 텍스트 없는 버전 */
+.toggle-switch {
+    display: flex;
+    align-items: center;
+}
+
+.toggle-input {
+    display: none;
+}
+
+.toggle-label {
+    position: relative;
+    cursor: pointer;
+    width: 32px;
+    height: 16px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.toggle-label::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 32px;
+    height: 16px;
+    background: #e0e0e0;
+    border-radius: 16px;
+    transition: all 0.3s ease;
+    border: 1px solid #ddd;
+}
+
+.toggle-label::after {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.toggle-input:checked + .toggle-label::before {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    border-color: #667eea;
+}
+
+.toggle-input:checked + .toggle-label::after {
+    transform: translateX(16px);
+}
+
+.toggle-label:hover::before {
+    box-shadow: 0 0 8px rgba(102, 126, 234, 0.3);
+}
+
+.toggle-input:checked + .toggle-label:hover::before {
+    box-shadow: 0 0 8px rgba(102, 126, 234, 0.5);
+}
+
+/* ===== 슬라이더 스타일 ===== */
 .slider-container {
     position: relative;
     margin: 8px 0;
@@ -318,6 +384,8 @@ header h1 {
     box-shadow: 0 3px 8px rgba(0,0,0,0.2), 0 0 0 2px white;
     z-index: 3;
     -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
     user-select: none;
     touch-action: none;
     /* 기본 트랜지션은 호버 효과만 */
@@ -381,6 +449,7 @@ header h1 {
     padding: 0 15px;
 }
 
+/* ===== 버튼 공통 스타일 ===== */
 button {
     padding: 12px 24px;
     background: linear-gradient(45deg, #667eea, #764ba2);
@@ -407,10 +476,21 @@ button:hover {
     box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
 }
 
-/* 그리드/테이블 헤더 */
+/* ===== 그리드 컨테이너 ===== */
+.grid-container {
+    background: rgba(255, 255, 255, 0.95);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    padding: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ===== 그리드 헤더 및 정렬 컨트롤 ===== */
 .grid-header {
     display: flex;
-    justify-content: flex-start;
+    justify-content: space-between;
     align-items: center;
     margin-bottom: 25px;
     padding-bottom: 15px;
@@ -423,17 +503,117 @@ button:hover {
     margin: 0;
 }
 
-/* 그리드 뷰 스타일 (카드 형태) */
-.grid-container {
-    background: rgba(255, 255, 255, 0.95);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-    border-radius: 15px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-    padding: 25px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
+/* 커스텀 드롭다운 */
+.custom-dropdown {
+    position: relative;
+    min-width: 100px;
+}
+
+.dropdown-selected {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 20px;
+    background: white;
+    font-size: 14px;
+    color: #2c3e50;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    min-width: 90px;
+}
+
+.dropdown-selected:hover {
+    border-color: #667eea;
+    box-shadow: 0 0 10px rgba(102, 126, 234, 0.15);
+}
+
+.dropdown-arrow {
+    font-size: 10px;
+    margin-left: 8px;
+    transition: transform 0.3s ease;
+    color: #667eea;
+    font-weight: bold;
+}
+
+.dropdown-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    margin-top: 4px;
+    overflow: hidden;
+}
+
+.dropdown-option {
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    color: #2c3e50;
+}
+
+.dropdown-option:hover {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+}
+
+.dropdown-option:not(:last-child) {
+    border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.sort-order-btn {
+    width: 32px;
+    height: 32px;
+    border: 2px solid #e0e0e0;
+    border-radius: 50%;
+    background: white;
+    color: #667eea;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    padding: 0;
+    box-shadow: none;
+}
+
+.sort-order-btn:hover {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.sort-order-btn:active {
+    transform: scale(0.95);
+    background: rgba(102, 126, 234, 0.2);
+}
+
+.sort-order-btn #sortOrderIcon {
+    line-height: 1;
+    transition: transform 0.2s ease;
+}
+
+/* ===== 게임 그리드 ===== */
 .game-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -491,86 +671,7 @@ button:hover {
     overflow-wrap: break-word;
 }
 
-/* 테이블 뷰 스타일 (개선됨) */
-.table-container {
-    background: rgba(255, 255, 255, 0.95);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-    border-radius: 15px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 25px;
-}
-
-.table-wrapper {
-    overflow-x: auto;
-    border-radius: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-}
-
-th, td {
-    padding: 16px 20px;
-    text-align: left;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
-}
-
-th {
-    background: linear-gradient(45deg, #667eea, #764ba2);
-    color: white;
-    font-weight: 600;
-    font-size: 14px;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-tbody tr {
-    transition: all 0.3s ease;
-}
-
-tbody tr:hover {
-    background: rgba(102, 126, 234, 0.05);
-    transform: scale(1.01);
-}
-
-td {
-    background: white;
-    font-size: 14px;
-    color: #333;
-}
-
-.youtube-btn {
-    background: linear-gradient(45deg, #ff0000, #cc0000);
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 15px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-decoration: none;
-    display: inline-block;
-}
-
-.youtube-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3);
-}
-
-.youtube-btn:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-/* 게임 상세 모달 */
+/* ===== 게임 상세 모달 ===== */
 .game-detail-modal {
     position: fixed;
     top: 0;
@@ -689,7 +790,117 @@ td {
     transform: scale(1.1);
 }
 
-/* 로딩 애니메이션 */
+/* ===== 관리자 비밀번호 모달 ===== */
+.admin-password-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3000;
+}
+
+.admin-password-content {
+    background: white;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.admin-password-header {
+    background: linear-gradient(45deg, #e74c3c, #c0392b);
+    color: white;
+    padding: 25px;
+    text-align: center;
+    position: relative;
+}
+
+.admin-password-header h2 {
+    margin: 0;
+    font-size: 1.5em;
+    font-weight: 600;
+}
+
+.admin-password-body {
+    padding: 30px 25px;
+    text-align: center;
+}
+
+.admin-password-body p {
+    color: #666;
+    margin-bottom: 20px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.password-input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.password-input-group input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 25px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.password-input-group input:focus {
+    outline: none;
+    border-color: #e74c3c;
+    box-shadow: 0 0 20px rgba(231, 76, 60, 0.2);
+}
+
+.verify-btn {
+    background: linear-gradient(45deg, #e74c3c, #c0392b);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+    white-space: nowrap;
+}
+
+.verify-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+}
+
+.password-error {
+    background: rgba(231, 76, 60, 0.1);
+    color: #c0392b;
+    padding: 10px 15px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid rgba(231, 76, 60, 0.2);
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* ===== 로딩 및 메시지 ===== */
 .loading {
     text-align: center;
     padding: 60px;
@@ -720,7 +931,6 @@ td {
     100% { transform: rotate(360deg); }
 }
 
-/* 에러 메시지 */
 .error-message {
     background: linear-gradient(45deg, #ff6b6b, #ee5a52);
     color: white;
@@ -741,19 +951,19 @@ td {
     font-size: 12px;
 }
 
-/* 숨김 클래스 */
+/* ===== 숨김 클래스 ===== */
 .hidden {
     display: none !important;
 }
 
-/* 모바일 환경 숨김 클래스 */
+/* ===== 데스크톱 전용 클래스 ===== */
 @media (max-width: 768px) {
     .desktop-only {
         display: none !important;
     }
 }
 
-/* 터치 디바이스에서 호버 효과 비활성화 */
+/* ===== 터치 디바이스 호버 효과 비활성화 ===== */
 @media (hover: none) and (pointer: coarse) {
     .slider-handle:hover {
         transform: translate(-50%, -50%);
@@ -767,7 +977,7 @@ td {
     }
 }
 
-/* 모바일 최적화 */
+/* ===== 모바일 최적화 ===== */
 @media (max-width: 768px) {
     .container {
         padding: 15px;
@@ -783,7 +993,7 @@ td {
     }
     
     header h1 {
-        font-size: 1.8em;
+        font-size: 1.6em;
     }
     
     .filter-box {
@@ -839,11 +1049,113 @@ td {
         width: 95%;
         margin: 20px;
     }
+    
+    /* 그리드 헤더 - 한 줄로 유지 */
+    .grid-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+    }
+    
+    .grid-header h2 {
+        font-size: 1.3em;
+        margin: 0;
+        flex-shrink: 0;
+    }
+    
+    .sort-controls {
+        gap: 6px;
+        flex-shrink: 0;
+    }
+    
+    .dropdown-selected {
+        padding: 6px 8px;
+        font-size: 12px;
+        min-width: 70px;
+    }
+    
+    .dropdown-arrow {
+        font-size: 8px;
+        margin-left: 4px;
+    }
+    
+    .dropdown-option {
+        padding: 8px 8px;
+        font-size: 12px;
+    }
+    
+    .sort-order-btn {
+        width: 26px;
+        height: 26px;
+        font-size: 13px;
+    }
+    
+    /* 토글 스위치 모바일 조정 */
+    .players-label-group {
+        gap: 6px;
+    }
+    
+    .toggle-label {
+        width: 28px;
+        height: 14px;
+    }
+    
+    .toggle-label::before {
+        width: 28px;
+        height: 14px;
+        border-radius: 14px;
+    }
+    
+    .toggle-label::after {
+        width: 10px;
+        height: 10px;
+        left: 2px;
+        top: 2px;
+    }
+    
+    .toggle-input:checked + .toggle-label::after {
+        transform: translateX(14px);
+    }
+    
+    /* 관리자 모달 모바일 */
+    .admin-password-content {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    .admin-password-header {
+        padding: 20px;
+    }
+    
+    .admin-password-header h2 {
+        font-size: 1.3em;
+    }
+    
+    .admin-password-body {
+        padding: 25px 20px;
+    }
+    
+    .password-input-group {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .verify-btn {
+        width: 100%;
+    }
 }
 
 @media (max-width: 480px) {
     .controls {
         padding: 15px;
+    }
+    
+    /* 헤더 타이틀 크기 조정 */
+    header h1 {
+        font-size: 1.4em;
     }
     
     .filter-box {
@@ -853,25 +1165,6 @@ td {
     
     .players-input-group {
         gap: 8px;
-    }
-    
-    .toggle-label {
-        font-size: 12px;
-        padding-left: 45px;
-    }
-    
-    .toggle-label::before {
-        width: 36px;
-        height: 18px;
-    }
-    
-    .toggle-label::after {
-        width: 14px;
-        height: 14px;
-    }
-    
-    .toggle-input:checked + .toggle-label::after {
-        transform: translateY(-50%) translateX(18px);
     }
     
     .slider-container {
@@ -925,9 +1218,76 @@ td {
     .game-title-grid {
         padding: 5px;
     }
+    
+    /* 그리드 헤더 480px */
+    .grid-header {
+        gap: 8px;
+        margin-bottom: 18px;
+        padding-bottom: 10px;
+    }
+    
+    .grid-header h2 {
+        font-size: 1.2em;
+    }
+    
+    .sort-controls {
+        gap: 4px;
+    }
+    
+    .dropdown-selected {
+        padding: 5px 6px;
+        font-size: 11px;
+        min-width: 60px;
+    }
+    
+    .dropdown-arrow {
+        font-size: 7px;
+        margin-left: 3px;
+    }
+    
+    .dropdown-option {
+        padding: 6px 6px;
+        font-size: 11px;
+    }
+    
+    .sort-order-btn {
+        width: 24px;
+        height: 24px;
+        font-size: 12px;
+    }
+    
+    /* 관리자 모달 480px */
+    .admin-password-header {
+        padding: 15px;
+    }
+    
+    .admin-password-header h2 {
+        font-size: 1.2em;
+    }
+    
+    .admin-password-body {
+        padding: 20px 15px;
+    }
+    
+    .password-input-group input {
+        padding: 10px 14px;
+        font-size: 13px;
+    }
+    
+    .verify-btn {
+        padding: 10px 18px;
+        font-size: 13px;
+    }
 }
 
+/* 매우 작은 화면 (360px 이하) 추가 최적화 */
 @media (max-width: 360px) {
+    /* 헤더 타이틀 더 작게 */
+    header h1 {
+        font-size: 1.2em;
+        line-height: 1.2;
+    }
+    
     .search-input-group {
         min-width: 180px;
     }
@@ -961,123 +1321,84 @@ td {
     .game-title-grid {
         padding: 4px;
     }
-}
-
-/* 플레이어 필터 개선된 레이아웃 */
-.players-filter {
-    max-width: 250px;
-}
-
-.players-label-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-}
-
-.players-label-group label {
-    margin-bottom: 0 !important;
-    transition: all 0.3s ease;
-}
-
-.players-input-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.players-input-group input[type="number"] {
-    width: 120px;
-    flex-shrink: 0;
-}
-
-/* 토글 스위치 - 텍스트 없는 버전 */
-.toggle-switch {
-    display: flex;
-    align-items: center;
-}
-
-.toggle-input {
-    display: none;
-}
-
-.toggle-label {
-    position: relative;
-    cursor: pointer;
-    width: 32px;
-    height: 16px;
-    -webkit-user-select: none;
-    user-select: none;
-}
-
-.toggle-label::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 32px;
-    height: 16px;
-    background: #e0e0e0;
-    border-radius: 16px;
-    transition: all 0.3s ease;
-    border: 1px solid #ddd;
-}
-
-.toggle-label::after {
-    content: '';
-    position: absolute;
-    left: 2px;
-    top: 4px;
-    width: 12px;
-    height: 12px;
-    background: white;
-    border-radius: 50%;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.toggle-input:checked + .toggle-label::before {
-    background: linear-gradient(45deg, #667eea, #764ba2);
-    border-color: #667eea;
-}
-
-.toggle-input:checked + .toggle-label::after {
-    transform: translateX(16px);
-}
-
-.toggle-label:hover::before {
-    box-shadow: 0 0 8px rgba(102, 126, 234, 0.3);
-}
-
-.toggle-input:checked + .toggle-label:hover::before {
-    box-shadow: 0 0 8px rgba(102, 126, 234, 0.5);
-}
-
-/* 모바일에서 토글 조정 */
-@media (max-width: 480px) {
-    .players-label-group {
+    
+    /* 그리드 헤더 360px */
+    .grid-header {
         gap: 6px;
+        margin-bottom: 15px;
+        padding-bottom: 8px;
     }
     
-    .toggle-label {
-        width: 28px;
-        height: 14px;
+    .grid-header h2 {
+        font-size: 1.1em;
     }
     
-    .toggle-label::before {
-        width: 28px;
-        height: 14px;
-        border-radius: 14px;
+    .sort-controls {
+        gap: 3px;
     }
     
-    .toggle-label::after {
-        width: 10px;
-        height: 10px;
-        left: 2px;
-        top: 2px;
+    .dropdown-selected {
+        padding: 4px 5px;
+        font-size: 10px;
+        min-width: 50px;
+        border-radius: 15px;
     }
     
-    .toggle-input:checked + .toggle-label::after {
-        transform: translateX(14px);
+    .dropdown-arrow {
+        font-size: 6px;
+        margin-left: 2px;
+    }
+    
+    .dropdown-option {
+        padding: 5px 5px;
+        font-size: 10px;
+    }
+    
+    .sort-order-btn {
+        width: 22px;
+        height: 22px;
+        font-size: 11px;
+        border-radius: 50%;
+    }
+}
+
+/* 초소형 화면 (320px 이하) 극한 최적화 */
+@media (max-width: 320px) {
+    .container {
+        padding: 10px;
+    }
+    
+    /* 헤더 타이틀 최소 크기 */
+    header {
+        padding: 15px;
+    }
+    
+    header h1 {
+        font-size: 1.1em;
+        line-height: 1.1;
+        word-break: keep-all;
+    }
+    
+    /* 그리드 헤더 최소화 */
+    .grid-header h2 {
+        font-size: 1.0em;
+    }
+    
+    .dropdown-selected {
+        padding: 3px 4px;
+        font-size: 9px;
+        min-width: 45px;
+        border-radius: 12px;
+    }
+    
+    .dropdown-arrow {
+        font-size: 5px;
+        margin-left: 1px;
+    }
+    
+    .sort-order-btn {
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
     }
 }

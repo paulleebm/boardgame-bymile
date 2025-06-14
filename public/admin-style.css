@@ -706,3 +706,46 @@ button:hover {
         font-size: 13px;
     }
 }
+
+/* admin-style.css에서 .last-update 스타일 추가 */
+
+.header-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.last-update {
+    color: #666;
+    font-size: 14px;
+    background: rgba(102, 126, 234, 0.1);
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-weight: 500;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+/* 모바일 반응형 조정 */
+@media (max-width: 768px) {
+    .header-controls {
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    .last-update {
+        font-size: 12px;
+        padding: 6px 10px;
+        order: -1; /* 모바일에서 맨 위로 배치 */
+        width: 100%;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .last-update {
+        font-size: 11px;
+        padding: 5px 8px;
+    }
+}
