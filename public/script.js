@@ -240,7 +240,7 @@ function applySortingAndRender() {
     renderGridView();
 }
 
-// 게임 정렬 함수
+// 개선된 게임 정렬 함수
 function sortGames() {
     currentData.sort((a, b) => {
         let comparison = 0;
@@ -251,10 +251,26 @@ function sortGames() {
             const nameB = (b.name || '').toLowerCase();
             comparison = nameA.localeCompare(nameB, 'ko-KR');
         } else if (currentSortBy === 'difficulty') {
-            // 난이도순 정렬
-            const diffA = parseFloat(a.difficulty) || 0;
-            const diffB = parseFloat(b.difficulty) || 0;
-            comparison = diffA - diffB;
+            // 개선된 난이도순 정렬
+            const diffA = a.difficulty !== null && a.difficulty !== undefined && a.difficulty !== '' 
+                ? parseFloat(a.difficulty) : null;
+            const diffB = b.difficulty !== null && b.difficulty !== undefined && b.difficulty !== '' 
+                ? parseFloat(b.difficulty) : null;
+            
+            // null 값 처리: 난이도가 없는 게임은 항상 뒤로
+            if (diffA === null && diffB === null) {
+                // 둘 다 난이도가 없으면 이름순으로 정렬
+                const nameA = (a.name || '').toLowerCase();
+                const nameB = (b.name || '').toLowerCase();
+                comparison = nameA.localeCompare(nameB, 'ko-KR');
+            } else if (diffA === null) {
+                comparison = 1; // A를 뒤로 (난이도 없음)
+            } else if (diffB === null) {
+                comparison = -1; // B를 뒤로 (난이도 없음)
+            } else {
+                // 둘 다 난이도가 있으면 난이도로 비교
+                comparison = diffA - diffB;
+            }
         }
         
         // 정렬 순서 적용
@@ -577,21 +593,40 @@ function openGameModal(gameId) {
         this.src = DEFAULT_IMAGE_URL;
     };
     
-    document.getElementById('modalGameName').textContent = game.name || '제목 없음';
-    document.getElementById('modalDifficulty').textContent = game.difficulty ? parseFloat(game.difficulty).toFixed(1) : '-';
-    document.getElementById('modalPlayers').textContent = formatPlayerInfo(game);
-    document.getElementById('modalPlayTime').textContent = game.playTime ? game.playTime + '분' : '-';
-    document.getElementById('modalGenre').textContent = game.genre || '-';
-    document.getElementById('modalBuyer').textContent = game.buyer || '-';
-    
-    // 유튜브 링크 처리 (없을 경우 숨김)
-    const youtubeLink = document.getElementById('modalYoutubeLink');
-    if (game.youtubeUrl && game.youtubeUrl.trim()) {
-        youtubeLink.href = game.youtubeUrl;
-        youtubeLink.style.display = 'inline-block';
-    } else {
-        youtubeLink.style.display = 'none';
-    }
+    // 게임 정보 렌더링
+    const gameDetailInfo = document.querySelector('.game-detail-info');
+    gameDetailInfo.innerHTML = `
+        <h2>${game.name || '제목 없음'}</h2>
+        <div class="detail-fields-container">
+            <div class="detail-field">
+                <span class="detail-label">난이도:</span>
+                <span class="detail-value">${game.difficulty ? parseFloat(game.difficulty).toFixed(1) : '-'}</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-label">플레이인원:</span>
+                <span class="detail-value">${formatPlayerInfo(game)}</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-label">플레이 시간:</span>
+                <span class="detail-value">${game.playTime ? game.playTime + '분' : '-'}</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-label">장르/테마:</span>
+                <span class="detail-value">${game.genre || '-'}</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-label">구매자:</span>
+                <span class="detail-value">${game.buyer || '-'}</span>
+            </div>
+        </div>
+        ${game.youtubeUrl && game.youtubeUrl.trim() ? `
+            <div class="youtube-link-container">
+                <a href="${game.youtubeUrl}" target="_blank" class="youtube-link">
+                    📺 룰 설명 영상 보기
+                </a>
+            </div>
+        ` : ''}
+    `;
     
     modal.classList.remove('hidden');
 }

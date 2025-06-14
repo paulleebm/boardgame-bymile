@@ -128,36 +128,7 @@
             </div>
             
             <div class="game-detail-info">
-                <h2 id="modalGameName">게임명</h2>
-                
-                <div class="detail-field">
-                    <span class="detail-label">난이도:</span>
-                    <span class="detail-value" id="modalDifficulty">-</span>
-                </div>
-                
-                <div class="detail-field">
-                    <span class="detail-label">플레이인원:</span>
-                    <span class="detail-value" id="modalPlayers">-</span>
-                </div>
-                
-                <div class="detail-field">
-                    <span class="detail-label">플레이 시간:</span>
-                    <span class="detail-value" id="modalPlayTime">-</span>
-                </div>
-                
-                <div class="detail-field">
-                    <span class="detail-label">장르/테마:</span>
-                    <span class="detail-value" id="modalGenre">-</span>
-                </div>
-                
-                <div class="detail-field">
-                    <span class="detail-label">구매자:</span>
-                    <span class="detail-value" id="modalBuyer">-</span>
-                </div>
-                
-                <a id="modalYoutubeLink" href="#" target="_blank" class="youtube-link">
-                    📺 룰 설명 영상 보기
-                </a>
+                <!-- 내용은 JavaScript로 동적 생성 -->
             </div>
         </div>
     </div>
@@ -236,11 +207,13 @@
             }
         }
         
+        // 개선된 정렬 옵션 선택 함수
         function selectOption(value, text) {
             const selectedOption = document.getElementById('selectedOption');
             const dropdown = document.getElementById('dropdownOptions');
             const arrow = document.querySelector('.dropdown-arrow');
             
+            // UI 업데이트
             if (selectedOption) {
                 selectedOption.textContent = text;
             }
@@ -251,10 +224,61 @@
                 arrow.style.transform = 'rotate(0deg)';
             }
             
-            // 정렬 기준 변경 - 안전하게 함수 호출
-            if (typeof window.currentSortBy !== 'undefined' && typeof window.applySortingAndRender === 'function') {
+            // 디버깅 로그 (개발 중에만 사용)
+            console.log('정렬 기준 변경:', value, '→', text);
+            
+            // script.js의 전역 변수 및 함수 확인 후 업데이트
+            if (typeof currentSortBy !== 'undefined') {
+                currentSortBy = value;
+                console.log('currentSortBy 업데이트됨:', currentSortBy);
+            }
+            
+            if (typeof window.currentSortBy !== 'undefined') {
                 window.currentSortBy = value;
+            }
+            
+            // 정렬 적용 함수 호출
+            if (typeof applySortingAndRender === 'function') {
+                applySortingAndRender();
+                console.log('정렬 적용 완료');
+            } else if (typeof window.applySortingAndRender === 'function') {
                 window.applySortingAndRender();
+                console.log('정렬 적용 완료 (window)');
+            } else {
+                console.error('applySortingAndRender 함수를 찾을 수 없습니다.');
+            }
+        }
+        
+        // 정렬 순서 토글 함수
+        function toggleSortOrder() {
+            // script.js의 전역 변수들 직접 조작
+            if (typeof currentSortOrder !== 'undefined') {
+                currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+                console.log('정렬 순서 변경:', currentSortOrder);
+                
+                // 아이콘 업데이트
+                const sortOrderIcon = document.getElementById('sortOrderIcon');
+                const sortOrderBtn = document.getElementById('sortOrderBtn');
+                
+                if (sortOrderIcon && sortOrderBtn) {
+                    if (currentSortOrder === 'asc') {
+                        sortOrderIcon.textContent = '↑';
+                        sortOrderBtn.title = '오름차순 → 내림차순으로 변경';
+                    } else {
+                        sortOrderIcon.textContent = '↓';
+                        sortOrderBtn.title = '내림차순 → 오름차순으로 변경';
+                    }
+                }
+                
+                // 정렬 적용
+                if (typeof applySortingAndRender === 'function') {
+                    applySortingAndRender();
+                } else if (typeof window.applySortingAndRender === 'function') {
+                    window.applySortingAndRender();
+                }
+                
+            } else {
+                console.error('currentSortOrder 변수를 찾을 수 없습니다.');
             }
         }
         
@@ -276,11 +300,14 @@
         
         // 엔터키로 비밀번호 확인
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('adminPasswordInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    verifyAdminPassword();
-                }
-            });
+            const passwordInput = document.getElementById('adminPasswordInput');
+            if (passwordInput) {
+                passwordInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        verifyAdminPassword();
+                    }
+                });
+            }
         });
     </script>
 </body>
