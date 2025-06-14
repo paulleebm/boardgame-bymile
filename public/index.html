@@ -27,7 +27,7 @@
         <div class="controls">
             <div class="search-box">
                 <div class="search-input-group">
-                    <input type="text" id="searchInput" placeholder="게임 이름으로 검색...">
+                    <input type="text" id="searchInput" placeholder="게임 이름 또는 장르로 검색...">
                     <button onclick="searchAndFilter()" class="search-btn" title="검색">🔍</button>
                 </div>
             </div>
@@ -64,7 +64,7 @@
                 </div>
                 
                 <div class="filter-group">
-                    <label>플레이 시간:</label>
+                    <label>플레이 시간 (분):</label>
                     <div class="slider-container">
                         <div class="slider-track">
                             <div class="slider-range" id="timeRange"></div>
@@ -188,7 +188,7 @@
     
     <script>
         // 관리자 비밀번호 설정 (실제 사용시 더 복잡한 비밀번호로 변경하세요)
-        const ADMIN_PASSWORD = 'admin2024';
+        const ADMIN_PASSWORD = '0220';
         
         // 관리자 비밀번호 확인 모달 열기
         function checkAdminPassword() {

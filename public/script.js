@@ -19,11 +19,180 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeSliders();
     setupBestToggle();
     setupSortingControls();
+    setupAdvancedSearch();
     loadData();
     
     // 5분마다 자동 새로고침
     setInterval(loadData, 300000);
 });
+
+// 고급 검색 설정
+function setupAdvancedSearch() {
+    const searchInput = document.getElementById('searchInput');
+    let searchTimeout;
+    
+    // 실시간 검색 (디바운싱)
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            advancedSearchAndFilter();
+        }, 300);
+    });
+    
+    // 엔터키 검색
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            clearTimeout(searchTimeout);
+            advancedSearchAndFilter();
+        }
+    });
+}
+
+// 한글 자음 분리를 위한 함수 (띄어쓰기 무시)
+function getKoreanInitials(text) {
+    const initials = [];
+    const koreanInitialConsonants = [
+        'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ',
+        'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'
+    ];
+    
+    // 띄어쓰기 제거 후 처리
+    const textNoSpaces = text.replace(/\s/g, '');
+    
+    for (let i = 0; i < textNoSpaces.length; i++) {
+        const charCode = textNoSpaces.charCodeAt(i);
+        if (charCode >= 0xAC00 && charCode <= 0xD7A3) { // 한글 범위
+            const initialIndex = Math.floor((charCode - 0xAC00) / 588);
+            initials.push(koreanInitialConsonants[initialIndex]);
+        } else if (charCode >= 0x3131 && charCode <= 0x3163) {
+            // 이미 자음/모음인 경우 (ㄱ, ㄴ, ㄷ 등)
+            initials.push(textNoSpaces[i]);
+        } else {
+            // 영어나 숫자 등
+            initials.push(textNoSpaces[i]);
+        }
+    }
+    
+    return initials.join('');
+}
+
+// 고급 검색 및 필터 기능
+function advancedSearchAndFilter() {
+    let filteredData = [...allData];
+    
+    // 1. 게임 이름 및 장르 고급 검색
+    const searchInput = document.getElementById('searchInput').value.trim();
+    if (searchInput) {
+        const searchTerm = searchInput.toLowerCase();
+        const searchTermNoSpaces = searchTerm.replace(/\s/g, '');
+        const searchInitials = getKoreanInitials(searchTerm);
+        
+        // 검색어가 모두 자음인지 확인 (초성 검색 여부 판단)
+        const isInitialSearch = /^[ㄱ-ㅎ]+$/.test(searchTermNoSpaces);
+        
+        filteredData = filteredData.filter(game => {
+            // 게임 이름 검색
+            const gameName = (game.name || '').toLowerCase();
+            const gameNameNoSpaces = gameName.replace(/\s/g, '');
+            const gameNameInitials = getKoreanInitials(gameName);
+            
+            // 장르 검색
+            const gameGenre = (game.genre || '').toLowerCase();
+            const gameGenreNoSpaces = gameGenre.replace(/\s/g, '');
+            const gameGenreInitials = getKoreanInitials(gameGenre);
+            
+            // 초성 검색인 경우
+            if (isInitialSearch) {
+                return (
+                    gameNameInitials.includes(searchInitials) ||
+                    gameGenreInitials.includes(searchInitials)
+                );
+            }
+            
+            // 일반 검색인 경우
+            return (
+                // 완전 매칭
+                gameName.includes(searchTerm) ||
+                gameGenre.includes(searchTerm) ||
+                // 띄어쓰기 무시 매칭
+                gameNameNoSpaces.includes(searchTermNoSpaces) ||
+                gameGenreNoSpaces.includes(searchTermNoSpaces) ||
+                // 초성도 함께 체크 (혼합 검색 지원)
+                gameNameInitials.includes(searchInitials) ||
+                gameGenreInitials.includes(searchInitials)
+            );
+        });
+    }
+    
+    // 2. 플레이 인원 필터
+    const playersFilter = document.getElementById('playersFilter').value;
+    const bestPlayersOnly = document.getElementById('bestPlayersOnly').checked;
+    
+    if (playersFilter) {
+        const playerCount = parseInt(playersFilter);
+        filteredData = filteredData.filter(game => {
+            if (bestPlayersOnly) {
+                // 베스트 인원만 체크
+                if (game.bestPlayers) {
+                    const bestPlayers = game.bestPlayers.toString().trim();
+                    if (!bestPlayers) return false;
+                    
+                    // 따옴표 제거 (CSV에서 "4,5" 형태로 올 수 있음)
+                    const cleanBestPlayers = bestPlayers.replace(/["']/g, '');
+                    
+                    // 쉼표 또는 세미콜론으로 구분된 값들 처리
+                    if (cleanBestPlayers.includes(',') || cleanBestPlayers.includes(';')) {
+                        const separator = cleanBestPlayers.includes(',') ? ',' : ';';
+                        const bestPlayersArray = cleanBestPlayers.split(separator).map(p => parseInt(p.trim()));
+                        return bestPlayersArray.includes(playerCount);
+                    }
+                    // 단일 값 처리
+                    else {
+                        return parseInt(cleanBestPlayers) === playerCount;
+                    }
+                }
+                return false;
+            } else {
+                // 일반 플레이 인원 범위 체크
+                const min = game.minPlayers || 0;
+                const max = game.maxPlayers || 999;
+                return playerCount >= min && playerCount <= max;
+            }
+        });
+    }
+    
+    // 3. 난이도 필터
+    const difficultyMin = parseFloat(document.getElementById('difficultyMin').value);
+    const difficultyMax = parseFloat(document.getElementById('difficultyMax').value);
+    
+    if (difficultyMin > 1 || difficultyMax < 3) {
+        filteredData = filteredData.filter(game => {
+            const difficulty = parseFloat(game.difficulty) || 0;
+            // 최대값이 3일 때는 3 이상의 모든 난이도 포함
+            const maxDifficulty = difficultyMax === 3 ? 5 : difficultyMax;
+            return difficulty >= difficultyMin && difficulty <= maxDifficulty;
+        });
+    }
+    
+    // 4. 플레이 시간 필터
+    const timeMin = parseInt(document.getElementById('timeMin').value);
+    const timeMax = parseInt(document.getElementById('timeMax').value);
+    
+    if (timeMin > 10 || timeMax < 120) {
+        filteredData = filteredData.filter(game => {
+            const playTime = game.playTime || 0;
+            return playTime >= timeMin && playTime <= timeMax;
+        });
+    }
+    
+    currentData = filteredData;
+    applySortingAndRender();
+}
+
+// 기존 searchAndFilter 함수를 고급 검색으로 대체
+function searchAndFilter() {
+    advancedSearchAndFilter();
+}
 
 // 정렬 컨트롤 설정
 function setupSortingControls() {
@@ -54,12 +223,14 @@ function updateSortOrderIcon() {
     const sortOrderIcon = document.getElementById('sortOrderIcon');
     const sortOrderBtn = document.getElementById('sortOrderBtn');
     
-    if (currentSortOrder === 'asc') {
-        sortOrderIcon.textContent = '↑';
-        sortOrderBtn.title = '오름차순 → 내림차순으로 변경';
-    } else {
-        sortOrderIcon.textContent = '↓';
-        sortOrderBtn.title = '내림차순 → 오름차순으로 변경';
+    if (sortOrderIcon && sortOrderBtn) {
+        if (currentSortOrder === 'asc') {
+            sortOrderIcon.textContent = '↑';
+            sortOrderBtn.title = '오름차순 → 내림차순으로 변경';
+        } else {
+            sortOrderIcon.textContent = '↓';
+            sortOrderBtn.title = '내림차순 → 오름차순으로 변경';
+        }
     }
 }
 
@@ -108,7 +279,7 @@ function setupBestToggle() {
         } else {
             playersLabel.textContent = '플레이 인원:';
         }
-        searchAndFilter();
+        advancedSearchAndFilter();
     });
 }
 
@@ -234,7 +405,7 @@ function initializeCustomSlider(type, min, max, step) {
         }
         
         updateUI();
-        searchAndFilter(); // 실시간 필터링
+        advancedSearchAndFilter(); // 실시간 필터링
         
         // 터치 이벤트의 기본 동작 방지 (스크롤 등)
         event.preventDefault();
@@ -275,7 +446,7 @@ function initializeCustomSlider(type, min, max, step) {
         }
         
         updateUI();
-        searchAndFilter();
+        advancedSearchAndFilter();
     }
     
     // 마우스 이벤트 리스너
@@ -299,13 +470,13 @@ function initializeCustomSlider(type, min, max, step) {
     minInput.addEventListener('input', () => {
         constrainValues();
         updateUI();
-        searchAndFilter();
+        advancedSearchAndFilter();
     });
     
     maxInput.addEventListener('input', () => {
         constrainValues();
         updateUI();
-        searchAndFilter();
+        advancedSearchAndFilter();
     });
     
     // 초기 UI 설정
@@ -339,7 +510,7 @@ function renderGridView() {
     const gameGrid = document.getElementById('gameGrid');
     
     if (currentData.length === 0) {
-        gameGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 60px; color: #666; font-size: 18px;">🎲 데이터가 없습니다</div>';
+        gameGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 60px; color: #666; font-size: 18px;">🎲 검색 결과가 없습니다</div>';
         return;
     }
     
@@ -360,84 +531,6 @@ function renderGridView() {
     }).join('');
 }
 
-// 통합된 검색 및 필터 기능
-function searchAndFilter() {
-    let filteredData = [...allData];
-    
-    // 1. 게임 이름 검색
-    const searchInput = document.getElementById('searchInput').value.trim();
-    if (searchInput) {
-        const searchTerm = searchInput.toLowerCase();
-        filteredData = filteredData.filter(game => 
-            game.name && game.name.toLowerCase().includes(searchTerm)
-        );
-    }
-    
-    // 2. 플레이 인원 필터
-    const playersFilter = document.getElementById('playersFilter').value;
-    const bestPlayersOnly = document.getElementById('bestPlayersOnly').checked;
-    
-    if (playersFilter) {
-        const playerCount = parseInt(playersFilter);
-        filteredData = filteredData.filter(game => {
-            if (bestPlayersOnly) {
-                // 베스트 인원만 체크
-                if (game.bestPlayers) {
-                    const bestPlayers = game.bestPlayers.toString().trim();
-                    if (!bestPlayers) return false;
-                    
-                    // 따옴표 제거 (CSV에서 "4,5" 형태로 올 수 있음)
-                    const cleanBestPlayers = bestPlayers.replace(/["']/g, '');
-                    
-                    // 쉼표 또는 세미콜론으로 구분된 값들 처리
-                    if (cleanBestPlayers.includes(',') || cleanBestPlayers.includes(';')) {
-                        const separator = cleanBestPlayers.includes(',') ? ',' : ';';
-                        const bestPlayersArray = cleanBestPlayers.split(separator).map(p => parseInt(p.trim()));
-                        return bestPlayersArray.includes(playerCount);
-                    }
-                    // 단일 값 처리
-                    else {
-                        return parseInt(cleanBestPlayers) === playerCount;
-                    }
-                }
-                return false;
-            } else {
-                // 일반 플레이 인원 범위 체크
-                const min = game.minPlayers || 0;
-                const max = game.maxPlayers || 999;
-                return playerCount >= min && playerCount <= max;
-            }
-        });
-    }
-    
-    // 3. 난이도 필터
-    const difficultyMin = parseFloat(document.getElementById('difficultyMin').value);
-    const difficultyMax = parseFloat(document.getElementById('difficultyMax').value);
-    
-    if (difficultyMin > 1 || difficultyMax < 3) {
-        filteredData = filteredData.filter(game => {
-            const difficulty = parseFloat(game.difficulty) || 0;
-            // 최대값이 3일 때는 3 이상의 모든 난이도 포함
-            const maxDifficulty = difficultyMax === 3 ? 5 : difficultyMax;
-            return difficulty >= difficultyMin && difficulty <= maxDifficulty;
-        });
-    }
-    
-    // 4. 플레이 시간 필터
-    const timeMin = parseInt(document.getElementById('timeMin').value);
-    const timeMax = parseInt(document.getElementById('timeMax').value);
-    
-    if (timeMin > 10 || timeMax < 120) {
-        filteredData = filteredData.filter(game => {
-            const playTime = game.playTime || 0;
-            return playTime >= timeMin && playTime <= timeMax;
-        });
-    }
-    
-    currentData = filteredData;
-    applySortingAndRender();
-}
-
 // 모든 검색 및 필터 초기화
 function clearAll() {
     document.getElementById('searchInput').value = '';
@@ -456,7 +549,10 @@ function clearAll() {
     // 정렬 초기화
     currentSortBy = 'name';
     currentSortOrder = 'asc';
-    document.getElementById('sortBy').value = currentSortBy;
+    const selectedOption = document.getElementById('selectedOption');
+    if (selectedOption) {
+        selectedOption.textContent = '가나다순';
+    }
     updateSortOrderIcon();
     
     // 슬라이더 UI 업데이트
@@ -583,13 +679,6 @@ function hideError() {
 
 // 필터 변경 시 자동 적용을 위한 이벤트 리스너
 document.addEventListener('DOMContentLoaded', function() {
-    // 검색 입력 디바운싱
-    let searchTimeout;
-    document.getElementById('searchInput').addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(searchAndFilter, 300);
-    });
-    
-    document.getElementById('playersFilter').addEventListener('input', searchAndFilter);
-    document.getElementById('bestPlayersOnly').addEventListener('change', searchAndFilter);
+    document.getElementById('playersFilter').addEventListener('input', advancedSearchAndFilter);
+    document.getElementById('bestPlayersOnly').addEventListener('change', advancedSearchAndFilter);
 });
