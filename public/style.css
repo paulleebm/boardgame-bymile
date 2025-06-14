@@ -1,14 +1,58 @@
-/* 브라우저 UI 색상 통합 */
+/* 브라우저 UI 색상 통합 및 폰트 크기 시스템 */
 :root {
     --primary-color: #667eea;
     --secondary-color: #764ba2;
     --gradient-bg: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+    
+    /* 폰트 크기 시스템 (데스크톱) */
+    --font-size-xs: 12px;
+    --font-size-sm: 14px;
+    --font-size-base: 16px;
+    --font-size-lg: 18px;
+    --font-size-xl: 24px;
+    --font-size-2xl: 32px;
+}
+
+/* 모바일 폰트 크기 조정 */
+@media (max-width: 768px) {
+    :root {
+        --font-size-xs: 11px;
+        --font-size-sm: 13px;
+        --font-size-base: 14px;
+        --font-size-lg: 16px;
+        --font-size-xl: 20px;
+        --font-size-2xl: 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --font-size-xs: 10px;
+        --font-size-sm: 12px;
+        --font-size-base: 14px;
+        --font-size-lg: 15px;
+        --font-size-xl: 18px;
+        --font-size-2xl: 20px;
+    }
 }
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    /* 더블탭 확대 방지 (접근성 고려) */
+    -webkit-touch-callout: none;
+}
+
+/* 텍스트 선택이 필요한 요소들 */
+input, textarea, [contenteditable], .selectable {
+    -webkit-user-select: text;
+    -khtml-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+    /* 더블탭 확대 방지하되 기능은 유지 */
+    touch-action: manipulation;
 }
 
 html {
@@ -35,6 +79,11 @@ body {
     min-height: 100vh;
     position: relative;
     overflow-x: hidden;
+    /* 더블탭 확대 방지 */
+    touch-action: manipulation;
+    /* 일관된 기본 폰트 크기 */
+    font-size: var(--font-size-base);
+    line-height: 1.5;
 }
 
 /* 사파리 바운스 스크롤 - 위아래 모두 파란색 */
@@ -461,6 +510,8 @@ button {
     font-weight: 600;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    /* 더블탭 확대 방지 */
+    touch-action: manipulation;
 }
 
 button:hover {
@@ -628,6 +679,8 @@ button:hover {
     transition: all 0.3s ease;
     cursor: pointer;
     border: 1px solid rgba(0,0,0,0.05);
+    /* 더블탭 확대 방지 */
+    touch-action: manipulation;
 }
 
 .game-card-grid:hover {
