@@ -4,6 +4,7 @@ let currentData = [];
 // 정렬 상태 관리
 let currentSortBy = 'name'; // 초기값: 가나다순
 let currentSortOrder = 'asc'; // 초기값: 오름차순
+let showSpecialOnly = false; // 상태 필터 토글
 
 // 기본 이미지 URL (더 안정적인 서비스 사용)
 const DEFAULT_IMAGE_URL = 'https://placehold.co/300x300/667eea/ffffff?text=No+Image';
@@ -20,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupSortingControls();
     setupAdvancedSearch();
     setupSearchTypeFilter();
+    updateStatusFilterBtn();
     loadData();
     
     // 5분마다 자동 새로고침
@@ -241,7 +243,12 @@ function advancedSearchAndFilter() {
             return playTime >= timeMin && playTime <= timeMax;
         });
     }
-    
+
+    // 4. 상태 필터
+    if (showSpecialOnly) {
+        filteredData = filteredData.filter(game => game.status && game.status !== 'normal');
+    }
+
     currentData = filteredData;
     applySortingAndRender();
 }
@@ -260,6 +267,7 @@ function setupSortingControls() {
     window.currentSortBy = currentSortBy;
     window.applySortingAndRender = applySortingAndRender;
     window.toggleSortOrder = toggleSortOrder;
+    window.toggleStatusFilter = toggleStatusFilter;
     
     // 커스텀 드롭다운 초기화
     const selectedOption = document.getElementById('selectedOption');
@@ -289,6 +297,28 @@ function updateSortOrderIcon() {
             sortOrderIcon.textContent = '↓';
             sortOrderBtn.title = '내림차순 → 오름차순으로 변경';
         }
+    }
+}
+
+// 상태 필터 토글
+function toggleStatusFilter() {
+    showSpecialOnly = !showSpecialOnly;
+    updateStatusFilterBtn();
+    advancedSearchAndFilter();
+}
+
+// 상태 필터 버튼 아이콘 업데이트
+function updateStatusFilterBtn() {
+    const btn = document.getElementById('statusFilterBtn');
+    if (!btn) return;
+    if (showSpecialOnly) {
+        btn.classList.add('active');
+        btn.textContent = '★';
+        btn.title = '특수 상태 보이기 해제';
+    } else {
+        btn.classList.remove('active');
+        btn.textContent = '☆';
+        btn.title = '특수 상태만 보기';
     }
 }
 
@@ -659,6 +689,8 @@ function clearAll() {
     if (selectedOption) {
         selectedOption.textContent = '가나다순';
     }
+    showSpecialOnly = false;
+    updateStatusFilterBtn();
     updateSortOrderIcon();
     
     // 슬라이더 UI 업데이트
