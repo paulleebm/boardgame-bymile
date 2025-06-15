@@ -84,7 +84,10 @@
         <!-- 그리드 뷰 -->
         <div id="gridView" class="grid-container">
             <div class="grid-header">
-                <h2>보드게임 목록</h2>
+                <div class="grid-header-left">
+                    <h2>보드게임 목록</h2>
+                    <div class="game-count" id="gameCount">총 0개</div>
+                </div>
                 <div class="sort-controls">
                     <!-- 커스텀 드롭다운 -->
                     <div class="custom-dropdown" id="customDropdown">
@@ -95,12 +98,15 @@
                         <div class="dropdown-options hidden" id="dropdownOptions">
                             <div class="dropdown-option" data-value="name" onclick="selectOption('name', '가나다순')">가나다순</div>
                             <div class="dropdown-option" data-value="difficulty" onclick="selectOption('difficulty', '난이도순')">난이도순</div>
-                            <div class="dropdown-option" data-value="status" onclick="selectOption('status', '상태순')">상태순</div>
                         </div>
                     </div>
                     
                     <button id="sortOrderBtn" onclick="toggleSortOrder()" class="sort-order-btn" title="정렬 순서 변경" aria-label="정렬 순서 토글">
                         <span id="sortOrderIcon">↑</span>
+                    </button>
+                    
+                    <button id="statusFilterBtn" onclick="toggleStatusFilter()" class="status-filter-btn" title="특별 상태 게임만 보기" aria-label="상태 필터 토글">
+                        ⭐
                     </button>
                 </div>
             </div>
@@ -279,6 +285,16 @@
                 
             } else {
                 console.error('currentSortOrder 변수를 찾을 수 없습니다.');
+            }
+        }
+        
+        // 상태 필터 토글 함수
+        function toggleStatusFilter() {
+            // script.js의 전역 함수 호출
+            if (typeof window.toggleStatusFilter === 'function') {
+                window.toggleStatusFilter();
+            } else {
+                console.error('toggleStatusFilter 함수를 찾을 수 없습니다.');
             }
         }
         

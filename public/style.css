@@ -200,7 +200,7 @@ header h1 {
     margin-bottom: 20px;
 }
 
-/* 검색 메인 그룹 */
+/* 검색 메인 그룹 - 개선된 모바일 대응 */
 .search-main-group {
     display: flex;
     align-items: stretch;
@@ -210,6 +210,8 @@ header h1 {
     border-radius: 25px;
     transition: all 0.3s ease;
     overflow: hidden;
+    /* 모바일에서 안전한 최대 너비 보장 */
+    max-width: 100%;
 }
 
 .search-main-group:focus-within {
@@ -220,6 +222,7 @@ header h1 {
 .search-type-group {
     display: flex;
     align-items: center;
+    flex-shrink: 0; /* 축소 방지 */
 }
 
 .search-type-group select {
@@ -230,7 +233,7 @@ header h1 {
     border-right: none;
     font-size: 14px;
     font-weight: 500;
-    transition: all 0.3s ease;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease; /* 크기 변화 방지 */
     background: white;
     outline: none;
     box-sizing: border-box;
@@ -243,6 +246,20 @@ header h1 {
     background-position: right 8px center;
     background-repeat: no-repeat;
     background-size: 16px 16px;
+    /* 최소 너비 보장 */
+    min-width: 90px;
+    width: auto;
+    flex-shrink: 0;
+}
+
+/* 드롭다운 크기 변화 방지 */
+.search-type-group select:focus {
+    transform: none;
+    box-shadow: 0 0 10px rgba(102, 126, 234, 0.15);
+}
+
+.search-type-group select:active {
+    transform: none;
 }
 
 /* 검색 입력 그룹 */
@@ -251,13 +268,15 @@ header h1 {
     align-items: center;
     position: relative;
     flex: 1;
+    min-width: 0; /* flexbox 오버플로우 방지 */
+    overflow: hidden;
 }
 
 .search-input-group input {
     height: 44px;
     flex: 1;
     min-width: 0;
-    padding: 0 50px 0 16px;
+    padding: 0 50px 0 16px; /* 오른쪽 패딩을 50px로 충분히 확보 */
     border: 2px solid #e0e0e0;
     border-radius: 0 25px 25px 0;
     border-left: none;
@@ -266,12 +285,13 @@ header h1 {
     background: white;
     outline: none;
     box-sizing: border-box;
+    width: 100%;
 }
 
-/* 검색 버튼 */
+/* 검색 버튼 - 위치 고정 */
 .search-btn {
     position: absolute;
-    right: 8px;
+    right: 8px; /* 오른쪽 여백 확보 */
     top: 50%;
     transform: translateY(-50%);
     padding: 8px;
@@ -289,6 +309,9 @@ header h1 {
     justify-content: center;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
+    /* z-index 추가로 확실히 위에 표시 */
+    z-index: 10;
+    flex-shrink: 0;
 }
 
 .search-btn:hover {
@@ -502,16 +525,73 @@ button:hover {
     border-bottom: 2px solid rgba(102, 126, 234, 0.1);
 }
 
+.grid-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
 .grid-header h2 {
     color: #2c3e50;
     font-size: 1.5em;
     margin: 0;
 }
 
+.game-count {
+    color: #666;
+    font-size: 14px;
+    font-weight: 500;
+}
+
 .sort-controls {
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+/* 상태 필터 버튼 */
+.status-filter-btn {
+    width: 32px;
+    height: 32px;
+    border: 2px solid #e0e0e0;
+    border-radius: 50%;
+    background: white;
+    color: #ffa726;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    padding: 0;
+    box-shadow: none;
+    position: relative;
+}
+
+.status-filter-btn:hover {
+    border-color: #ffa726;
+    background: rgba(255, 167, 38, 0.1);
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(255, 167, 38, 0.2);
+}
+
+.status-filter-btn:active {
+    transform: scale(0.95);
+    background: rgba(255, 167, 38, 0.2);
+}
+
+.status-filter-btn.active {
+    background: #ffa726;
+    color: white;
+    border-color: #ffa726;
+    box-shadow: 0 2px 12px rgba(255, 167, 38, 0.4);
+}
+
+.status-filter-btn.active:hover {
+    background: #ff9800;
+    border-color: #ff9800;
+    transform: scale(1.05);
 }
 
 /* 커스텀 드롭다운 */
@@ -635,6 +715,9 @@ button:hover {
     border: 1px solid rgba(0,0,0,0.05);
     position: relative;
     touch-action: manipulation;
+    /* 카드 높이를 일정하게 유지 */
+    display: flex;
+    flex-direction: column;
 }
 
 .game-card-grid:hover {
@@ -650,6 +733,7 @@ button:hover {
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0; /* 이미지 영역 크기 고정 */
 }
 
 .game-image img {
@@ -663,9 +747,17 @@ button:hover {
     transform: scale(1.05);
 }
 
+/* 게임 제목 영역 - 한 줄 고정 및 높이 일정 */
 .game-title-grid {
     padding: 8px;
     text-align: center;
+    flex: 1; /* 남은 공간 차지 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px; /* 최소 높이 보장 */
+    height: 40px; /* 고정 높이 설정 */
+    overflow: hidden; /* 넘치는 텍스트 숨김 */
 }
 
 .game-title-grid h3 {
@@ -674,8 +766,13 @@ button:hover {
     font-size: 0.9em;
     font-weight: 600;
     line-height: 1.2;
-    word-break: keep-all;
-    overflow-wrap: break-word;
+    /* 한 줄 말줄임표 처리 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    /* 중앙 정렬 */
+    text-align: center;
 }
 
 /* ===== 상태 태그 스타일 ===== */
@@ -1087,6 +1184,12 @@ button:hover {
     .search-main-group {
         min-width: 100%;
         flex: 1;
+        width: 100%; /* 명시적 너비 설정 */
+        max-width: 100%; /* 최대 너비 제한 */
+    }
+    
+    .search-type-group {
+        flex-shrink: 0; /* 축소 방지 강화 */
     }
     
     .search-type-group select {
@@ -1095,19 +1198,32 @@ button:hover {
         padding: 0 20px 0 10px;
         background-size: 14px 14px;
         background-position: right 6px center;
+        min-width: 85px; /* 모바일에서 최소 너비 */
+        width: auto;
+        flex-shrink: 0;
+    }
+    
+    .search-input-group {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden; /* 오버플로우 방지 */
     }
     
     .search-input-group input {
         height: 40px;
         font-size: 16px; /* iOS 줌 방지 */
-        padding: 0 45px 0 12px;
+        padding: 0 45px 0 12px; /* 오른쪽 패딩 조정 */
+        width: 100%;
+        flex: 1;
+        min-width: 0;
     }
     
     .search-btn {
         width: 32px;
         height: 32px;
-        right: 6px;
+        right: 6px; /* 위치 조정 */
         font-size: 14px;
+        z-index: 10; /* z-index 증가 */
     }
     
     .filter-box {
@@ -1124,13 +1240,15 @@ button:hover {
         height: 110px;
     }
     
+    .game-title-grid {
+        padding: 6px;
+        min-height: 36px; /* 모바일에서 최소 높이 조정 */
+        height: 36px; /* 모바일에서 고정 높이 조정 */
+    }
+    
     .game-title-grid h3 {
         font-size: 0.8em;
         line-height: 1.1;
-    }
-    
-    .game-title-grid {
-        padding: 6px;
     }
     
     .status-tag {
@@ -1217,10 +1335,15 @@ button:hover {
         padding-bottom: 12px;
     }
     
-    .grid-header h2 {
+    .grid-header-left h2 {
         font-size: 1.3em;
         margin: 0;
         flex-shrink: 0;
+    }
+    
+    .game-count {
+        font-size: 11px;
+        color: #777;
     }
     
     .sort-controls {
@@ -1245,6 +1368,12 @@ button:hover {
     }
     
     .sort-order-btn {
+        width: 26px;
+        height: 26px;
+        font-size: 13px;
+    }
+    
+    .status-filter-btn {
         width: 26px;
         height: 26px;
         font-size: 13px;
@@ -1294,12 +1423,13 @@ button:hover {
         padding: 0 18px 0 8px;
         background-size: 12px 12px;
         background-position: right 5px center;
+        min-width: 75px; /* 480px에서 최소 너비 */
     }
     
     .search-input-group input {
         height: 36px;
         font-size: 16px; /* iOS 줌 방지 유지 */
-        padding: 0 40px 0 10px;
+        padding: 0 40px 0 10px; /* 패딩 조정 */
     }
     
     .search-btn {
@@ -1340,13 +1470,15 @@ button:hover {
         height: 85px;
     }
     
+    .game-title-grid {
+        padding: 5px;
+        min-height: 32px; /* 480px에서 최소 높이 조정 */
+        height: 32px; /* 480px에서 고정 높이 조정 */
+    }
+    
     .game-title-grid h3 {
         font-size: 0.75em;
         line-height: 1.1;
-    }
-    
-    .game-title-grid {
-        padding: 5px;
     }
     
     .status-tag {
@@ -1426,8 +1558,12 @@ button:hover {
         padding-bottom: 10px;
     }
     
-    .grid-header h2 {
+    .grid-header-left h2 {
         font-size: 1.2em;
+    }
+    
+    .game-count {
+        font-size: 10px;
     }
     
     .sort-controls {
@@ -1454,6 +1590,12 @@ button:hover {
         width: 24px;
         height: 24px;
         font-size: 12px;
+    }
+    
+    .status-filter-btn {
+        width: 24px;
+        height: 24px;
+        font-size: 11px;
     }
     
     /* 관리자 모달 480px */
@@ -1494,6 +1636,7 @@ button:hover {
         padding: 0 16px 0 6px;
         background-size: 10px 10px;
         background-position: right 4px center;
+        min-width: 70px;
     }
     
     .search-input-group input {
@@ -1518,13 +1661,15 @@ button:hover {
         height: 75px;
     }
     
+    .game-title-grid {
+        padding: 4px;
+        min-height: 30px; /* 360px에서 최소 높이 조정 */
+        height: 30px; /* 360px에서 고정 높이 조정 */
+    }
+    
     .game-title-grid h3 {
         font-size: 0.7em;
         line-height: 1.1;
-    }
-    
-    .game-title-grid {
-        padding: 4px;
     }
     
     /* 360px 모달 최적화 */
@@ -1586,8 +1731,12 @@ button:hover {
         padding-bottom: 8px;
     }
     
-    .grid-header h2 {
+    .grid-header-left h2 {
         font-size: 1.1em;
+    }
+    
+    .game-count {
+        font-size: 9px;
     }
     
     .sort-controls {
@@ -1617,6 +1766,12 @@ button:hover {
         font-size: 11px;
         border-radius: 50%;
     }
+    
+    .status-filter-btn {
+        width: 22px;
+        height: 22px;
+        font-size: 10px;
+    }
 }
 
 /* 초소형 화면 (320px 이하) 극한 최적화 */
@@ -1642,6 +1797,7 @@ button:hover {
         padding: 0 14px 0 5px;
         background-size: 9px 9px;
         background-position: right 3px center;
+        min-width: 65px;
     }
     
     .search-input-group input {
@@ -1655,6 +1811,26 @@ button:hover {
         height: 26px;
         right: 3px;
         font-size: 11px;
+    }
+    
+    .game-grid {
+        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+        gap: 6px;
+    }
+    
+    .game-image {
+        height: 70px;
+    }
+    
+    .game-title-grid {
+        padding: 3px;
+        min-height: 28px; /* 320px에서 최소 높이 조정 */
+        height: 28px; /* 320px에서 고정 높이 조정 */
+    }
+    
+    .game-title-grid h3 {
+        font-size: 0.65em;
+        line-height: 1.0;
     }
     
     /* 320px 모달 최적화 */
@@ -1710,8 +1886,12 @@ button:hover {
     }
     
     /* 그리드 헤더 최소화 */
-    .grid-header h2 {
+    .grid-header-left h2 {
         font-size: 1.0em;
+    }
+    
+    .game-count {
+        font-size: 8px;
     }
     
     .dropdown-selected {
@@ -1730,5 +1910,11 @@ button:hover {
         width: 20px;
         height: 20px;
         font-size: 10px;
+    }
+    
+    .status-filter-btn {
+        width: 20px;
+        height: 20px;
+        font-size: 9px;
     }
 }

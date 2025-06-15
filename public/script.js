@@ -5,6 +5,9 @@ let currentData = [];
 let currentSortBy = 'name'; // 초기값: 가나다순
 let currentSortOrder = 'asc'; // 초기값: 오름차순
 
+// 상태 필터 관리
+let statusFilterActive = false; // 상태 필터 활성화 여부
+
 // 기본 이미지 URL (더 안정적인 서비스 사용)
 const DEFAULT_IMAGE_URL = 'https://placehold.co/300x300/667eea/ffffff?text=No+Image';
 
@@ -60,8 +63,6 @@ function setupSearchTypeFilter() {
         advancedSearchAndFilter();
     });
 }
-
-// 상태 필터 설정 (제거)
 
 // 고급 검색 설정
 function setupAdvancedSearch() {
@@ -242,13 +243,53 @@ function advancedSearchAndFilter() {
         });
     }
     
+    // 4. 상태 필터 (특별 상태만 보기)
+    if (statusFilterActive) {
+        filteredData = filteredData.filter(game => {
+            return game.status && game.status !== 'normal' && game.status.trim() !== '';
+        });
+    }
+    
     currentData = filteredData;
     applySortingAndRender();
+    updateGameCount();
 }
 
 // 기존 searchAndFilter 함수를 고급 검색으로 대체
 function searchAndFilter() {
     advancedSearchAndFilter();
+}
+
+// 상태 필터 토글 함수
+function toggleStatusFilter() {
+    statusFilterActive = !statusFilterActive;
+    
+    const statusFilterBtn = document.getElementById('statusFilterBtn');
+    if (statusFilterActive) {
+        statusFilterBtn.classList.add('active');
+        statusFilterBtn.title = '전체 게임 보기';
+    } else {
+        statusFilterBtn.classList.remove('active');
+        statusFilterBtn.title = '특별 상태 게임만 보기';
+    }
+    
+    // 필터 재적용
+    advancedSearchAndFilter();
+}
+
+// 게임 개수 업데이트 함수
+function updateGameCount() {
+    const gameCount = document.getElementById('gameCount');
+    if (gameCount) {
+        const total = currentData.length;
+        const totalAll = allData.length;
+        
+        if (total === totalAll) {
+            gameCount.textContent = `총 ${total}개`;
+        } else {
+            gameCount.textContent = `${total}개 (전체 ${totalAll}개)`;
+        }
+    }
 }
 
 // 정렬 컨트롤 설정
@@ -260,12 +301,12 @@ function setupSortingControls() {
     window.currentSortBy = currentSortBy;
     window.applySortingAndRender = applySortingAndRender;
     window.toggleSortOrder = toggleSortOrder;
+    window.toggleStatusFilter = toggleStatusFilter;
     
     // 커스텀 드롭다운 초기화
     const selectedOption = document.getElementById('selectedOption');
     if (selectedOption) {
-        selectedOption.textContent = currentSortBy === 'name' ? '가나다순' : 
-                                   currentSortBy === 'difficulty' ? '난이도순' : '상태순';
+        selectedOption.textContent = currentSortBy === 'name' ? '가나다순' : '난이도순';
     }
 }
 
@@ -329,20 +370,6 @@ function sortGames() {
                 // 둘 다 난이도가 있으면 난이도로 비교
                 comparison = diffA - diffB;
             }
-        } else if (currentSortBy === 'status') {
-            // 상태순 정렬: new → purchasing → shipping → normal
-            const statusOrder = { 'new': 0, 'purchasing': 1, 'shipping': 2, 'normal': 3, '': 3 };
-            const statusA = statusOrder[a.status] !== undefined ? statusOrder[a.status] : 3;
-            const statusB = statusOrder[b.status] !== undefined ? statusOrder[b.status] : 3;
-            
-            if (statusA !== statusB) {
-                comparison = statusA - statusB;
-            } else {
-                // 같은 상태일 경우 이름순
-                const nameA = (a.name || '').toLowerCase();
-                const nameB = (b.name || '').toLowerCase();
-                comparison = nameA.localeCompare(nameB, 'ko-KR');
-            }
         }
         
         // 정렬 순서 적용
@@ -354,21 +381,6 @@ function sortGames() {
 function initializeSliders() {
     initializeCustomSlider('difficulty', 1, 3, 0.1);
     initializeCustomSlider('time', 10, 120, 5); // 5분 단위
-}
-
-// 베스트 토글 설정
-function setupBestToggle() {
-    const bestToggle = document.getElementById('bestPlayersOnly');
-    const playersLabel = document.getElementById('playersLabel');
-    
-    bestToggle.addEventListener('change', function() {
-        if (this.checked) {
-            playersLabel.textContent = '베스트 인원:';
-        } else {
-            playersLabel.textContent = '플레이 인원:';
-        }
-        advancedSearchAndFilter();
-    });
 }
 
 // 커스텀 슬라이더 초기화 (난이도 & 시간용)
@@ -584,6 +596,7 @@ async function loadData() {
         
         // 초기 정렬 적용
         applySortingAndRender();
+        updateGameCount();
         
     } catch (error) {
         console.error('데이터 로드 실패:', error);
@@ -661,11 +674,20 @@ function clearAll() {
     }
     updateSortOrderIcon();
     
+    // 상태 필터 초기화
+    statusFilterActive = false;
+    const statusFilterBtn = document.getElementById('statusFilterBtn');
+    if (statusFilterBtn) {
+        statusFilterBtn.classList.remove('active');
+        statusFilterBtn.title = '특별 상태 게임만 보기';
+    }
+    
     // 슬라이더 UI 업데이트
     initializeSliders();
     
     currentData = allData;
     applySortingAndRender();
+    updateGameCount();
 }
 
 // 게임 상세 모달 열기
@@ -813,8 +835,3 @@ function hideError() {
     const errorMessage = document.getElementById('errorMessage');
     errorMessage.classList.add('hidden');
 }
-
-// 필터 변경 시 자동 적용을 위한 이벤트 리스너
-document.addEventListener('DOMContentLoaded', function() {
-    // 이미 setupAdvancedSearch에서 베스트 토글 이벤트 설정됨
-});
