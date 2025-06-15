@@ -357,7 +357,6 @@ header h1 {
 .filter-group {
     display: flex;
     flex-direction: column;
-    gap: 10px;
 }
 
 .filter-group label {
@@ -389,7 +388,7 @@ header h1 {
 /* ===== 슬라이더 스타일 ===== */
 .slider-container {
     position: relative;
-    margin: 8px 0;
+    margin: 0px 0;
     height: 35px;
     display: flex;
     align-items: center;
@@ -570,7 +569,7 @@ button:hover {
 }
 
 .status-filter-btn:hover {
-    border-color: #ffa726;
+    border-color: #f3a79a;
     background: rgba(255, 167, 38, 0.1);
     transform: scale(1.1);
     box-shadow: 0 2px 8px rgba(255, 167, 38, 0.2);
@@ -582,15 +581,15 @@ button:hover {
 }
 
 .status-filter-btn.active {
-    background: #ffa726;
+    background: #f3a79a;
     color: white;
-    border-color: #ffa726;
+    border-color: #ff4726;
     box-shadow: 0 2px 12px rgba(255, 167, 38, 0.4);
 }
 
 .status-filter-btn.active:hover {
-    background: #ff9800;
-    border-color: #ff9800;
+    background: #f3a79a;
+    border-color: #ff4726;
     transform: scale(1.05);
 }
 
@@ -869,7 +868,7 @@ button:hover {
 
 .youtube-link-container {
     flex-shrink: 0;
-    margin-top: 15px;
+    margin-top: 0px;
 }
 
 .game-detail-info h2 {
@@ -892,7 +891,7 @@ button:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 0;
+    padding: 0px 0;
     border-bottom: 1px solid rgba(0,0,0,0.05);
     min-height: 40px;
 }
@@ -1228,7 +1227,7 @@ button:hover {
     
     .filter-box {
         grid-template-columns: 1fr;
-        gap: 15px;
+        gap: 5px;
     }
     
     .game-grid {
@@ -1298,7 +1297,7 @@ button:hover {
     }
     
     .detail-field {
-        padding: 10px 0;
+        padding: 0px 0;
         min-height: 36px;
     }
     
@@ -1440,12 +1439,12 @@ button:hover {
     }
     
     .filter-box {
-        gap: 10px;
+        gap: 2px;
         padding-top: 12px;
     }
     
     .slider-container {
-        margin: 4px 0;
+        margin: 0px 0;
         height: 28px;
         padding: 0 10px;
     }
@@ -1524,7 +1523,7 @@ button:hover {
     }
     
     .detail-field {
-        padding: 8px 0;
+        padding: 0px 0;
         min-height: 32px;
     }
     
@@ -1697,7 +1696,7 @@ button:hover {
     }
     
     .detail-field {
-        padding: 6px 0;
+        padding: 0px 0;
         min-height: 30px;
     }
     
@@ -1858,7 +1857,7 @@ button:hover {
     }
     
     .detail-field {
-        padding: 5px 0;
+        padding: 0px 0;
         min-height: 28px;
     }
     
