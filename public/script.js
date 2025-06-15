@@ -239,7 +239,8 @@ function advancedSearchAndFilter() {
     if (timeMin > 10 || timeMax < 120) {
         filteredData = filteredData.filter(game => {
             const playTime = game.playTime || 0;
-            return playTime >= timeMin && playTime <= timeMax;
+            const maxTime = timeMax === 120 ? 360 : timeMax
+            return playTime >= timeMin && playTime <= maxTime;
         });
     }
     
