@@ -25,12 +25,31 @@
                 <div class="stat-number" id="totalGames">0</div>
                 <div class="stat-label">총 게임 수</div>
             </div>
+            <div class="stat-card">
+                <div class="stat-number" id="newGames">0</div>
+                <div class="stat-label">신상 게임</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="shippingGames">0</div>
+                <div class="stat-label">배송중</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="purchasingGames">0</div>
+                <div class="stat-label">구매중</div>
+            </div>
         </div>
 
         <div class="controls">
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="게임 검색...">
                 <button onclick="searchGames()">🔍 검색</button>
+                <select id="statusFilter" title="상태 필터" aria-label="상태 필터">
+                    <option value="">전체 상태</option>
+                    <option value="new">신상</option>
+                    <option value="shipping">배송중</option>
+                    <option value="purchasing">구매중</option>
+                    <option value="normal">일반</option>
+                </select>
             </div>
         </div>
 
@@ -42,6 +61,7 @@
                         <option value="createdAt">등록일순</option>
                         <option value="name">이름순</option>
                         <option value="updatedAt">수정일순</option>
+                        <option value="status">상태순</option>
                     </select>
                 </div>
             </div>
@@ -67,7 +87,6 @@
         </div>
     </div>
 
-    <!-- 나머지 모달들은 동일... -->
     <!-- 게임 추가/수정 모달 -->
     <div class="modal hidden" id="gameModal">
         <div class="modal-content">
@@ -80,6 +99,16 @@
                 <div class="form-group">
                     <label for="gameName">게임 이름 *</label>
                     <input type="text" id="gameName" name="name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="gameStatus">상태</label>
+                    <select id="gameStatus" name="status">
+                        <option value="">일반 (표시 안함)</option>
+                        <option value="new">신상</option>
+                        <option value="shipping">배송중</option>
+                        <option value="purchasing">구매중</option>
+                    </select>
                 </div>
                 
                 <div class="form-group">
@@ -169,14 +198,15 @@
                 <div class="bulk-info">
                     <p><strong>CSV 형식으로 여러 게임을 한번에 등록할 수 있습니다.</strong></p>
                     <p>첫 번째 줄은 헤더이고, 각 열은 다음과 같습니다:</p>
-                    <code>name,difficulty,minPlayers,maxPlayers,bestPlayers,playTime,genre,buyer,imageUrl,youtubeUrl</code>
+                    <code>name,status,difficulty,minPlayers,maxPlayers,bestPlayers,playTime,genre,buyer,imageUrl,youtubeUrl</code>
+                    <p><small>status는 빈칸(일반), new(신상), shipping(배송중), purchasing(구매중) 중 하나</small></p>
                 </div>
                 
                 <div class="form-group">
                     <label for="bulkData">CSV 데이터:</label>
-                    <textarea id="bulkData" rows="10" placeholder="name,difficulty,minPlayers,maxPlayers,bestPlayers,playTime,genre,buyer,imageUrl,youtubeUrl
-스플렌더,2.3,2,4,3,30,전략,김철수,https://example.com/splendor.jpg,https://youtube.com/watch?v=abc
-킹 오브 도쿄,2.1,2,6,4,20,파티,이영희,https://example.com/kot.jpg,https://youtube.com/watch?v=def"></textarea>
+                    <textarea id="bulkData" rows="10" placeholder="name,status,difficulty,minPlayers,maxPlayers,bestPlayers,playTime,genre,buyer,imageUrl,youtubeUrl
+스플렌더,new,2.3,2,4,3,30,전략,김철수,https://example.com/splendor.jpg,https://youtube.com/watch?v=abc
+킹 오브 도쿄,,2.1,2,6,4,20,파티,이영희,https://example.com/kot.jpg,https://youtube.com/watch?v=def"></textarea>
                 </div>
                 
                 <div class="bulk-preview hidden" id="bulkPreview">

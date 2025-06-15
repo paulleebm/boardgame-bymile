@@ -26,25 +26,24 @@
 
         <div class="controls">
             <div class="search-box">
-                <div class="search-input-group">
-                    <input type="text" id="searchInput" placeholder="게임 이름 또는 장르로 검색...">
-                    <button onclick="searchAndFilter()" class="search-btn" title="검색">🔍</button>
+                <div class="search-main-group">
+                    <div class="search-type-group">
+                        <select id="searchType" aria-label="검색 타입">
+                            <option value="name">게임 이름</option>
+                            <option value="players">플레이 인원</option>
+                            <option value="players-best">베스트 인원</option>
+                            <option value="genre">장르</option>
+                        </select>
+                    </div>
+                    
+                    <div class="search-input-group">
+                        <input type="text" id="searchInput" placeholder="게임 이름으로 검색...">
+                        <button onclick="searchAndFilter()" class="search-btn" title="검색">🔍</button>
+                    </div>
                 </div>
             </div>
             
             <div class="filter-box">
-                <div class="filter-group players-filter">
-                    <div class="players-label-group">
-                        <label id="playersLabel" for="playersFilter">플레이 인원:</label>
-                        <div class="toggle-switch">
-                            <input type="checkbox" id="bestPlayersOnly" class="toggle-input" aria-label="베스트 인원으로 필터링">
-                            <label for="bestPlayersOnly" class="toggle-label" title="베스트 인원 필터 토글"></label>
-                        </div>
-                    </div>
-                    <div class="players-input-group">
-                        <input type="number" id="playersFilter" min="1" max="20" placeholder="인원 수">
-                    </div>
-                </div>
                 
                 <div class="filter-group">
                     <label>난이도:</label>
@@ -96,6 +95,7 @@
                         <div class="dropdown-options hidden" id="dropdownOptions">
                             <div class="dropdown-option" data-value="name" onclick="selectOption('name', '가나다순')">가나다순</div>
                             <div class="dropdown-option" data-value="difficulty" onclick="selectOption('difficulty', '난이도순')">난이도순</div>
+                            <div class="dropdown-option" data-value="status" onclick="selectOption('status', '상태순')">상태순</div>
                         </div>
                     </div>
                     

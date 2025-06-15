@@ -17,14 +17,51 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('timeMax').value = 120;
     
     initializeSliders();
-    setupBestToggle();
     setupSortingControls();
     setupAdvancedSearch();
+    setupSearchTypeFilter();
     loadData();
     
     // 5분마다 자동 새로고침
     setInterval(loadData, 300000);
 });
+
+// 검색 타입 필터 설정
+function setupSearchTypeFilter() {
+    const searchType = document.getElementById('searchType');
+    const searchInput = document.getElementById('searchInput');
+    
+    searchType.addEventListener('change', function() {
+        const type = this.value;
+        
+        // 검색창 플레이스홀더 변경
+        if (type === 'name') {
+            searchInput.placeholder = '게임 이름으로 검색...';
+            searchInput.type = 'text';
+        } else if (type === 'players') {
+            searchInput.placeholder = '인원 수로 검색';
+            searchInput.type = 'number';
+            searchInput.min = '1';
+            searchInput.max = '20';
+        } else if (type === 'players-best') {
+            searchInput.placeholder = '인원 수로 검색';
+            searchInput.type = 'number';
+            searchInput.min = '1';
+            searchInput.max = '20';
+        } else if (type === 'genre') {
+            searchInput.placeholder = '장르로 검색';
+            searchInput.type = 'text';
+        }
+        
+        // 검색 입력값 초기화
+        searchInput.value = '';
+        
+        // 검색 재실행
+        advancedSearchAndFilter();
+    });
+}
+
+// 상태 필터 설정 (제거)
 
 // 고급 검색 설정
 function setupAdvancedSearch() {
@@ -80,88 +117,108 @@ function getKoreanInitials(text) {
 function advancedSearchAndFilter() {
     let filteredData = [...allData];
     
-    // 1. 게임 이름 및 장르 고급 검색
+    // 1. 검색 타입별 검색
     const searchInput = document.getElementById('searchInput').value.trim();
+    const searchType = document.getElementById('searchType').value;
+    
     if (searchInput) {
-        const searchTerm = searchInput.toLowerCase();
-        const searchTermNoSpaces = searchTerm.replace(/\s/g, '');
-        const searchInitials = getKoreanInitials(searchTerm);
-        
-        // 검색어가 모두 자음인지 확인 (초성 검색 여부 판단)
-        const isInitialSearch = /^[ㄱ-ㅎ]+$/.test(searchTermNoSpaces);
-        
-        filteredData = filteredData.filter(game => {
-            // 게임 이름 검색
-            const gameName = (game.name || '').toLowerCase();
-            const gameNameNoSpaces = gameName.replace(/\s/g, '');
-            const gameNameInitials = getKoreanInitials(gameName);
+        if (searchType === 'name') {
+            // 게임 이름 검색 (기존 로직)
+            const searchTerm = searchInput.toLowerCase();
+            const searchTermNoSpaces = searchTerm.replace(/\s/g, '');
+            const searchInitials = getKoreanInitials(searchTerm);
             
-            // 장르 검색
-            const gameGenre = (game.genre || '').toLowerCase();
-            const gameGenreNoSpaces = gameGenre.replace(/\s/g, '');
-            const gameGenreInitials = getKoreanInitials(gameGenre);
+            // 검색어가 모두 자음인지 확인 (초성 검색 여부 판단)
+            const isInitialSearch = /^[ㄱ-ㅎ]+$/.test(searchTermNoSpaces);
             
-            // 초성 검색인 경우
-            if (isInitialSearch) {
+            filteredData = filteredData.filter(game => {
+                const gameName = (game.name || '').toLowerCase();
+                const gameNameNoSpaces = gameName.replace(/\s/g, '');
+                const gameNameInitials = getKoreanInitials(gameName);
+                
+                // 초성 검색인 경우
+                if (isInitialSearch) {
+                    return gameNameInitials.includes(searchInitials);
+                }
+                
+                // 일반 검색인 경우
                 return (
-                    gameNameInitials.includes(searchInitials) ||
+                    gameName.includes(searchTerm) ||
+                    gameNameNoSpaces.includes(searchTermNoSpaces) ||
+                    gameNameInitials.includes(searchInitials)
+                );
+            });
+            
+        } else if (searchType === 'players') {
+            // 인원 수 검색
+            const playerCount = parseInt(searchInput);
+            if (!isNaN(playerCount)) {
+                filteredData = filteredData.filter(game => {
+                    // 일반 플레이 인원 범위 체크
+                    const min = game.minPlayers || 0;
+                    const max = game.maxPlayers || 999;
+                    return playerCount >= min && playerCount <= max;
+                });
+            }
+            
+        } else if (searchType === 'players-best') {
+            // 베스트 인원 검색
+            const playerCount = parseInt(searchInput);
+            if (!isNaN(playerCount)) {
+                filteredData = filteredData.filter(game => {
+                    // 베스트 인원만 체크
+                    if (game.bestPlayers) {
+                        const bestPlayers = game.bestPlayers.toString().trim();
+                        if (!bestPlayers) return false;
+                        
+                        // 따옴표 제거 (CSV에서 "4,5" 형태로 올 수 있음)
+                        const cleanBestPlayers = bestPlayers.replace(/["']/g, '');
+                        
+                        // 쉼표 또는 세미콜론으로 구분된 값들 처리
+                        if (cleanBestPlayers.includes(',') || cleanBestPlayers.includes(';')) {
+                            const separator = cleanBestPlayers.includes(',') ? ',' : ';';
+                            const bestPlayersArray = cleanBestPlayers.split(separator).map(p => parseInt(p.trim()));
+                            return bestPlayersArray.includes(playerCount);
+                        }
+                        // 단일 값 처리
+                        else {
+                            return parseInt(cleanBestPlayers) === playerCount;
+                        }
+                    }
+                    return false;
+                });
+            }
+            
+        } else if (searchType === 'genre') {
+            // 장르 검색
+            const searchTerm = searchInput.toLowerCase();
+            const searchTermNoSpaces = searchTerm.replace(/\s/g, '');
+            const searchInitials = getKoreanInitials(searchTerm);
+            
+            // 검색어가 모두 자음인지 확인 (초성 검색 여부 판단)
+            const isInitialSearch = /^[ㄱ-ㅎ]+$/.test(searchTermNoSpaces);
+            
+            filteredData = filteredData.filter(game => {
+                const gameGenre = (game.genre || '').toLowerCase();
+                const gameGenreNoSpaces = gameGenre.replace(/\s/g, '');
+                const gameGenreInitials = getKoreanInitials(gameGenre);
+                
+                // 초성 검색인 경우
+                if (isInitialSearch) {
+                    return gameGenreInitials.includes(searchInitials);
+                }
+                
+                // 일반 검색인 경우
+                return (
+                    gameGenre.includes(searchTerm) ||
+                    gameGenreNoSpaces.includes(searchTermNoSpaces) ||
                     gameGenreInitials.includes(searchInitials)
                 );
-            }
-            
-            // 일반 검색인 경우
-            return (
-                // 완전 매칭
-                gameName.includes(searchTerm) ||
-                gameGenre.includes(searchTerm) ||
-                // 띄어쓰기 무시 매칭
-                gameNameNoSpaces.includes(searchTermNoSpaces) ||
-                gameGenreNoSpaces.includes(searchTermNoSpaces) ||
-                // 초성도 함께 체크 (혼합 검색 지원)
-                gameNameInitials.includes(searchInitials) ||
-                gameGenreInitials.includes(searchInitials)
-            );
-        });
+            });
+        }
     }
-    
-    // 2. 플레이 인원 필터
-    const playersFilter = document.getElementById('playersFilter').value;
-    const bestPlayersOnly = document.getElementById('bestPlayersOnly').checked;
-    
-    if (playersFilter) {
-        const playerCount = parseInt(playersFilter);
-        filteredData = filteredData.filter(game => {
-            if (bestPlayersOnly) {
-                // 베스트 인원만 체크
-                if (game.bestPlayers) {
-                    const bestPlayers = game.bestPlayers.toString().trim();
-                    if (!bestPlayers) return false;
-                    
-                    // 따옴표 제거 (CSV에서 "4,5" 형태로 올 수 있음)
-                    const cleanBestPlayers = bestPlayers.replace(/["']/g, '');
-                    
-                    // 쉼표 또는 세미콜론으로 구분된 값들 처리
-                    if (cleanBestPlayers.includes(',') || cleanBestPlayers.includes(';')) {
-                        const separator = cleanBestPlayers.includes(',') ? ',' : ';';
-                        const bestPlayersArray = cleanBestPlayers.split(separator).map(p => parseInt(p.trim()));
-                        return bestPlayersArray.includes(playerCount);
-                    }
-                    // 단일 값 처리
-                    else {
-                        return parseInt(cleanBestPlayers) === playerCount;
-                    }
-                }
-                return false;
-            } else {
-                // 일반 플레이 인원 범위 체크
-                const min = game.minPlayers || 0;
-                const max = game.maxPlayers || 999;
-                return playerCount >= min && playerCount <= max;
-            }
-        });
-    }
-    
-    // 3. 난이도 필터
+
+    // 2. 난이도 필터
     const difficultyMin = parseFloat(document.getElementById('difficultyMin').value);
     const difficultyMax = parseFloat(document.getElementById('difficultyMax').value);
     
@@ -174,7 +231,7 @@ function advancedSearchAndFilter() {
         });
     }
     
-    // 4. 플레이 시간 필터
+    // 3. 플레이 시간 필터
     const timeMin = parseInt(document.getElementById('timeMin').value);
     const timeMax = parseInt(document.getElementById('timeMax').value);
     
@@ -207,7 +264,8 @@ function setupSortingControls() {
     // 커스텀 드롭다운 초기화
     const selectedOption = document.getElementById('selectedOption');
     if (selectedOption) {
-        selectedOption.textContent = currentSortBy === 'name' ? '가나다순' : '난이도순';
+        selectedOption.textContent = currentSortBy === 'name' ? '가나다순' : 
+                                   currentSortBy === 'difficulty' ? '난이도순' : '상태순';
     }
 }
 
@@ -270,6 +328,20 @@ function sortGames() {
             } else {
                 // 둘 다 난이도가 있으면 난이도로 비교
                 comparison = diffA - diffB;
+            }
+        } else if (currentSortBy === 'status') {
+            // 상태순 정렬: new → purchasing → shipping → normal
+            const statusOrder = { 'new': 0, 'purchasing': 1, 'shipping': 2, 'normal': 3, '': 3 };
+            const statusA = statusOrder[a.status] !== undefined ? statusOrder[a.status] : 3;
+            const statusB = statusOrder[b.status] !== undefined ? statusOrder[b.status] : 3;
+            
+            if (statusA !== statusB) {
+                comparison = statusA - statusB;
+            } else {
+                // 같은 상태일 경우 이름순
+                const nameA = (a.name || '').toLowerCase();
+                const nameB = (b.name || '').toLowerCase();
+                comparison = nameA.localeCompare(nameB, 'ko-KR');
             }
         }
         
@@ -521,6 +593,22 @@ async function loadData() {
     showLoading(false);
 }
 
+// 상태 태그 HTML 생성
+function getStatusTag(status) {
+    if (!status || status === 'normal') return '';
+    
+    const statusMap = {
+        'new': { text: 'NEW', class: 'status-new' },
+        'shipping': { text: '배송중', class: 'status-shipping' },
+        'purchasing': { text: '구매중', class: 'status-purchasing' }
+    };
+    
+    const statusInfo = statusMap[status];
+    if (!statusInfo) return '';
+    
+    return `<span class="status-tag ${statusInfo.class}">${statusInfo.text}</span>`;
+}
+
 // 그리드 뷰 렌더링 (카드 형태)
 function renderGridView() {
     const gameGrid = document.getElementById('gameGrid');
@@ -533,9 +621,11 @@ function renderGridView() {
     gameGrid.innerHTML = currentData.map(item => {
         const title = item.name || '제목 없음';
         const imageUrl = item.imageUrl || DEFAULT_IMAGE_URL;
+        const statusTag = getStatusTag(item.status);
         
         return `
-            <div class="game-card-grid" onclick="openGameModal('${item.id}')">
+            <div class="game-card-grid ${item.status ? 'has-status' : ''}" onclick="openGameModal('${item.id}')">
+                ${statusTag}
                 <div class="game-image">
                     <img src="${imageUrl}" alt="${title}" onerror="this.src='${DEFAULT_IMAGE_URL}'">
                 </div>
@@ -550,11 +640,11 @@ function renderGridView() {
 // 모든 검색 및 필터 초기화
 function clearAll() {
     document.getElementById('searchInput').value = '';
-    document.getElementById('playersFilter').value = '';
-    document.getElementById('bestPlayersOnly').checked = false;
+    document.getElementById('searchType').value = 'name';
     
-    // 라벨 초기화
-    document.getElementById('playersLabel').textContent = '플레이 인원:';
+    // 검색 타입 초기화
+    document.getElementById('searchInput').placeholder = '게임 이름으로 검색...';
+    document.getElementById('searchInput').type = 'text';
     
     // 슬라이더 초기화
     document.getElementById('difficultyMin').value = 1;
@@ -593,10 +683,20 @@ function openGameModal(gameId) {
         this.src = DEFAULT_IMAGE_URL;
     };
     
+    // 상태 텍스트 반환
+    function getStatusText(status) {
+        const statusMap = {
+            'new': '신상',
+            'shipping': '배송중',
+            'purchasing': '구매중'
+        };
+        return statusMap[status] || '일반';
+    }
+    
     // 게임 정보 렌더링
     const gameDetailInfo = document.querySelector('.game-detail-info');
     gameDetailInfo.innerHTML = `
-        <h2>${game.name || '제목 없음'}</h2>
+        <h2>${game.name || '제목 없음'} ${getStatusTag(game.status)}</h2>
         <div class="detail-fields-container">
             <div class="detail-field">
                 <span class="detail-label">난이도:</span>
@@ -614,10 +714,6 @@ function openGameModal(gameId) {
                 <span class="detail-label">장르/테마:</span>
                 <span class="detail-value">${game.genre || '-'}</span>
             </div>
-            <div class="detail-field">
-                <span class="detail-label">구매자:</span>
-                <span class="detail-value">${game.buyer || '-'}</span>
-            </div>
         </div>
         ${game.youtubeUrl && game.youtubeUrl.trim() ? `
             <div class="youtube-link-container">
@@ -625,7 +721,13 @@ function openGameModal(gameId) {
                     📺 룰 설명 영상 보기
                 </a>
             </div>
-        ` : ''}
+        ` : `
+            <div class="youtube-link-container">
+                <div class="youtube-link disabled">
+                    📺 룰 영상 없음
+                </div>
+            </div>
+        `}
     `;
     
     modal.classList.remove('hidden');
@@ -714,6 +816,5 @@ function hideError() {
 
 // 필터 변경 시 자동 적용을 위한 이벤트 리스너
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('playersFilter').addEventListener('input', advancedSearchAndFilter);
-    document.getElementById('bestPlayersOnly').addEventListener('change', advancedSearchAndFilter);
+    // 이미 setupAdvancedSearch에서 베스트 토글 이벤트 설정됨
 });

@@ -14,6 +14,9 @@ function setupEventListeners() {
     // 정렬 변경
     document.getElementById('sortBy').addEventListener('change', sortGames);
     
+    // 상태 필터 변경
+    document.getElementById('statusFilter').addEventListener('change', searchGames);
+    
     // 검색 입력 디바운싱
     let searchTimeout;
     document.getElementById('searchInput').addEventListener('input', function() {
@@ -104,7 +107,10 @@ function renderGames() {
     gamesList.innerHTML = currentGames.map(game => `
         <div class="game-item">
             <div class="game-header">
-                <h3 class="game-title">${game.name || '이름 없음'}</h3>
+                <h3 class="game-title">
+                    ${game.name || '이름 없음'}
+                    ${getStatusTag(game.status)}
+                </h3>
                 <div class="game-actions">
                     <button class="action-btn edit-btn" onclick="editGame('${game.id}')">✏️ 수정</button>
                     <button class="action-btn delete-btn" onclick="deleteGame('${game.id}', '${game.name}')">🗑️ 삭제</button>
@@ -112,6 +118,10 @@ function renderGames() {
             </div>
             
             <div class="game-info">
+                <div class="game-field">
+                    <span class="field-label">상태:</span>
+                    <span class="field-value">${getStatusText(game.status)}</span>
+                </div>
                 <div class="game-field">
                     <span class="field-label">난이도:</span>
                     <span class="field-value">${game.difficulty ? game.difficulty.toFixed(1) : '-'}</span>
@@ -151,26 +161,71 @@ function renderGames() {
     `).join('');
 }
 
+// 상태 태그 HTML 생성
+function getStatusTag(status) {
+    if (!status || status === 'normal') return '';
+    
+    const statusMap = {
+        'new': { text: 'NEW', class: 'status-new' },
+        'shipping': { text: '배송중', class: 'status-shipping' },
+        'purchasing': { text: '구매중', class: 'status-purchasing' }
+    };
+    
+    const statusInfo = statusMap[status];
+    if (!statusInfo) return '';
+    
+    return `<span class="status-tag ${statusInfo.class}">${statusInfo.text}</span>`;
+}
+
+// 상태 텍스트 반환
+function getStatusText(status) {
+    const statusMap = {
+        'new': '신상',
+        'shipping': '배송중',
+        'purchasing': '구매중'
+    };
+    
+    return statusMap[status] || '일반';
+}
+
 // 통계 업데이트
 function updateStats() {
     const totalGames = allGames.length;
+    const newGames = allGames.filter(game => game.status === 'new').length;
+    const shippingGames = allGames.filter(game => game.status === 'shipping').length;
+    const purchasingGames = allGames.filter(game => game.status === 'purchasing').length;
+    
     document.getElementById('totalGames').textContent = totalGames;
+    document.getElementById('newGames').textContent = newGames;
+    document.getElementById('shippingGames').textContent = shippingGames;
+    document.getElementById('purchasingGames').textContent = purchasingGames;
 }
 
-// 게임 검색
+// 게임 검색 (상태 필터 포함)
 function searchGames() {
     const query = document.getElementById('searchInput').value.trim().toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value;
     
-    if (!query) {
-        currentGames = allGames;
-    } else {
-        currentGames = allGames.filter(game => {
-            return Object.values(game).some(value => 
-                value && value.toString().toLowerCase().includes(query)
-            );
-        });
-    }
+    currentGames = allGames.filter(game => {
+        // 텍스트 검색
+        const matchesText = !query || Object.values(game).some(value => 
+            value && value.toString().toLowerCase().includes(query)
+        );
+        
+        // 상태 필터
+        const matchesStatus = !statusFilter || 
+            (statusFilter === 'normal' && (!game.status || game.status === 'normal')) ||
+            (statusFilter !== 'normal' && game.status === statusFilter);
+        
+        return matchesText && matchesStatus;
+    });
     
+    renderGames();
+}
+
+// 검색 초기화
+function clearSearch() {
+    currentGames = allGames;
     renderGames();
 }
 
@@ -180,6 +235,17 @@ function sortGames() {
     
     currentGames.sort((a, b) => {
         if (sortBy === 'name') {
+            return (a.name || '').localeCompare(b.name || '');
+        } else if (sortBy === 'status') {
+            // 상태순 정렬: new → purchasing → shipping → normal
+            const statusOrder = { 'new': 0, 'purchasing': 1, 'shipping': 2, 'normal': 3, '': 3 };
+            const statusA = statusOrder[a.status] !== undefined ? statusOrder[a.status] : 3;
+            const statusB = statusOrder[b.status] !== undefined ? statusOrder[b.status] : 3;
+            
+            if (statusA !== statusB) {
+                return statusA - statusB;
+            }
+            // 같은 상태일 경우 이름순
             return (a.name || '').localeCompare(b.name || '');
         } else if (sortBy === 'createdAt' || sortBy === 'updatedAt') {
             const dateA = a[sortBy] ? (a[sortBy].toDate ? a[sortBy].toDate() : new Date(a[sortBy])) : new Date(0);
@@ -212,6 +278,7 @@ function editGame(gameId) {
     
     // 폼에 데이터 채우기
     document.getElementById('gameName').value = game.name || '';
+    document.getElementById('gameStatus').value = game.status || '';
     document.getElementById('gameDifficulty').value = game.difficulty || '';
     document.getElementById('gameMinPlayers').value = game.minPlayers || '';
     document.getElementById('gameMaxPlayers').value = game.maxPlayers || '';
@@ -253,6 +320,7 @@ function clearForm() {
 async function saveGame() {
     const formData = {
         name: document.getElementById('gameName').value.trim(),
+        status: document.getElementById('gameStatus').value.trim() || null,
         difficulty: parseFloat(document.getElementById('gameDifficulty').value) || null,
         minPlayers: parseInt(document.getElementById('gameMinPlayers').value) || null,
         maxPlayers: parseInt(document.getElementById('gameMaxPlayers').value) || null,
@@ -362,7 +430,7 @@ function previewBulkData() {
         
         // 헤더 파싱
         const headers = parseCSVLine(lines[0]);
-        const expectedHeaders = ['name', 'difficulty', 'minPlayers', 'maxPlayers', 'bestPlayers', 'playTime', 'genre', 'buyer', 'imageUrl', 'youtubeUrl'];
+        const expectedHeaders = ['name', 'status', 'difficulty', 'minPlayers', 'maxPlayers', 'bestPlayers', 'playTime', 'genre', 'buyer', 'imageUrl', 'youtubeUrl'];
         
         // 필수 헤더 체크 (name만 필수)
         if (!headers.includes('name')) {
@@ -385,7 +453,11 @@ function previewBulkData() {
                 // 모든 값에서 추가 따옴표 제거
                 value = value.replace(/^["']|["']$/g, '').trim();
                 
-                if (header === 'difficulty' && value) {
+                if (header === 'status' && value) {
+                    // 상태 값 검증
+                    const validStatuses = ['new', 'shipping', 'purchasing', 'normal', ''];
+                    gameData[header] = validStatuses.includes(value) ? (value === 'normal' ? '' : value) : null;
+                } else if (header === 'difficulty' && value) {
                     gameData[header] = parseFloat(value) || null;
                 } else if (['minPlayers', 'maxPlayers', 'playTime'].includes(header) && value) {
                     gameData[header] = parseInt(value) || null;
@@ -401,7 +473,11 @@ function previewBulkData() {
                 // 미리보기 추가
                 const previewItem = document.createElement('div');
                 previewItem.className = 'preview-item';
-                previewItem.textContent = `${gameData.name} (난이도: ${gameData.difficulty || '-'}, 인원: ${formatPlayerInfoForAdmin(gameData)})`;
+                previewItem.innerHTML = `
+                    ${gameData.name} 
+                    ${getStatusTag(gameData.status)}
+                    (난이도: ${gameData.difficulty || '-'}, 인원: ${formatPlayerInfoForAdmin(gameData)})
+                `;
                 previewList.appendChild(previewItem);
             }
         }

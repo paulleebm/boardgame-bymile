@@ -191,41 +191,89 @@ header h1 {
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+/* 검색 박스 레이아웃 */
 .search-box {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
     margin-bottom: 20px;
 }
 
-.search-input-group {
+/* 검색 메인 그룹 */
+.search-main-group {
     display: flex;
-    align-items: center;
-    width: 100%;
-    max-width: 400px;
+    align-items: stretch;
     position: relative;
-    min-width: 200px;
-}
-
-.search-input-group input {
+    min-width: 280px;
     flex: 1;
-    min-width: 0;
-    padding: 12px 50px 12px 16px;
-    border: 2px solid #e0e0e0;
     border-radius: 25px;
-    font-size: 14px;
     transition: all 0.3s ease;
-    background: white;
-    width: 100%;
+    overflow: hidden;
 }
 
-.search-input-group input:focus {
-    outline: none;
-    border-color: #667eea;
+.search-main-group:focus-within {
     box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
 }
 
-/* 검색버튼 - 배경 없이 돋보기만 */
+/* 검색 타입 드롭다운 */
+.search-type-group {
+    display: flex;
+    align-items: center;
+}
+
+.search-type-group select {
+    height: 44px;
+    padding: 0 24px 0 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 25px 0 0 25px;
+    border-right: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    background: white;
+    outline: none;
+    box-sizing: border-box;
+    cursor: pointer;
+    /* 커스텀 화살표 */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23667eea' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 8px center;
+    background-repeat: no-repeat;
+    background-size: 16px 16px;
+}
+
+/* 검색 입력 그룹 */
+.search-input-group {
+    display: flex;
+    align-items: center;
+    position: relative;
+    flex: 1;
+}
+
+.search-input-group input {
+    height: 44px;
+    flex: 1;
+    min-width: 0;
+    padding: 0 50px 0 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 0 25px 25px 0;
+    border-left: none;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    background: white;
+    outline: none;
+    box-sizing: border-box;
+}
+
+/* 검색 버튼 */
 .search-btn {
     position: absolute;
     right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
     padding: 8px;
     background: none;
     color: #667eea;
@@ -239,19 +287,38 @@ header h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 
 .search-btn:hover {
     color: #5a6fd8;
     background: rgba(102, 126, 234, 0.1);
-    transform: scale(1.1);
-    box-shadow: none;
+    transform: translateY(-50%) scale(1.1);
 }
 
 .search-btn:active {
-    transform: scale(0.95);
+    transform: translateY(-50%) scale(0.95);
     background: rgba(102, 126, 234, 0.2);
+}
+
+/* 연결된 호버/포커스 효과 */
+.search-main-group:hover .search-type-group select,
+.search-main-group:hover .search-input-group input {
+    border-color: #667eea;
+}
+
+.search-main-group:focus-within .search-type-group select,
+.search-main-group:focus-within .search-input-group input {
+    border-color: #667eea;
+}
+
+/* iOS 사파리 줌 방지 */
+@supports (-webkit-touch-callout: none) {
+    .search-input-group input,
+    .search-type-group select {
+        font-size: 16px; /* iOS에서 줌 방지를 위해 16px 이상 */
+    }
 }
 
 /* ===== 필터 박스 ===== */
@@ -259,26 +326,9 @@ header h1 {
     border-top: 1px solid rgba(102, 126, 234, 0.2);
     padding-top: 20px;
     display: grid;
-    grid-template-columns: auto 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 20px;
     align-items: start;
-}
-
-.players-filter {
-    max-width: 250px;
-}
-
-.players-input-group {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.players-input-group input[type="number"] {
-    width: 120px;
-    flex-shrink: 0;
-    text-align: center;
 }
 
 .filter-group {
@@ -293,7 +343,8 @@ header h1 {
     font-size: 14px;
 }
 
-.search-box input, .filter-group input, .filter-group select {
+.filter-group input, .filter-group select {
+    padding: 12px 16px;
     border: 2px solid #e0e0e0;
     border-radius: 25px;
     font-size: 14px;
@@ -301,7 +352,7 @@ header h1 {
     background: white;
 }
 
-.search-box input:focus, .filter-group input:focus, .filter-group select:focus {
+.filter-group input:focus, .filter-group select:focus {
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
@@ -310,87 +361,6 @@ header h1 {
 .filter-group input[type="number"] {
     width: 100px;
     text-align: center;
-}
-
-.filter-group input, .filter-group select {
-    padding: 12px 16px;
-}
-
-/* ===== 플레이어 필터 개선된 레이아웃 ===== */
-.players-label-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-}
-
-.players-label-group label {
-    margin-bottom: 0 !important;
-    transition: all 0.3s ease;
-}
-
-/* 토글 스위치 - 텍스트 없는 버전 */
-.toggle-switch {
-    display: flex;
-    align-items: center;
-}
-
-.toggle-input {
-    display: none;
-}
-
-.toggle-label {
-    position: relative;
-    cursor: pointer;
-    width: 32px;
-    height: 16px;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-}
-
-.toggle-label::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 32px;
-    height: 16px;
-    background: #e0e0e0;
-    border-radius: 16px;
-    transition: all 0.3s ease;
-    border: 1px solid #ddd;
-}
-
-.toggle-label::after {
-    content: '';
-    position: absolute;
-    left: 2px;
-    top: 4px;
-    width: 12px;
-    height: 12px;
-    background: white;
-    border-radius: 50%;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.toggle-input:checked + .toggle-label::before {
-    background: linear-gradient(45deg, #667eea, #764ba2);
-    border-color: #667eea;
-}
-
-.toggle-input:checked + .toggle-label::after {
-    transform: translateX(16px);
-}
-
-.toggle-label:hover::before {
-    box-shadow: 0 0 8px rgba(102, 126, 234, 0.3);
-}
-
-.toggle-input:checked + .toggle-label:hover::before {
-    box-shadow: 0 0 8px rgba(102, 126, 234, 0.5);
 }
 
 /* ===== 슬라이더 스타일 ===== */
@@ -420,7 +390,6 @@ header h1 {
     top: 0;
 }
 
-/* 슬라이더 핸들 - 터치 영역은 크게 유지하되 시각적 크기는 원래대로 */
 .slider-handle {
     position: absolute;
     top: 50%;
@@ -437,11 +406,9 @@ header h1 {
     -ms-user-select: none;
     user-select: none;
     touch-action: none;
-    /* 기본 트랜지션은 호버 효과만 */
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* 터치 영역만 크게 (보이지 않음) */
 .slider-handle::before {
     content: '';
     position: absolute;
@@ -465,7 +432,6 @@ header h1 {
     z-index: 10;
 }
 
-/* 최소값 핸들 */
 .slider-handle.min-handle {
     background: #667eea;
 }
@@ -474,7 +440,6 @@ header h1 {
     background: #5a6fd8;
 }
 
-/* 최대값 핸들 */
 .slider-handle.max-handle {
     background: #764ba2;
 }
@@ -483,7 +448,6 @@ header h1 {
     background: #6a4190;
 }
 
-/* 기본 input 슬라이더 숨김 */
 .slider-input {
     display: none;
 }
@@ -510,21 +474,12 @@ button {
     font-weight: 600;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-    /* 더블탭 확대 방지 */
     touch-action: manipulation;
 }
 
 button:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-}
-
-.clear-btn {
-    background: linear-gradient(45deg, #ff6b6b, #ee5a52);
-}
-
-.clear-btn:hover {
-    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
 }
 
 /* ===== 그리드 컨테이너 ===== */
@@ -538,7 +493,6 @@ button:hover {
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* ===== 그리드 헤더 및 정렬 컨트롤 ===== */
 .grid-header {
     display: flex;
     justify-content: space-between;
@@ -679,7 +633,7 @@ button:hover {
     transition: all 0.3s ease;
     cursor: pointer;
     border: 1px solid rgba(0,0,0,0.05);
-    /* 더블탭 확대 방지 */
+    position: relative;
     touch-action: manipulation;
 }
 
@@ -722,6 +676,33 @@ button:hover {
     line-height: 1.2;
     word-break: keep-all;
     overflow-wrap: break-word;
+}
+
+/* ===== 상태 태그 스타일 ===== */
+.status-tag {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    z-index: 2;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.status-tag.status-new {
+    background: linear-gradient(45deg, #ff6b6b, #ff5252);
+}
+
+.status-tag.status-shipping {
+    background: linear-gradient(45deg, #4ecdc4, #26d0ce);
+}
+
+.status-tag.status-purchasing {
+    background: linear-gradient(45deg, #ffa726, #ff9800);
 }
 
 /* ===== 게임 상세 모달 ===== */
@@ -802,6 +783,14 @@ button:hover {
     line-height: 1.2;
 }
 
+.game-detail-info h2 .status-tag {
+    position: static;
+    margin-left: 8px;
+    vertical-align: middle;
+    font-size: 11px;
+    padding: 5px 10px;
+}
+
 .detail-field {
     display: flex;
     justify-content: space-between;
@@ -845,6 +834,13 @@ button:hover {
 .youtube-link:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(255, 0, 0, 0.4);
+}
+
+.youtube-link.disabled {
+    background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+    box-shadow: 0 4px 15px rgba(149, 165, 166, 0.3);
+    cursor: not-allowed;
+    opacity: 0.8;
 }
 
 .modal-close-btn {
@@ -1056,7 +1052,12 @@ button:hover {
     .search-btn:hover {
         color: #667eea;
         background: none;
-        transform: none;
+        transform: translateY(-50%);
+    }
+    
+    .search-main-group:hover .search-type-group select,
+    .search-main-group:hover .search-input-group input {
+        border-color: #e0e0e0;
     }
 }
 
@@ -1079,31 +1080,39 @@ button:hover {
         font-size: 1.6em;
     }
     
-    .filter-box {
-        grid-template-columns: 1fr;
-        gap: 15px;
+    .search-box {
+        margin-bottom: 15px;
     }
     
-    .search-input-group {
-        max-width: 100%;
-        min-width: 250px;
+    .search-main-group {
+        min-width: 100%;
+        flex: 1;
+    }
+    
+    .search-type-group select {
+        height: 40px;
+        font-size: 16px; /* iOS 줌 방지 */
+        padding: 0 20px 0 10px;
+        background-size: 14px 14px;
+        background-position: right 6px center;
     }
     
     .search-input-group input {
-        font-size: 14px;
-        padding: 12px 50px 12px 16px;
+        height: 40px;
+        font-size: 16px; /* iOS 줌 방지 */
+        padding: 0 45px 0 12px;
     }
     
     .search-btn {
-        font-size: 14px;
         width: 32px;
         height: 32px;
         right: 6px;
+        font-size: 14px;
     }
     
-    .slider-handle::before {
-        width: 48px;
-        height: 48px;
+    .filter-box {
+        grid-template-columns: 1fr;
+        gap: 15px;
     }
     
     .game-grid {
@@ -1122,6 +1131,13 @@ button:hover {
     
     .game-title-grid {
         padding: 6px;
+    }
+    
+    .status-tag {
+        font-size: 9px;
+        padding: 3px 6px;
+        top: 6px;
+        left: 6px;
     }
     
     /* 모바일 모달 최적화 */
@@ -1155,6 +1171,12 @@ button:hover {
     .game-detail-info h2 {
         font-size: 1.4em;
         margin: 0;
+    }
+    
+    .game-detail-info h2 .status-tag {
+        font-size: 10px;
+        padding: 4px 8px;
+        margin-left: 6px;
     }
     
     .detail-field {
@@ -1228,33 +1250,6 @@ button:hover {
         font-size: 13px;
     }
     
-    /* 토글 스위치 모바일 조정 */
-    .players-label-group {
-        gap: 6px;
-    }
-    
-    .toggle-label {
-        width: 28px;
-        height: 14px;
-    }
-    
-    .toggle-label::before {
-        width: 28px;
-        height: 14px;
-        border-radius: 14px;
-    }
-    
-    .toggle-label::after {
-        width: 10px;
-        height: 10px;
-        left: 2px;
-        top: 2px;
-    }
-    
-    .toggle-input:checked + .toggle-label::after {
-        transform: translateX(14px);
-    }
-    
     /* 관리자 모달 모바일 */
     .admin-password-content {
         width: 95%;
@@ -1293,13 +1288,30 @@ button:hover {
         font-size: 1.4em;
     }
     
+    .search-type-group select {
+        height: 36px;
+        font-size: 16px; /* iOS 줌 방지 유지 */
+        padding: 0 18px 0 8px;
+        background-size: 12px 12px;
+        background-position: right 5px center;
+    }
+    
+    .search-input-group input {
+        height: 36px;
+        font-size: 16px; /* iOS 줌 방지 유지 */
+        padding: 0 40px 0 10px;
+    }
+    
+    .search-btn {
+        width: 30px;
+        height: 30px;
+        right: 5px;
+        font-size: 13px;
+    }
+    
     .filter-box {
         gap: 10px;
         padding-top: 12px;
-    }
-    
-    .players-input-group {
-        gap: 8px;
     }
     
     .slider-container {
@@ -1319,23 +1331,6 @@ button:hover {
         height: 52px;
     }
     
-    .search-input-group {
-        min-width: 200px;
-        max-width: 100%;
-    }
-    
-    .search-input-group input {
-        font-size: 13px;
-        padding: 10px 45px 10px 14px;
-    }
-    
-    .search-btn {
-        width: 30px;
-        height: 30px;
-        right: 5px;
-        font-size: 13px;
-    }
-    
     .game-grid {
         grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
         gap: 10px;
@@ -1352,6 +1347,14 @@ button:hover {
     
     .game-title-grid {
         padding: 5px;
+    }
+    
+    .status-tag {
+        font-size: 8px;
+        padding: 2px 5px;
+        border-radius: 8px;
+        top: 5px;
+        left: 5px;
     }
     
     /* 480px 모달 최적화 */
@@ -1380,6 +1383,12 @@ button:hover {
     .game-detail-info h2 {
         font-size: 1.2em;
         margin: 0;
+    }
+    
+    .game-detail-info h2 .status-tag {
+        font-size: 9px;
+        padding: 3px 6px;
+        margin-left: 4px;
     }
     
     .detail-field {
@@ -1479,20 +1488,25 @@ button:hover {
         line-height: 1.2;
     }
     
-    .search-input-group {
-        min-width: 180px;
+    .search-type-group select {
+        height: 34px;
+        font-size: 16px; /* iOS 줌 방지 유지 */
+        padding: 0 16px 0 6px;
+        background-size: 10px 10px;
+        background-position: right 4px center;
     }
     
     .search-input-group input {
-        font-size: 12px;
-        padding: 8px 40px 8px 12px;
+        height: 34px;
+        font-size: 16px; /* iOS 줌 방지 유지 */
+        padding: 0 35px 0 8px;
     }
     
     .search-btn {
         width: 28px;
         height: 28px;
-        right: 5px;
-        font-size: 11px;
+        right: 4px;
+        font-size: 12px;
     }
     
     .game-grid {
@@ -1620,6 +1634,27 @@ button:hover {
         font-size: 1.1em;
         line-height: 1.1;
         word-break: keep-all;
+    }
+    
+    .search-type-group select {
+        height: 32px;
+        font-size: 16px; /* iOS 줌 방지 유지 */
+        padding: 0 14px 0 5px;
+        background-size: 9px 9px;
+        background-position: right 3px center;
+    }
+    
+    .search-input-group input {
+        height: 32px;
+        font-size: 16px; /* iOS 줌 방지 유지 */
+        padding: 0 32px 0 6px;
+    }
+    
+    .search-btn {
+        width: 26px;
+        height: 26px;
+        right: 3px;
+        font-size: 11px;
     }
     
     /* 320px 모달 최적화 */
