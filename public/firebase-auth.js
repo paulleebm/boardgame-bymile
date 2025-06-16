@@ -4,22 +4,59 @@
 
 let currentUser = null;
 
-// 사용자 상태 변화 감지
-function initializeAuth() {
-    firebase.auth().onAuthStateChanged(async (user) => {
-        currentUser = user;
-        updateAuthUI();
-        
-        if (user) {
-            // 로그인된 사용자 정보를 Firestore에서 확인/생성
-            await ensureUserInFirestore(user);
+// Firebase 초기화 대기 함수
+function waitForFirebaseInit() {
+    return new Promise((resolve) => {
+        if (window.firebaseInitialized && typeof firebase !== 'undefined') {
+            resolve();
+            return;
         }
+        
+        const checkInit = setInterval(() => {
+            if (window.firebaseInitialized && typeof firebase !== 'undefined') {
+                clearInterval(checkInit);
+                resolve();
+            }
+        }, 100);
+        
+        // 최대 10초 대기
+        setTimeout(() => {
+            clearInterval(checkInit);
+            console.error('Firebase 초기화 타임아웃');
+            resolve();
+        }, 10000);
     });
+}
+
+// 사용자 상태 변화 감지
+async function initializeAuth() {
+    try {
+        // Firebase 초기화 대기
+        await waitForFirebaseInit();
+        
+        if (typeof firebase === 'undefined' || !firebase.auth) {
+            console.error('Firebase Auth가 로드되지 않았습니다.');
+            return;
+        }
+        
+        firebase.auth().onAuthStateChanged(async (user) => {
+            currentUser = user;
+            updateAuthUI();
+            
+            if (user) {
+                // 로그인된 사용자 정보를 Firestore에서 확인/생성
+                await ensureUserInFirestore(user);
+            }
+        });
+    } catch (error) {
+        console.error('Auth 초기화 오류:', error);
+    }
 }
 
 // UI 업데이트 (로그인/마이페이지 버튼)
 function updateAuthUI() {
     const authBtn = document.getElementById('authBtn');
+    if (!authBtn) return;
     
     if (currentUser) {
         // 로그인된 상태 - 마이페이지 버튼
@@ -39,6 +76,13 @@ function updateAuthUI() {
 // Google 로그인
 async function signInWithGoogle() {
     try {
+        await waitForFirebaseInit();
+        
+        if (typeof firebase === 'undefined' || !firebase.auth) {
+            alert('인증 시스템이 로드되지 않았습니다. 페이지를 새로고침해주세요.');
+            return;
+        }
+        
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.addScope('profile');
         provider.addScope('email');
@@ -54,6 +98,13 @@ async function signInWithGoogle() {
 // 로그아웃
 async function signOut() {
     try {
+        await waitForFirebaseInit();
+        
+        if (typeof firebase === 'undefined' || !firebase.auth) {
+            console.error('Firebase Auth가 로드되지 않았습니다.');
+            return;
+        }
+        
         await firebase.auth().signOut();
         console.log('로그아웃 완료');
         // 마이페이지가 열려있다면 닫기
@@ -66,6 +117,13 @@ async function signOut() {
 // Firestore에 사용자 정보 확인/생성
 async function ensureUserInFirestore(user) {
     try {
+        await waitForFirebaseInit();
+        
+        if (typeof firebase === 'undefined' || !firebase.firestore) {
+            console.error('Firebase Firestore가 로드되지 않았습니다.');
+            return;
+        }
+        
         const userRef = firebase.firestore().collection('users').doc(user.uid);
         const userDoc = await userRef.get();
         
@@ -87,7 +145,10 @@ function showRealNameModal(user) {
     const modal = document.getElementById('realNameModal');
     if (modal) {
         modal.classList.remove('hidden');
-        document.getElementById('realNameInput').focus();
+        const realNameInput = document.getElementById('realNameInput');
+        if (realNameInput) {
+            realNameInput.focus();
+        }
     }
 }
 
@@ -109,6 +170,13 @@ async function saveRealName() {
     }
     
     try {
+        await waitForFirebaseInit();
+        
+        if (!currentUser) {
+            alert('로그인 정보를 찾을 수 없습니다.');
+            return;
+        }
+        
         const userRef = firebase.firestore().collection('users').doc(currentUser.uid);
         await userRef.set({
             uid: currentUser.uid,
@@ -135,7 +203,10 @@ function closeRealNameModal() {
     const modal = document.getElementById('realNameModal');
     if (modal) {
         modal.classList.add('hidden');
-        document.getElementById('realNameInput').value = '';
+        const realNameInput = document.getElementById('realNameInput');
+        if (realNameInput) {
+            realNameInput.value = '';
+        }
     }
 }
 
@@ -144,6 +215,8 @@ async function getCurrentUserData() {
     if (!currentUser) return null;
     
     try {
+        await waitForFirebaseInit();
+        
         const userRef = firebase.firestore().collection('users').doc(currentUser.uid);
         const userDoc = await userRef.get();
         
@@ -174,8 +247,11 @@ function showMyPageModal(userData) {
     const modal = document.getElementById('myPageModal');
     if (modal) {
         // 사용자 정보 표시
-        document.getElementById('userRealName').textContent = userData.realName;
-        document.getElementById('userEmail').textContent = userData.email;
+        const userRealName = document.getElementById('userRealName');
+        const userEmail = document.getElementById('userEmail');
+        
+        if (userRealName) userRealName.textContent = userData.realName;
+        if (userEmail) userEmail.textContent = userData.email;
         
         // 대여 기록 로드
         loadUserRentals(userData.uid);
@@ -195,6 +271,8 @@ function closeMyPage() {
 // 사용자 대여 기록 로드
 async function loadUserRentals(userId) {
     try {
+        await waitForFirebaseInit();
+        
         const rentalsRef = firebase.firestore()
             .collection('rentals')
             .where('userId', '==', userId)
@@ -220,6 +298,7 @@ async function loadUserRentals(userId) {
 // 대여 기록 렌더링
 function renderUserRentals(rentals) {
     const rentalsList = document.getElementById('userRentalsList');
+    if (!rentalsList) return;
     
     if (rentals.length === 0) {
         rentalsList.innerHTML = '<div class="no-rentals">대여 기록이 없습니다.</div>';
@@ -282,6 +361,8 @@ function getRentalActionButtons(rental) {
 // 대여 시작
 async function startRental(rentalId) {
     try {
+        await waitForFirebaseInit();
+        
         const batch = firebase.firestore().batch();
         
         // 대여 상태 업데이트
@@ -315,6 +396,8 @@ async function returnRental(rentalId) {
     if (!confirm('정말 반납하시겠습니까?')) return;
     
     try {
+        await waitForFirebaseInit();
+        
         const batch = firebase.firestore().batch();
         
         // 대여 상태 업데이트
@@ -357,11 +440,6 @@ function formatDate(date) {
 
 // 페이지 로드 시 인증 초기화
 document.addEventListener('DOMContentLoaded', function() {
-    // Firebase가 로드된 후에 인증 초기화
-    if (typeof firebase !== 'undefined') {
-        initializeAuth();
-    } else {
-        // Firebase 로드 대기
-        window.addEventListener('load', initializeAuth);
-    }
+    // Firebase 초기화를 기다린 후 인증 초기화
+    initializeAuth();
 });
