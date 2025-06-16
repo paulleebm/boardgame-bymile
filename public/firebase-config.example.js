@@ -1,10 +1,6 @@
 // Firebase configuration placeholder
 // Copy this file to firebase-config.js and fill in your project credentials.
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
-
 // Replace the values below with your Firebase project's configuration.
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
@@ -15,12 +11,7 @@ const firebaseConfig = {
   appId: "YOUR_APP_ID"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-
-// Expose Firebase services globally
-window.firebase = {
-  auth: getAuth(app),
-  firestore: getFirestore(app)
-};
+// Firebase compat libraries are loaded in index.html. Use them to initialize
+// the global firebase object.
+firebase.initializeApp(firebaseConfig);
 window.firebaseInitialized = true;
