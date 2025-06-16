@@ -1,143 +1,128 @@
-// public/rental-system.js
+// rental-system.js
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import {
+    getFirestore,
+    collection,
+    doc,
+    getDocs,
+    getDoc,
+    addDoc,
+    updateDoc,
+    query,
+    where,
+    orderBy,
+    Timestamp,
+    serverTimestamp
+} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
-// 대여 신청 관련 함수들
+import {
+    getAuth,
+    onAuthStateChanged
+} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 
-// Firebase 초기화 대기 함수
-function waitForFirebaseInit() {
-    return new Promise((resolve) => {
-        if (window.firebaseInitialized && typeof firebase !== 'undefined') {
-            resolve();
-            return;
-        }
-        
-        const checkInit = setInterval(() => {
-            if (window.firebaseInitialized && typeof firebase !== 'undefined') {
-                clearInterval(checkInit);
-                resolve();
-            }
-        }, 100);
-        
-        // 최대 10초 대기
-        setTimeout(() => {
-            clearInterval(checkInit);
-            console.error('Firebase 초기화 타임아웃');
-            resolve();
-        }, 10000);
-    });
-}
+// Firebase 설정
+const firebaseConfig = {
+    apiKey: "AIzaSyA4Q7fbrhlXG9LU67MpUovSLkXrqtHhftc",
+    authDomain: "boardgame-bymile.firebaseapp.com",
+    projectId: "boardgame-bymile",
+    storageBucket: "boardgame-bymile.firebasestorage.app",
+    messagingSenderId: "450054853638",
+    appId: "1:450054853638:web:f0c7895aa7e38cd7915f87",
+    measurementId: "G-F5FS0S6VTE"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+let currentUser = null;
+
+onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+});
 
 // 대여 신청 모달 열기
-async function openRentalModal() {
+export async function openRentalModal() {
     if (!currentUser) {
         alert('로그인이 필요합니다.');
         return;
     }
-    
-    // Firebase가 초기화되었는지 확인
-    if (!window.firebaseInitialized) {
-        alert('시스템 로딩 중입니다. 잠시 후 다시 시도해주세요.');
-        return;
-    }
-    
-    // 대여 가능한 게임 목록 로드
+
     await loadAvailableGames();
-    
+
     const modal = document.getElementById('rentalModal');
     if (modal) {
         modal.classList.remove('hidden');
-        
-        // 오늘 날짜로 초기화
         const today = new Date().toISOString().split('T')[0];
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
-        
+
         if (startDateInput) {
             startDateInput.value = today;
             startDateInput.min = today;
         }
-        
-        // 최대 8일 후 날짜 설정
+
         const maxDate = new Date();
         maxDate.setDate(maxDate.getDate() + 8);
         if (endDateInput) {
             endDateInput.max = maxDate.toISOString().split('T')[0];
         }
-        
-        // 종료일 초기화
+
         updateEndDate();
     }
 }
 
-// 대여 모달 닫기
-function closeRentalModal() {
+export function closeRentalModal() {
     const modal = document.getElementById('rentalModal');
     if (modal) {
         modal.classList.add('hidden');
-        // 폼 초기화
         const rentalForm = document.getElementById('rentalForm');
-        if (rentalForm) {
-            rentalForm.reset();
-        }
+        rentalForm?.reset();
     }
 }
 
-// 대여 가능한 게임 목록 로드
 async function loadAvailableGames() {
     try {
-        await waitForFirebaseInit();
-        
-        const gamesRef = firebase.firestore().collection('games');
-        const snapshot = await gamesRef.get();
+        const snapshot = await getDocs(collection(db, 'boardgames'));
         const availableGames = [];
-        
-        snapshot.forEach(doc => {
-            const game = { id: doc.id, ...doc.data() };
-            
-            // 대여 불가능한 상태 체크
+
+        snapshot.forEach(docSnap => {
+            const game = { id: docSnap.id, ...docSnap.data() };
             const unavailableStatuses = ['new', 'shipping', 'purchasing', 'rented'];
-            
             if (!unavailableStatuses.includes(game.status)) {
                 availableGames.push(game);
             }
         });
-        
+
         renderGameSelection(availableGames);
-        
     } catch (error) {
         console.error('게임 목록 로드 실패:', error);
     }
 }
 
-// 게임 선택 렌더링
 function renderGameSelection(games) {
     const gameSelect = document.getElementById('gameSelect');
     if (!gameSelect) return;
-    
+
     gameSelect.innerHTML = '<option value="">게임을 선택하세요</option>' +
-        games.map(game => 
+        games.map(game =>
             `<option value="${game.id}">${game.name}</option>`
         ).join('');
 }
 
-// 시작 날짜 변경 시 종료일 업데이트
-function updateEndDate() {
+export function updateEndDate() {
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
-    
+
     if (startDateInput && endDateInput && startDateInput.value) {
         const startDate = new Date(startDateInput.value);
-        
-        // 최소 종료일: 시작일 + 1일
         const minEndDate = new Date(startDate);
         minEndDate.setDate(minEndDate.getDate() + 1);
         endDateInput.min = minEndDate.toISOString().split('T')[0];
-        
-        // 최대 종료일: 시작일 + 8일
+
         const maxEndDate = new Date(startDate);
         maxEndDate.setDate(maxEndDate.getDate() + 8);
         endDateInput.max = maxEndDate.toISOString().split('T')[0];
-        
-        // 종료일이 범위를 벗어나면 조정
+
         if (endDateInput.value) {
             const currentEndDate = new Date(endDateInput.value);
             if (currentEndDate < minEndDate) {
@@ -149,27 +134,23 @@ function updateEndDate() {
     }
 }
 
-// 날짜 충돌 체크
 async function checkDateConflict(gameId, startDate, endDate) {
     try {
-        await waitForFirebaseInit();
-        
-        const rentalsRef = firebase.firestore()
-            .collection('rentals')
-            .where('gameId', '==', gameId)
-            .where('status', 'in', ['approved', 'rented']);
-        
-        const snapshot = await rentalsRef.get();
-        
+        const q = query(
+            collection(db, 'rentals'),
+            where('gameId', '==', gameId),
+            where('status', 'in', ['approved', 'rented'])
+        );
+
+        const snapshot = await getDocs(q);
         const requestStart = new Date(startDate);
         const requestEnd = new Date(endDate);
-        
+
         for (const doc of snapshot.docs) {
             const rental = doc.data();
-            const existingStart = rental.startDate.toDate ? rental.startDate.toDate() : new Date(rental.startDate);
-            const existingEnd = rental.endDate.toDate ? rental.endDate.toDate() : new Date(rental.endDate);
-            
-            // 날짜 겹침 체크
+            const existingStart = rental.startDate.toDate();
+            const existingEnd = rental.endDate.toDate();
+
             if (requestStart <= existingEnd && requestEnd >= existingStart) {
                 return {
                     conflict: true,
@@ -177,283 +158,168 @@ async function checkDateConflict(gameId, startDate, endDate) {
                 };
             }
         }
-        
+
         return { conflict: false };
-        
     } catch (error) {
         console.error('날짜 충돌 체크 실패:', error);
         return { conflict: false };
     }
 }
 
-// 대여 신청 제출
-async function submitRental() {
+export async function submitRental() {
     const gameSelect = document.getElementById('gameSelect');
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
-    
-    if (!gameSelect || !startDateInput || !endDateInput) {
-        alert('폼 요소를 찾을 수 없습니다.');
-        return;
-    }
-    
+
     const gameId = gameSelect.value;
     const startDate = startDateInput.value;
     const endDate = endDateInput.value;
-    
-    // 입력값 검증
+
     if (!gameId || !startDate || !endDate) {
         alert('모든 항목을 입력해주세요.');
         return;
     }
-    
+
     const startDateObj = new Date(startDate);
     const endDateObj = new Date(endDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
-    // 날짜 검증
+
     if (startDateObj < today) {
         alert('시작일은 오늘 이후로 선택해주세요.');
         return;
     }
-    
+
     if (endDateObj <= startDateObj) {
         alert('종료일은 시작일 이후로 선택해주세요.');
         return;
     }
-    
+
     const daysDiff = (endDateObj - startDateObj) / (1000 * 60 * 60 * 24);
     if (daysDiff > 8) {
         alert('대여 기간은 최대 8일입니다.');
         return;
     }
-    
-    // 날짜 충돌 체크
-    const conflictCheck = await checkDateConflict(gameId, startDate, endDate);
-    if (conflictCheck.conflict) {
-        alert(`선택한 기간에 이미 승인된 대여가 있습니다.\n충돌 기간: ${conflictCheck.conflictPeriod}`);
+
+    const conflict = await checkDateConflict(gameId, startDate, endDate);
+    if (conflict.conflict) {
+        alert(`선택한 기간에 이미 승인된 대여가 있습니다.\n충돌 기간: ${conflict.conflictPeriod}`);
         return;
     }
-    
+
     try {
-        await waitForFirebaseInit();
-        
         if (!currentUser) {
             alert('로그인이 필요합니다.');
             return;
         }
-        
-        // 게임 정보 가져오기
-        const gameDoc = await firebase.firestore().collection('games').doc(gameId).get();
-        const gameData = gameDoc.data();
-        
-        // 대여 신청 데이터 생성
+
+        const gameSnap = await getDoc(doc(db, 'boardgames', gameId));
+        const gameData = gameSnap.data();
+
         const rentalData = {
             userId: currentUser.uid,
             userEmail: currentUser.email,
-            gameId: gameId,
+            gameId,
             gameName: gameData.name,
-            startDate: firebase.firestore.Timestamp.fromDate(startDateObj),
-            endDate: firebase.firestore.Timestamp.fromDate(endDateObj),
+            startDate: Timestamp.fromDate(startDateObj),
+            endDate: Timestamp.fromDate(endDateObj),
             status: 'pending',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            createdAt: serverTimestamp()
         };
-        
-        // Firestore에 저장
-        await firebase.firestore().collection('rentals').add(rentalData);
-        
+
+        await addDoc(collection(db, 'rentals'), rentalData);
+
         alert('대여 신청이 완료되었습니다. 관리자 승인을 기다려주세요.');
         closeRentalModal();
-        
-        // 마이페이지가 열려있다면 새로고침
+
         const myPageModal = document.getElementById('myPageModal');
         if (myPageModal && !myPageModal.classList.contains('hidden')) {
-            loadUserRentals(currentUser.uid);
+            if (typeof window.loadUserRentals === 'function') {
+                window.loadUserRentals(currentUser.uid);
+            }
         }
-        
+
     } catch (error) {
         console.error('대여 신청 실패:', error);
-        alert('대여 신청에 실패했습니다. 다시 시도해주세요.');
+        alert('대여 신청에 실패했습니다.');
     }
 }
 
-// 관리자 - 모든 대여 신청 로드
-async function loadAllRentals() {
-    try {
-        await waitForFirebaseInit();
-        
-        const rentalsRef = firebase.firestore()
-            .collection('rentals')
-            .orderBy('createdAt', 'desc');
-        
-        const snapshot = await rentalsRef.get();
-        const rentals = [];
-        
-        snapshot.forEach(doc => {
-            rentals.push({
-                id: doc.id,
-                ...doc.data()
-            });
-        });
-        
-        renderAdminRentals(rentals);
-        
-    } catch (error) {
-        console.error('대여 목록 로드 실패:', error);
-    }
-}
-
-// 관리자 - 대여 목록 렌더링
-function renderAdminRentals(rentals) {
-    const rentalsList = document.getElementById('adminRentalsList');
-    if (!rentalsList) return;
-    
-    if (rentals.length === 0) {
-        rentalsList.innerHTML = '<div class="no-rentals">대여 신청이 없습니다.</div>';
-        return;
-    }
-    
-    rentalsList.innerHTML = rentals.map(rental => {
-        const statusText = getRentalStatusText(rental.status);
-        const statusClass = getRentalStatusClass(rental.status);
-        
-        return `
-            <div class="admin-rental-item">
-                <div class="rental-header">
-                    <h4>${rental.gameName}</h4>
-                    <span class="rental-status ${statusClass}">${statusText}</span>
-                </div>
-                <div class="rental-details">
-                    <p><strong>신청자:</strong> ${rental.userEmail}</p>
-                    <p><strong>대여 기간:</strong> ${formatDate(rental.startDate)} ~ ${formatDate(rental.endDate)}</p>
-                    <p><strong>신청일:</strong> ${formatDate(rental.createdAt)}</p>
-                    ${rental.rejectionReason ? `<p class="rejection-reason"><strong>거절 사유:</strong> ${rental.rejectionReason}</p>` : ''}
-                </div>
-                <div class="admin-rental-actions">
-                    ${getAdminActionButtons(rental)}
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-// 관리자 액션 버튼들
-function getAdminActionButtons(rental) {
-    if (rental.status === 'pending') {
-        return `
-            <button onclick="approveRental('${rental.id}')" class="action-btn approve-btn">승인</button>
-            <button onclick="showRejectModal('${rental.id}')" class="action-btn reject-btn">거절</button>
-        `;
-    }
-    return '';
-}
-
-// 대여 승인
-async function approveRental(rentalId) {
-    if (!confirm('이 대여 신청을 승인하시겠습니까?')) return;
-    
-    try {
-        await waitForFirebaseInit();
-        
-        await firebase.firestore().collection('rentals').doc(rentalId).update({
-            status: 'approved',
-            approvedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        alert('대여 신청이 승인되었습니다.');
-        loadAllRentals();
-        
-    } catch (error) {
-        console.error('대여 승인 실패:', error);
-        alert('대여 승인에 실패했습니다.');
-    }
-}
-
-// 거절 모달 표시
-function showRejectModal(rentalId) {
-    const rejectRentalIdInput = document.getElementById('rejectRentalId');
-    const rejectModal = document.getElementById('rejectModal');
-    const rejectionReasonInput = document.getElementById('rejectionReason');
-    
-    if (rejectRentalIdInput) rejectRentalIdInput.value = rentalId;
-    if (rejectModal) rejectModal.classList.remove('hidden');
-    if (rejectionReasonInput) rejectionReasonInput.focus();
-}
-
-// 거절 모달 닫기
-function closeRejectModal() {
-    const rejectModal = document.getElementById('rejectModal');
-    const rejectionReasonInput = document.getElementById('rejectionReason');
-    const rejectRentalIdInput = document.getElementById('rejectRentalId');
-    
-    if (rejectModal) rejectModal.classList.add('hidden');
-    if (rejectionReasonInput) rejectionReasonInput.value = '';
-    if (rejectRentalIdInput) rejectRentalIdInput.value = '';
-}
-
-// 대여 거절
-async function rejectRental() {
-    const rejectRentalIdInput = document.getElementById('rejectRentalId');
-    const rejectionReasonInput = document.getElementById('rejectionReason');
-    
-    if (!rejectRentalIdInput || !rejectionReasonInput) {
-        alert('폼 요소를 찾을 수 없습니다.');
-        return;
-    }
-    
-    const rentalId = rejectRentalIdInput.value;
-    const reason = rejectionReasonInput.value.trim();
-    
-    if (!reason) {
-        alert('거절 사유를 입력해주세요.');
-        return;
-    }
-    
-    try {
-        await waitForFirebaseInit();
-        
-        await firebase.firestore().collection('rentals').doc(rentalId).update({
-            status: 'rejected',
-            rejectionReason: reason,
-            rejectedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        alert('대여 신청이 거절되었습니다.');
-        closeRejectModal();
-        loadAllRentals();
-        
-    } catch (error) {
-        console.error('대여 거절 실패:', error);
-        alert('대여 거절에 실패했습니다.');
-    }
-}
-
-// 대여 상태 텍스트
-function getRentalStatusText(status) {
-    const statusMap = {
-        'pending': '신청중',
-        'approved': '승인됨',
-        'rented': '대여중',
-        'returned': '반납완료',
-        'rejected': '거절됨'
-    };
-    return statusMap[status] || status;
-}
-
-// 대여 상태 클래스
-function getRentalStatusClass(status) {
-    return `status-${status}`;
-}
-
-// 날짜 포맷팅
+// 상태 텍스트 및 포맷팅
 function formatDate(date) {
-    if (!date) return '-';
-    
-    const d = date.toDate ? date.toDate() : new Date(date);
+    const d = date instanceof Date ? date : date.toDate();
     return d.toLocaleDateString('ko-KR', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit'
     });
 }
+
+async function loadUserRentals(userId) {
+    try {
+        const rentalsRef = collection(db, 'rentals');
+        const q = query(rentalsRef, where('userId', '==', userId), orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
+
+        const rentals = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        renderUserRentals(rentals);
+    } catch (error) {
+        console.error('대여 기록 로드 실패:', error);
+    }
+}
+
+function renderUserRentals(rentals) {
+    const rentalsList = document.getElementById('userRentalsList');
+    if (!rentalsList) return;
+
+    if (rentals.length === 0) {
+        rentalsList.innerHTML = '<div class="no-rentals">대여 기록이 없습니다.</div>';
+        return;
+    }
+
+    rentalsList.innerHTML = rentals.map(rental => {
+        const statusText = getRentalStatusText(rental.status);
+        const statusClass = getRentalStatusClass(rental.status);
+
+        return `
+            <div class="rental-item">
+                <div class="rental-header">
+                    <h4>${rental.gameName}</h4>
+                    <span class="rental-status ${statusClass}">${statusText}</span>
+                </div>
+                <div class="rental-details">
+                    <p>대여 기간: ${formatDate(rental.startDate)} ~ ${formatDate(rental.endDate)}</p>
+                    <p>신청일: ${formatDate(rental.createdAt)}</p>
+                    ${rental.rejectionReason ? `<p class="rejection-reason">거절 사유: ${rental.rejectionReason}</p>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function getRentalStatusText(status) {
+    const map = {
+        pending: '신청중',
+        approved: '승인됨',
+        rented: '대여중',
+        returned: '반납완료',
+        rejected: '거절됨'
+    };
+    return map[status] || status;
+}
+
+function getRentalStatusClass(status) {
+    return `status-${status}`;
+}
+
+// ✅ 전역 등록
+window.loadUserRentals = loadUserRentals;
+window.submitRental = submitRental;
+window.updateEndDate = updateEndDate;
+window.openRentalModal = openRentalModal;
+window.closeRentalModal = closeRentalModal;
+
