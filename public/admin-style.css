@@ -45,6 +45,17 @@ header h1 {
     display: flex;
     gap: 15px;
     align-items: center;
+    flex-wrap: wrap;
+}
+
+.last-update {
+    color: #666;
+    font-size: 14px;
+    background: rgba(102, 126, 234, 0.1);
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-weight: 500;
+    border: 1px solid rgba(102, 126, 234, 0.2);
 }
 
 .view-btn {
@@ -99,10 +110,65 @@ header h1 {
     box-shadow: 0 6px 20px rgba(255, 152, 0, 0.4);
 }
 
-/* 통계 카드 */
-.stats {
+/* ===== 탭 네비게이션 ===== */
+.tab-navigation {
+    background: rgba(255, 255, 255, 0.95);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    padding: 15px 25px;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    margin-bottom: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    gap: 10px;
+}
+
+.tab-btn {
+    background: transparent;
+    color: #666;
+    border: 2px solid #e0e0e0;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: none;
+}
+
+.tab-btn:hover {
+    border-color: #667eea;
+    color: #667eea;
+    transform: none;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.tab-btn.active {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.tab-btn.active:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* ===== 탭 콘텐츠 ===== */
+.tab-content {
+    display: block;
+}
+
+.tab-content.hidden {
+    display: none;
+}
+
+/* ===== 통계 카드 ===== */
+.stats, .rental-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
     margin-bottom: 25px;
 }
@@ -134,8 +200,8 @@ header h1 {
     font-weight: 500;
 }
 
-/* 컨트롤 영역 */
-.controls {
+/* ===== 컨트롤 영역 ===== */
+.controls, .rental-controls {
     background: rgba(255, 255, 255, 0.95);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
@@ -188,16 +254,24 @@ button:hover {
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
-.clear-btn {
-    background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+.search-box select {
+    padding: 12px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 25px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    background: white;
+    cursor: pointer;
 }
 
-.clear-btn:hover {
-    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+.search-box select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
 }
 
-/* 게임 목록 */
-.games-container {
+/* ===== 게임 목록 ===== */
+.games-container, .rentals-container {
     background: rgba(255, 255, 255, 0.95);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
@@ -207,7 +281,7 @@ button:hover {
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.games-header {
+.games-header, .rentals-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -216,7 +290,7 @@ button:hover {
     border-bottom: 2px solid rgba(102, 126, 234, 0.1);
 }
 
-.games-header h2 {
+.games-header h2, .rentals-header h2 {
     color: #2c3e50;
     font-size: 1.5em;
 }
@@ -227,15 +301,22 @@ button:hover {
     border-radius: 20px;
     background: white;
     font-size: 14px;
+    cursor: pointer;
 }
 
-.games-list {
+.sort-controls select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 10px rgba(102, 126, 234, 0.15);
+}
+
+.games-list, .admin-rentals-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: 20px;
 }
 
-.game-item {
+.game-item, .admin-rental-item {
     background: white;
     border-radius: 15px;
     padding: 20px;
@@ -245,19 +326,19 @@ button:hover {
     position: relative;
 }
 
-.game-item:hover {
+.game-item:hover, .admin-rental-item:hover {
     transform: translateY(-5px);
     box-shadow: 0 8px 30px rgba(0,0,0,0.15);
 }
 
-.game-header {
+.game-header, .rental-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 15px;
 }
 
-.game-title {
+.game-title, .rental-header h4 {
     font-size: 1.2em;
     font-weight: 700;
     color: #2c3e50;
@@ -265,7 +346,7 @@ button:hover {
     flex: 1;
 }
 
-.game-actions {
+.game-actions, .admin-rental-actions {
     display: flex;
     gap: 5px;
     margin-left: 10px;
@@ -278,6 +359,7 @@ button:hover {
     border: none;
     cursor: pointer;
     transition: all 0.3s ease;
+    font-weight: 600;
 }
 
 .edit-btn {
@@ -290,11 +372,26 @@ button:hover {
     color: white;
 }
 
-.game-info {
+.approve-btn {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    color: white;
+}
+
+.reject-btn {
+    background: linear-gradient(45deg, #f44336, #d32f2f);
+    color: white;
+}
+
+.game-info, .rental-details {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
     font-size: 14px;
+}
+
+.rental-details {
+    grid-template-columns: 1fr;
+    gap: 5px;
 }
 
 .game-field {
@@ -312,6 +409,17 @@ button:hover {
     text-align: right;
 }
 
+.rental-details p {
+    margin: 5px 0;
+    color: #666;
+    line-height: 1.4;
+}
+
+.rejection-reason {
+    color: #f44336;
+    font-weight: 600;
+}
+
 .game-description {
     margin-top: 15px;
     padding-top: 15px;
@@ -321,7 +429,66 @@ button:hover {
     line-height: 1.4;
 }
 
-/* 모달 스타일 */
+/* ===== 상태 태그 ===== */
+.status-tag {
+    display: inline-block;
+    padding: 4px 8px;
+    margin-left: 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    vertical-align: middle;
+}
+
+.status-tag.status-new {
+    background: linear-gradient(45deg, #ff6b6b, #ff5252);
+}
+
+.status-tag.status-shipping {
+    background: linear-gradient(45deg, #4ecdc4, #26d0ce);
+}
+
+.status-tag.status-purchasing {
+    background: linear-gradient(45deg, #ffa726, #ff9800);
+}
+
+.status-tag.status-rented {
+    background: linear-gradient(45deg, #9c27b0, #7b1fa2);
+}
+
+/* 대여 상태 태그 */
+.rental-status {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+}
+
+.rental-status.status-pending {
+    background: linear-gradient(45deg, #ffa726, #ff9800);
+}
+
+.rental-status.status-approved {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+}
+
+.rental-status.status-rented {
+    background: linear-gradient(45deg, #2196F3, #1976D2);
+}
+
+.rental-status.status-returned {
+    background: linear-gradient(45deg, #9E9E9E, #757575);
+}
+
+.rental-status.status-rejected {
+    background: linear-gradient(45deg, #f44336, #d32f2f);
+}
+
+/* ===== 모달 스타일 ===== */
 .modal {
     position: fixed;
     top: 0;
@@ -354,65 +521,6 @@ button:hover {
 .modal-content.bulk-modal {
     max-width: 800px;
     max-height: 95vh;
-}
-
-.bulk-info {
-    background: rgba(102, 126, 234, 0.1);
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-}
-
-.bulk-info code {
-    background: rgba(255, 255, 255, 0.8);
-    padding: 5px 8px;
-    border-radius: 5px;
-    font-family: 'Courier New', monospace;
-    font-size: 12px;
-    display: block;
-    margin-top: 10px;
-    word-break: break-all;
-}
-
-.bulk-preview {
-    background: rgba(76, 175, 80, 0.1);
-    padding: 15px;
-    border-radius: 10px;
-    margin-top: 20px;
-}
-
-.preview-count {
-    font-weight: 600;
-    color: #4CAF50;
-    margin-bottom: 10px;
-}
-
-.preview-list {
-    max-height: 200px;
-    overflow-y: auto;
-    background: white;
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #ddd;
-}
-
-.preview-item {
-    padding: 5px 0;
-    border-bottom: 1px solid #eee;
-    font-size: 14px;
-}
-
-.preview-item:last-child {
-    border-bottom: none;
-}
-
-.preview-btn {
-    background: linear-gradient(45deg, #2196F3, #1976D2);
-    color: white;
-}
-
-.preview-btn:hover {
-    box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
 }
 
 .modal-header {
@@ -483,6 +591,7 @@ button:hover {
     font-size: 14px;
     transition: all 0.3s ease;
     background: white;
+    font-family: inherit;
 }
 
 .form-group input:focus,
@@ -491,6 +600,11 @@ button:hover {
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
 }
 
 .modal-footer {
@@ -512,8 +626,8 @@ button:hover {
     color: white;
 }
 
-.delete-btn {
-    background: linear-gradient(45deg, #e74c3c, #c0392b);
+.preview-btn {
+    background: linear-gradient(45deg, #2196F3, #1976D2);
     color: white;
 }
 
@@ -535,7 +649,66 @@ button:hover {
     border-radius: 10px;
 }
 
-/* 로딩 및 메시지 */
+/* ===== 대량 등록 관련 ===== */
+.bulk-info {
+    background: rgba(102, 126, 234, 0.1);
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.bulk-info code {
+    background: rgba(255, 255, 255, 0.8);
+    padding: 5px 8px;
+    border-radius: 5px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    display: block;
+    margin-top: 10px;
+    word-break: break-all;
+}
+
+.bulk-preview {
+    background: rgba(76, 175, 80, 0.1);
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 20px;
+}
+
+.preview-count {
+    font-weight: 600;
+    color: #4CAF50;
+    margin-bottom: 10px;
+}
+
+.preview-list {
+    max-height: 200px;
+    overflow-y: auto;
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.preview-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.preview-item:last-child {
+    border-bottom: none;
+}
+
+.preview-item .status-tag {
+    margin-left: 8px;
+    margin-right: 8px;
+}
+
+/* ===== 로딩 및 메시지 ===== */
 .loading {
     text-align: center;
     padding: 60px;
@@ -596,8 +769,8 @@ button:hover {
     font-size: 12px;
 }
 
-/* 빈 상태 */
-.empty-state {
+/* ===== 빈 상태 ===== */
+.empty-state, .no-rentals {
     text-align: center;
     padding: 60px 20px;
     color: #666;
@@ -614,10 +787,17 @@ button:hover {
     margin-bottom: 25px;
 }
 
-/* 숨김 클래스 */
+.no-rentals {
+    font-style: italic;
+    grid-column: 1 / -1;
+}
+
+/* ===== 숨김 클래스 ===== */
 .hidden {
     display: none !important;
 }
+
+/* ===== 모바일 반응형 ===== */
 @media (max-width: 768px) {
     .container {
         padding: 15px;
@@ -631,42 +811,64 @@ button:hover {
     
     .header-controls {
         justify-content: center;
+        flex-wrap: wrap;
     }
     
     header h1 {
         font-size: 1.8em;
     }
     
-    .stats {
-        grid-template-columns: 1fr;
+    .last-update {
+        font-size: 12px;
+        padding: 6px 10px;
+        order: -1;
+        width: 100%;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+    
+    .tab-navigation {
+        padding: 15px;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .tab-btn {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .stats, .rental-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
     }
     
     .search-box {
         flex-direction: column;
+        align-items: stretch;
     }
     
-    .search-box input {
-        min-width: 100%;
+    .search-box input,
+    .search-box select,
+    .search-box button {
+        width: 100%;
+        margin-bottom: 10px;
     }
     
-    .games-header {
-        flex-direction: column;
-        gap: 15px;
-        align-items: flex-start;
-    }
-    
-    .games-list {
+    .games-list, .admin-rentals-list {
         grid-template-columns: 1fr;
     }
     
-    .game-header {
+    .game-header, .rental-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
     }
     
-    .game-actions {
+    .game-actions, .admin-rental-actions {
         margin-left: 0;
+        width: 100%;
+        justify-content: flex-end;
     }
     
     .game-info {
@@ -685,6 +887,10 @@ button:hover {
     .modal-footer {
         flex-direction: column;
     }
+    
+    .modal-footer button {
+        width: 100%;
+    }
 }
 
 @media (max-width: 480px) {
@@ -693,7 +899,7 @@ button:hover {
         font-size: 11px;
     }
     
-    .game-item {
+    .game-item, .admin-rental-item {
         padding: 15px;
     }
     
@@ -705,165 +911,14 @@ button:hover {
         padding: 10px 20px;
         font-size: 13px;
     }
-}
-
-/* admin-style.css에서 .last-update 스타일 추가 */
-
-.header-controls {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.last-update {
-    color: #666;
-    font-size: 14px;
-    background: rgba(102, 126, 234, 0.1);
-    padding: 8px 12px;
-    border-radius: 20px;
-    font-weight: 500;
-    border: 1px solid rgba(102, 126, 234, 0.2);
-}
-
-/* 모바일 반응형 조정 */
-@media (max-width: 768px) {
-    .header-controls {
-        justify-content: center;
-        gap: 10px;
-    }
     
-    .last-update {
-        font-size: 12px;
-        padding: 6px 10px;
-        order: -1; /* 모바일에서 맨 위로 배치 */
-        width: 100%;
-        text-align: center;
-        margin-bottom: 10px;
-    }
-}
-
-@media (max-width: 480px) {
-    .last-update {
-        font-size: 11px;
-        padding: 5px 8px;
-    }
-}
-
-/* 상태 태그 스타일 */
-.status-tag {
-    display: inline-block;
-    padding: 4px 8px;
-    margin-left: 8px;
-    border-radius: 12px;
-    font-size: 10px;
-    font-weight: 600;
-    color: white;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    vertical-align: middle;
-}
-
-.status-tag.status-new {
-    background: linear-gradient(45deg, #ff6b6b, #ff5252);
-}
-
-.status-tag.status-shipping {
-    background: linear-gradient(45deg, #4ecdc4, #26d0ce);
-}
-
-.status-tag.status-purchasing {
-    background: linear-gradient(45deg, #ffa726, #ff9800);
-}
-
-/* 게임 타이틀과 태그 정렬 */
-.game-title {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    line-height: 1.4;
-}
-
-/* 통계 카드 개선 */
-.stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin-bottom: 25px;
-}
-
-/* 검색 컨트롤 개선 */
-.search-box {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.search-box select {
-    padding: 12px 16px;
-    border: 2px solid #e0e0e0;
-    border-radius: 25px;
-    font-size: 14px;
-    transition: all 0.3s ease;
-    background: white;
-    min-width: 140px;
-}
-
-.search-box select:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
-}
-
-/* 미리보기 항목 개선 */
-.preview-item {
-    padding: 8px 0;
-    border-bottom: 1px solid #eee;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.preview-item:last-child {
-    border-bottom: none;
-}
-
-.preview-item .status-tag {
-    margin-left: 8px;
-    margin-right: 8px;
-}
-
-/* 모바일 반응형 조정 */
-@media (max-width: 768px) {
-    .stats {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-    }
-    
-    .search-box {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .search-box input,
-    .search-box select,
-    .search-box button {
-        width: 100%;
-        margin-bottom: 10px;
+    .stats, .rental-stats {
+        grid-template-columns: 1fr;
     }
     
     .status-tag {
         font-size: 9px;
         padding: 3px 6px;
-        margin-left: 6px;
-    }
-    
-    .game-title {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 5px;
     }
     
     .preview-item {
@@ -875,17 +930,5 @@ button:hover {
     .preview-item .status-tag {
         margin-left: 0;
         margin-right: 0;
-    }
-}
-
-@media (max-width: 480px) {
-    .stats {
-        grid-template-columns: 1fr;
-    }
-    
-    .status-tag {
-        font-size: 8px;
-        padding: 2px 5px;
-        border-radius: 8px;
     }
 }

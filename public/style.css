@@ -1,10 +1,10 @@
-/* 브라우저 UI 색상 통합 및 폰트 크기 시스템 */
+/* ===== CSS 변수 및 기본 설정 ===== */
 :root {
     --primary-color: #667eea;
     --secondary-color: #764ba2;
     --gradient-bg: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
     
-    /* 폰트 크기 시스템 (데스크톱) */
+    /* 폰트 크기 시스템 */
     --font-size-xs: 12px;
     --font-size-sm: 14px;
     --font-size-base: 16px;
@@ -40,7 +40,6 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    /* 더블탭 확대 방지 (접근성 고려) */
     -webkit-touch-callout: none;
 }
 
@@ -51,7 +50,6 @@ input, textarea, [contenteditable], .selectable {
     -moz-user-select: text;
     -ms-user-select: text;
     user-select: text;
-    /* 더블탭 확대 방지하되 기능은 유지 */
     touch-action: manipulation;
 }
 
@@ -79,14 +77,12 @@ body {
     min-height: 100vh;
     position: relative;
     overflow-x: hidden;
-    /* 더블탭 확대 방지 */
     touch-action: manipulation;
-    /* 일관된 기본 폰트 크기 */
     font-size: var(--font-size-base);
     line-height: 1.5;
 }
 
-/* 사파리 바운스 스크롤 - 위아래 모두 파란색 */
+/* 사파리 바운스 스크롤 대응 */
 body::before {
     content: '';
     position: fixed;
@@ -109,7 +105,7 @@ body::after {
     z-index: -2;
 }
 
-/* PWA 지원을 위한 Safe Area 대응 */
+/* PWA Safe Area 대응 */
 @supports (padding: max(0px)) {
     body {
         padding-top: env(safe-area-inset-top);
@@ -160,8 +156,9 @@ header h1 {
     gap: 10px;
 }
 
-.admin-btn {
-    background: linear-gradient(45deg, #e74c3c, #c0392b);
+/* 로그인/프로필 버튼 */
+.login-btn {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
     color: white;
     border: none;
     padding: 8px 16px;
@@ -169,17 +166,41 @@ header h1 {
     font-size: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
     font-weight: 600;
     text-decoration: none;
 }
 
-.admin-btn:hover {
+.login-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
 }
 
-/* ===== 컨트롤 영역 ===== */
+.profile-btn {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    font-weight: 600;
+    text-decoration: none;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-btn:hover {
+    transform: translateY(-2px) scale(1.1);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* ===== 검색 및 컨트롤 영역 ===== */
 .controls {
     background: rgba(255, 255, 255, 0.95);
     -webkit-backdrop-filter: blur(10px);
@@ -191,7 +212,6 @@ header h1 {
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* 검색 박스 레이아웃 */
 .search-box {
     display: flex;
     align-items: center;
@@ -200,7 +220,7 @@ header h1 {
     margin-bottom: 20px;
 }
 
-/* 검색 메인 그룹 - 개선된 모바일 대응 */
+/* 검색 메인 그룹 */
 .search-main-group {
     display: flex;
     align-items: stretch;
@@ -210,7 +230,6 @@ header h1 {
     border-radius: 25px;
     transition: all 0.3s ease;
     overflow: hidden;
-    /* 모바일에서 안전한 최대 너비 보장 */
     max-width: 100%;
 }
 
@@ -222,7 +241,7 @@ header h1 {
 .search-type-group {
     display: flex;
     align-items: center;
-    flex-shrink: 0; /* 축소 방지 */
+    flex-shrink: 0;
 }
 
 .search-type-group select {
@@ -233,12 +252,11 @@ header h1 {
     border-right: none;
     font-size: 14px;
     font-weight: 500;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease; /* 크기 변화 방지 */
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
     background: white;
     outline: none;
     box-sizing: border-box;
     cursor: pointer;
-    /* 커스텀 화살표 */
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
@@ -246,20 +264,14 @@ header h1 {
     background-position: right 8px center;
     background-repeat: no-repeat;
     background-size: 16px 16px;
-    /* 최소 너비 보장 */
     min-width: 90px;
     width: auto;
     flex-shrink: 0;
 }
 
-/* 드롭다운 크기 변화 방지 */
 .search-type-group select:focus {
     transform: none;
     box-shadow: 0 0 10px rgba(102, 126, 234, 0.15);
-}
-
-.search-type-group select:active {
-    transform: none;
 }
 
 /* 검색 입력 그룹 */
@@ -268,7 +280,7 @@ header h1 {
     align-items: center;
     position: relative;
     flex: 1;
-    min-width: 0; /* flexbox 오버플로우 방지 */
+    min-width: 0;
     overflow: hidden;
 }
 
@@ -276,7 +288,7 @@ header h1 {
     height: 44px;
     flex: 1;
     min-width: 0;
-    padding: 0 50px 0 16px; /* 오른쪽 패딩을 50px로 충분히 확보 */
+    padding: 0 50px 0 16px;
     border: 2px solid #e0e0e0;
     border-radius: 0 25px 25px 0;
     border-left: none;
@@ -288,10 +300,10 @@ header h1 {
     width: 100%;
 }
 
-/* 검색 버튼 - 위치 고정 */
+/* 검색 버튼 */
 .search-btn {
     position: absolute;
-    right: 8px; /* 오른쪽 여백 확보 */
+    right: 8px;
     top: 50%;
     transform: translateY(-50%);
     padding: 8px;
@@ -309,7 +321,6 @@ header h1 {
     justify-content: center;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
-    /* z-index 추가로 확실히 위에 표시 */
     z-index: 10;
     flex-shrink: 0;
 }
@@ -325,7 +336,7 @@ header h1 {
     background: rgba(102, 126, 234, 0.2);
 }
 
-/* 연결된 호버/포커스 효과 */
+/* 검색 호버/포커스 효과 */
 .search-main-group:hover .search-type-group select,
 .search-main-group:hover .search-input-group input {
     border-color: #667eea;
@@ -340,7 +351,7 @@ header h1 {
 @supports (-webkit-touch-callout: none) {
     .search-input-group input,
     .search-type-group select {
-        font-size: 16px; /* iOS에서 줌 방지를 위해 16px 이상 */
+        font-size: 16px;
     }
 }
 
@@ -363,26 +374,6 @@ header h1 {
     font-weight: 600;
     color: #2c3e50;
     font-size: 14px;
-}
-
-.filter-group input, .filter-group select {
-    padding: 12px 16px;
-    border: 2px solid #e0e0e0;
-    border-radius: 25px;
-    font-size: 14px;
-    transition: all 0.3s ease;
-    background: white;
-}
-
-.filter-group input:focus, .filter-group select:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
-}
-
-.filter-group input[type="number"] {
-    width: 100px;
-    text-align: center;
 }
 
 /* ===== 슬라이더 스타일 ===== */
@@ -575,22 +566,11 @@ button:hover {
     box-shadow: 0 2px 8px rgba(255, 167, 38, 0.2);
 }
 
-.status-filter-btn:active {
-    transform: scale(0.95);
-    background: rgba(255, 167, 38, 0.2);
-}
-
 .status-filter-btn.active {
     background: #f3a79a;
     color: white;
     border-color: #ff4726;
     box-shadow: 0 2px 12px rgba(255, 167, 38, 0.4);
-}
-
-.status-filter-btn.active:hover {
-    background: #f3a79a;
-    border-color: #ff4726;
-    transform: scale(1.05);
 }
 
 /* 커스텀 드롭다운 */
@@ -687,11 +667,6 @@ button:hover {
     box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
 }
 
-.sort-order-btn:active {
-    transform: scale(0.95);
-    background: rgba(102, 126, 234, 0.2);
-}
-
 .sort-order-btn #sortOrderIcon {
     line-height: 1;
     transition: transform 0.2s ease;
@@ -714,7 +689,6 @@ button:hover {
     border: 1px solid rgba(0,0,0,0.05);
     position: relative;
     touch-action: manipulation;
-    /* 카드 높이를 일정하게 유지 */
     display: flex;
     flex-direction: column;
 }
@@ -732,7 +706,7 @@ button:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0; /* 이미지 영역 크기 고정 */
+    flex-shrink: 0;
 }
 
 .game-image img {
@@ -746,17 +720,16 @@ button:hover {
     transform: scale(1.05);
 }
 
-/* 게임 제목 영역 - 한 줄 고정 및 높이 일정 */
 .game-title-grid {
     padding: 8px;
     text-align: center;
-    flex: 1; /* 남은 공간 차지 */
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 40px; /* 최소 높이 보장 */
-    height: 40px; /* 고정 높이 설정 */
-    overflow: hidden; /* 넘치는 텍스트 숨김 */
+    min-height: 40px;
+    height: 40px;
+    overflow: hidden;
 }
 
 .game-title-grid h3 {
@@ -765,12 +738,10 @@ button:hover {
     font-size: 0.9em;
     font-weight: 600;
     line-height: 1.2;
-    /* 한 줄 말줄임표 처리 */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     width: 100%;
-    /* 중앙 정렬 */
     text-align: center;
 }
 
@@ -799,6 +770,10 @@ button:hover {
 
 .status-tag.status-purchasing {
     background: linear-gradient(45deg, #ffa726, #ff9800);
+}
+
+.status-tag.status-rented {
+    background: linear-gradient(45deg, #9c27b0, #7b1fa2);
 }
 
 /* ===== 게임 상세 모달 ===== */
@@ -847,6 +822,57 @@ button:hover {
     width: 100%;
     height: 100%;
     object-fit: contain;
+}
+
+/* 비디오 컨테이너 스타일 */
+.video-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #000;
+    border-radius: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.close-video-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    padding: 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    z-index: 30;
+    line-height: 1;
+}
+
+.close-video-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    transform: scale(1.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
+}
+
+.video-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 0;
+    background: #000;
 }
 
 .game-detail-info {
@@ -915,6 +941,7 @@ button:hover {
     background: linear-gradient(45deg, #ff0000, #cc0000);
     color: white;
     text-decoration: none;
+    border: none;
     padding: 12px 20px;
     border-radius: 25px;
     margin-top: 15px;
@@ -925,6 +952,8 @@ button:hover {
     font-size: 16px;
     font-weight: 600;
     flex-shrink: 0;
+    cursor: pointer;
+    font-family: inherit;
 }
 
 .youtube-link:hover {
@@ -937,6 +966,11 @@ button:hover {
     box-shadow: 0 4px 15px rgba(149, 165, 166, 0.3);
     cursor: not-allowed;
     opacity: 0.8;
+}
+
+.youtube-link.disabled:hover {
+    transform: none;
+    box-shadow: 0 4px 15px rgba(149, 165, 166, 0.3);
 }
 
 .modal-close-btn {
@@ -965,7 +999,347 @@ button:hover {
     transform: scale(1.1);
 }
 
-/* ===== 관리자 비밀번호 모달 ===== */
+/* ===== 마이페이지 모달 ===== */
+.mypage-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3000;
+    padding: 20px;
+}
+
+.mypage-content {
+    background: white;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.mypage-header {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    padding: 25px;
+    text-align: center;
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mypage-header h2 {
+    margin: 0;
+    font-size: 1.5em;
+    font-weight: 600;
+    flex: 1;
+}
+
+.mypage-body {
+    padding: 25px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.user-info {
+    text-align: center;
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid rgba(102, 126, 234, 0.1);
+}
+
+.user-info h3 {
+    color: #2c3e50;
+    font-size: 1.3em;
+    margin-bottom: 5px;
+}
+
+.user-info p {
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.logout-btn {
+    background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(149, 165, 166, 0.3);
+}
+
+.logout-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(149, 165, 166, 0.4);
+}
+
+.mypage-actions {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.rental-btn {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    color: white;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.rental-btn:hover {
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+.user-rentals h3 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+.rentals-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.rental-item {
+    background: rgba(102, 126, 234, 0.05);
+    border: 1px solid rgba(102, 126, 234, 0.1);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.rental-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.rental-header h4 {
+    color: #2c3e50;
+    margin: 0;
+    font-size: 1.1em;
+}
+
+.rental-status {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+}
+
+.rental-status.status-pending {
+    background: linear-gradient(45deg, #ffa726, #ff9800);
+}
+
+.rental-status.status-approved {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+}
+
+.rental-status.status-rented {
+    background: linear-gradient(45deg, #2196F3, #1976D2);
+}
+
+.rental-status.status-returned {
+    background: linear-gradient(45deg, #9E9E9E, #757575);
+}
+
+.rental-status.status-rejected {
+    background: linear-gradient(45deg, #f44336, #d32f2f);
+}
+
+.rental-details {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.rental-details p {
+    margin: 5px 0;
+}
+
+.rejection-reason {
+    color: #f44336;
+    font-weight: 600;
+}
+
+.rental-actions {
+    margin-top: 10px;
+    text-align: right;
+}
+
+.action-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    border: none;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+}
+
+.start-btn {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    color: white;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.start-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.return-btn {
+    background: linear-gradient(45deg, #2196F3, #1976D2);
+    color: white;
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+}
+
+.return-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+}
+
+.no-rentals {
+    text-align: center;
+    color: #999;
+    padding: 40px 20px;
+    font-style: italic;
+}
+
+/* ===== 대여 신청 모달 ===== */
+.rental-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 4000;
+    padding: 20px;
+}
+
+.rental-content {
+    background: white;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.rental-header {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    color: white;
+    padding: 25px;
+    text-align: center;
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.rental-header h2 {
+    margin: 0;
+    font-size: 1.5em;
+    font-weight: 600;
+    flex: 1;
+}
+
+.rental-body {
+    padding: 25px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.2);
+}
+
+.rental-info {
+    background: rgba(76, 175, 80, 0.1);
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 15px;
+}
+
+.rental-info p {
+    margin: 5px 0;
+    font-size: 13px;
+    color: #2e7d32;
+}
+
+.rental-footer {
+    padding: 25px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    border-top: 2px solid rgba(76, 175, 80, 0.1);
+    margin-top: 0;
+}
+
+.cancel-btn {
+    background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+    color: white;
+}
+
+.submit-btn {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    color: white;
+}
+
+/* ===== 실명 입력 모달 ===== */
 .admin-password-modal {
     position: fixed;
     top: 0;
@@ -992,7 +1366,7 @@ button:hover {
 }
 
 .admin-password-header {
-    background: linear-gradient(45deg, #e74c3c, #c0392b);
+    background: linear-gradient(45deg, #4CAF50, #45a049);
     color: white;
     padding: 25px;
     text-align: center;
@@ -1035,12 +1409,12 @@ button:hover {
 
 .password-input-group input:focus {
     outline: none;
-    border-color: #e74c3c;
-    box-shadow: 0 0 20px rgba(231, 76, 60, 0.2);
+    border-color: #4CAF50;
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.2);
 }
 
 .verify-btn {
-    background: linear-gradient(45deg, #e74c3c, #c0392b);
+    background: linear-gradient(45deg, #4CAF50, #45a049);
     color: white;
     border: none;
     padding: 12px 20px;
@@ -1049,30 +1423,13 @@ button:hover {
     font-size: 14px;
     font-weight: 600;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
     white-space: nowrap;
 }
 
 .verify-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
-}
-
-.password-error {
-    background: rgba(231, 76, 60, 0.1);
-    color: #c0392b;
-    padding: 10px 15px;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 600;
-    border: 1px solid rgba(231, 76, 60, 0.2);
-    animation: shake 0.5s ease-in-out;
-}
-
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    75% { transform: translateX(5px); }
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
 }
 
 /* ===== 로딩 및 메시지 ===== */
@@ -1131,13 +1488,6 @@ button:hover {
     display: none !important;
 }
 
-/* ===== 데스크톱 전용 클래스 ===== */
-@media (max-width: 768px) {
-    .desktop-only {
-        display: none !important;
-    }
-}
-
 /* ===== 터치 디바이스 호버 효과 비활성화 ===== */
 @media (hover: none) and (pointer: coarse) {
     .slider-handle:hover {
@@ -1164,65 +1514,45 @@ button:hover {
     }
     
     header {
-        justify-content: center;
-        text-align: center;
+        justify-content: space-between;
+        text-align: left;
     }
     
     .header-info {
-        display: none;
+        display: flex;
     }
     
     header h1 {
         font-size: 1.6em;
     }
     
-    .search-box {
-        margin-bottom: 15px;
-    }
-    
     .search-main-group {
         min-width: 100%;
         flex: 1;
-        width: 100%; /* 명시적 너비 설정 */
-        max-width: 100%; /* 최대 너비 제한 */
-    }
-    
-    .search-type-group {
-        flex-shrink: 0; /* 축소 방지 강화 */
+        width: 100%;
+        max-width: 100%;
     }
     
     .search-type-group select {
         height: 40px;
-        font-size: 16px; /* iOS 줌 방지 */
+        font-size: 16px;
         padding: 0 20px 0 10px;
         background-size: 14px 14px;
         background-position: right 6px center;
-        min-width: 85px; /* 모바일에서 최소 너비 */
-        width: auto;
-        flex-shrink: 0;
-    }
-    
-    .search-input-group {
-        flex: 1;
-        min-width: 0;
-        overflow: hidden; /* 오버플로우 방지 */
+        min-width: 85px;
     }
     
     .search-input-group input {
         height: 40px;
-        font-size: 16px; /* iOS 줌 방지 */
-        padding: 0 45px 0 12px; /* 오른쪽 패딩 조정 */
-        width: 100%;
-        flex: 1;
-        min-width: 0;
+        font-size: 16px;
+        padding: 0 45px 0 12px;
     }
     
     .search-btn {
         width: 32px;
         height: 32px;
-        right: 6px; /* 위치 조정 */
+        right: 6px;
         font-size: 14px;
-        z-index: 10; /* z-index 증가 */
     }
     
     .filter-box {
@@ -1241,223 +1571,60 @@ button:hover {
     
     .game-title-grid {
         padding: 6px;
-        min-height: 36px; /* 모바일에서 최소 높이 조정 */
-        height: 36px; /* 모바일에서 고정 높이 조정 */
+        min-height: 36px;
+        height: 36px;
     }
     
     .game-title-grid h3 {
         font-size: 0.8em;
-        line-height: 1.1;
     }
     
     .status-tag {
         font-size: 9px;
         padding: 3px 6px;
-        top: 6px;
-        left: 6px;
     }
     
-    /* 모바일 모달 최적화 */
-    .game-detail-modal {
-        padding: 15px;
-        align-items: center;
-    }
-    
-    .game-detail-content {
-        width: 95%;
-        max-width: 100%;
-        height: 85vh;
-        max-height: none;
-        min-height: 0;
-        margin: 0;
-    }
-    
-    .modal-game-image {
-        flex: 1;
-        min-height: 150px;
-    }
-    
-    .game-detail-info {
-        padding: 20px;
-        gap: 12px;
-        flex-shrink: 0;
-        overflow-y: auto;
-        max-height: 45vh;
-    }
-    
-    .game-detail-info h2 {
-        font-size: 1.4em;
-        margin: 0;
-    }
-    
-    .game-detail-info h2 .status-tag {
-        font-size: 10px;
-        padding: 4px 8px;
-        margin-left: 6px;
-    }
-    
-    .detail-field {
-        padding: 0px 0;
-        min-height: 36px;
-    }
-    
-    .detail-label {
-        font-size: 15px;
-        min-width: 100px;
-    }
-    
-    .detail-value {
-        font-size: 15px;
-    }
-    
-    .youtube-link {
-        padding: 10px 16px;
-        font-size: 15px;
-        margin-top: 12px;
-    }
-    
-    .modal-close-btn {
-        width: 36px;
-        height: 36px;
-        font-size: 18px;
-        top: 15px;
-        right: 15px;
-    }
-    
-    /* 그리드 헤더 - 한 줄로 유지 */
-    .grid-header {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 20px;
-        padding-bottom: 12px;
-    }
-    
-    .grid-header-left h2 {
-        font-size: 1.3em;
-        margin: 0;
-        flex-shrink: 0;
-    }
-    
-    .game-count {
+    .login-btn {
+        padding: 6px 12px;
         font-size: 11px;
-        color: #777;
     }
     
-    .sort-controls {
-        gap: 6px;
-        flex-shrink: 0;
+    .profile-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
     }
     
-    .dropdown-selected {
-        padding: 6px 8px;
-        font-size: 12px;
-        min-width: 70px;
+    .form-row {
+        grid-template-columns: 1fr;
     }
     
-    .dropdown-arrow {
-        font-size: 8px;
-        margin-left: 4px;
-    }
-    
-    .dropdown-option {
-        padding: 8px 8px;
-        font-size: 12px;
-    }
-    
-    .sort-order-btn {
-        width: 26px;
-        height: 26px;
-        font-size: 13px;
-    }
-    
-    .status-filter-btn {
-        width: 26px;
-        height: 26px;
-        font-size: 13px;
-    }
-    
-    /* 관리자 모달 모바일 */
-    .admin-password-content {
-        width: 95%;
-        margin: 20px;
-    }
-    
-    .admin-password-header {
-        padding: 20px;
-    }
-    
-    .admin-password-header h2 {
-        font-size: 1.3em;
-    }
-    
-    .admin-password-body {
-        padding: 25px 20px;
-    }
-    
-    .password-input-group {
+    .rental-footer {
         flex-direction: column;
-        gap: 15px;
     }
     
-    .verify-btn {
+    .rental-footer button {
         width: 100%;
     }
 }
 
 @media (max-width: 480px) {
-    .controls {
-        padding: 15px;
-    }
-    
-    /* 헤더 타이틀 크기 조정 */
     header h1 {
         font-size: 1.4em;
     }
     
     .search-type-group select {
         height: 36px;
-        font-size: 16px; /* iOS 줌 방지 유지 */
-        padding: 0 18px 0 8px;
-        background-size: 12px 12px;
-        background-position: right 5px center;
-        min-width: 75px; /* 480px에서 최소 너비 */
+        min-width: 75px;
     }
     
     .search-input-group input {
         height: 36px;
-        font-size: 16px; /* iOS 줌 방지 유지 */
-        padding: 0 40px 0 10px; /* 패딩 조정 */
     }
     
     .search-btn {
         width: 30px;
         height: 30px;
-        right: 5px;
-        font-size: 13px;
-    }
-    
-    .filter-box {
-        gap: 2px;
-        padding-top: 12px;
-    }
-    
-    .slider-container {
-        margin: 0px 0;
-        height: 28px;
-        padding: 0 10px;
-    }
-    
-    .slider-values {
-        margin-top: 2px;
-        font-size: 10px;
-        padding: 0 10px;
-    }
-    
-    .slider-handle::before {
-        width: 52px;
-        height: 52px;
     }
     
     .game-grid {
@@ -1470,185 +1637,43 @@ button:hover {
     }
     
     .game-title-grid {
-        padding: 5px;
-        min-height: 32px; /* 480px에서 최소 높이 조정 */
-        height: 32px; /* 480px에서 고정 높이 조정 */
+        min-height: 32px;
+        height: 32px;
     }
     
     .game-title-grid h3 {
         font-size: 0.75em;
-        line-height: 1.1;
     }
     
-    .status-tag {
-        font-size: 8px;
-        padding: 2px 5px;
-        border-radius: 8px;
-        top: 5px;
-        left: 5px;
-    }
-    
-    /* 480px 모달 최적화 */
-    .game-detail-modal {
-        padding: 10px;
-    }
-    
-    .game-detail-content {
-        width: 98%;
-        height: 90vh;
-    }
-    
-    .modal-game-image {
-        flex: 1;
-        min-height: 120px;
-    }
-    
-    .game-detail-info {
-        padding: 15px;
-        gap: 10px;
-        flex-shrink: 0;
-        overflow-y: auto;
-        max-height: 40vh;
-    }
-    
-    .game-detail-info h2 {
-        font-size: 1.2em;
-        margin: 0;
-    }
-    
-    .game-detail-info h2 .status-tag {
-        font-size: 9px;
-        padding: 3px 6px;
-        margin-left: 4px;
-    }
-    
-    .detail-field {
-        padding: 0px 0;
-        min-height: 32px;
-    }
-    
-    .detail-label {
-        font-size: 14px;
-        min-width: 90px;
-    }
-    
-    .detail-value {
-        font-size: 14px;
-    }
-    
-    .youtube-link {
-        padding: 9px 14px;
-        font-size: 14px;
-        margin-top: 10px;
-    }
-    
-    .modal-close-btn {
-        width: 34px;
-        height: 34px;
-        font-size: 16px;
-        top: 12px;
-        right: 12px;
-    }
-    
-    /* 그리드 헤더 480px */
-    .grid-header {
-        gap: 8px;
-        margin-bottom: 18px;
-        padding-bottom: 10px;
-    }
-    
-    .grid-header-left h2 {
-        font-size: 1.2em;
-    }
-    
-    .game-count {
+    .login-btn {
+        padding: 5px 10px;
         font-size: 10px;
     }
     
-    .sort-controls {
-        gap: 4px;
-    }
-    
-    .dropdown-selected {
-        padding: 5px 6px;
-        font-size: 11px;
-        min-width: 60px;
-    }
-    
-    .dropdown-arrow {
-        font-size: 7px;
-        margin-left: 3px;
-    }
-    
-    .dropdown-option {
-        padding: 6px 6px;
-        font-size: 11px;
-    }
-    
-    .sort-order-btn {
-        width: 24px;
-        height: 24px;
+    .profile-btn {
+        width: 28px;
+        height: 28px;
         font-size: 12px;
-    }
-    
-    .status-filter-btn {
-        width: 24px;
-        height: 24px;
-        font-size: 11px;
-    }
-    
-    /* 관리자 모달 480px */
-    .admin-password-header {
-        padding: 15px;
-    }
-    
-    .admin-password-header h2 {
-        font-size: 1.2em;
-    }
-    
-    .admin-password-body {
-        padding: 20px 15px;
-    }
-    
-    .password-input-group input {
-        padding: 10px 14px;
-        font-size: 13px;
-    }
-    
-    .verify-btn {
-        padding: 10px 18px;
-        font-size: 13px;
     }
 }
 
-/* 매우 작은 화면 (360px 이하) 추가 최적화 */
 @media (max-width: 360px) {
-    /* 헤더 타이틀 더 작게 */
     header h1 {
         font-size: 1.2em;
-        line-height: 1.2;
     }
     
     .search-type-group select {
         height: 34px;
-        font-size: 16px; /* iOS 줌 방지 유지 */
-        padding: 0 16px 0 6px;
-        background-size: 10px 10px;
-        background-position: right 4px center;
         min-width: 70px;
     }
     
     .search-input-group input {
         height: 34px;
-        font-size: 16px; /* iOS 줌 방지 유지 */
-        padding: 0 35px 0 8px;
     }
     
     .search-btn {
         width: 28px;
         height: 28px;
-        right: 4px;
-        font-size: 12px;
     }
     
     .game-grid {
@@ -1661,155 +1686,18 @@ button:hover {
     }
     
     .game-title-grid {
-        padding: 4px;
-        min-height: 30px; /* 360px에서 최소 높이 조정 */
-        height: 30px; /* 360px에서 고정 높이 조정 */
+        min-height: 30px;
+        height: 30px;
     }
     
     .game-title-grid h3 {
         font-size: 0.7em;
-        line-height: 1.1;
-    }
-    
-    /* 360px 모달 최적화 */
-    .game-detail-content {
-        width: 98%;
-        height: 92vh;
-    }
-    
-    .modal-game-image {
-        flex: 1;
-        min-height: 100px;
-    }
-    
-    .game-detail-info {
-        padding: 12px;
-        gap: 8px;
-        flex-shrink: 0;
-        overflow-y: auto;
-        max-height: 35vh;
-    }
-    
-    .game-detail-info h2 {
-        font-size: 1.1em;
-        margin: 0;
-    }
-    
-    .detail-field {
-        padding: 0px 0;
-        min-height: 30px;
-    }
-    
-    .detail-label {
-        font-size: 13px;
-        min-width: 80px;
-    }
-    
-    .detail-value {
-        font-size: 13px;
-    }
-    
-    .youtube-link {
-        padding: 8px 12px;
-        font-size: 13px;
-        margin-top: 8px;
-    }
-    
-    .modal-close-btn {
-        width: 32px;
-        height: 32px;
-        font-size: 14px;
-        top: 10px;
-        right: 10px;
-    }
-    
-    /* 그리드 헤더 360px */
-    .grid-header {
-        gap: 6px;
-        margin-bottom: 15px;
-        padding-bottom: 8px;
-    }
-    
-    .grid-header-left h2 {
-        font-size: 1.1em;
-    }
-    
-    .game-count {
-        font-size: 9px;
-    }
-    
-    .sort-controls {
-        gap: 3px;
-    }
-    
-    .dropdown-selected {
-        padding: 4px 5px;
-        font-size: 10px;
-        min-width: 50px;
-        border-radius: 15px;
-    }
-    
-    .dropdown-arrow {
-        font-size: 6px;
-        margin-left: 2px;
-    }
-    
-    .dropdown-option {
-        padding: 5px 5px;
-        font-size: 10px;
-    }
-    
-    .sort-order-btn {
-        width: 22px;
-        height: 22px;
-        font-size: 11px;
-        border-radius: 50%;
-    }
-    
-    .status-filter-btn {
-        width: 22px;
-        height: 22px;
-        font-size: 10px;
     }
 }
 
-/* 초소형 화면 (320px 이하) 극한 최적화 */
 @media (max-width: 320px) {
-    .container {
-        padding: 10px;
-    }
-    
-    /* 헤더 타이틀 최소 크기 */
-    header {
-        padding: 15px;
-    }
-    
     header h1 {
         font-size: 1.1em;
-        line-height: 1.1;
-        word-break: keep-all;
-    }
-    
-    .search-type-group select {
-        height: 32px;
-        font-size: 16px; /* iOS 줌 방지 유지 */
-        padding: 0 14px 0 5px;
-        background-size: 9px 9px;
-        background-position: right 3px center;
-        min-width: 65px;
-    }
-    
-    .search-input-group input {
-        height: 32px;
-        font-size: 16px; /* iOS 줌 방지 유지 */
-        padding: 0 32px 0 6px;
-    }
-    
-    .search-btn {
-        width: 26px;
-        height: 26px;
-        right: 3px;
-        font-size: 11px;
     }
     
     .game-grid {
@@ -1822,98 +1710,11 @@ button:hover {
     }
     
     .game-title-grid {
-        padding: 3px;
-        min-height: 28px; /* 320px에서 최소 높이 조정 */
-        height: 28px; /* 320px에서 고정 높이 조정 */
+        min-height: 28px;
+        height: 28px;
     }
     
     .game-title-grid h3 {
         font-size: 0.65em;
-        line-height: 1.0;
-    }
-    
-    /* 320px 모달 최적화 */
-    .game-detail-content {
-        width: 98%;
-        height: 94vh;
-    }
-    
-    .modal-game-image {
-        flex: 1;
-        min-height: 80px;
-    }
-    
-    .game-detail-info {
-        padding: 10px;
-        gap: 6px;
-        flex-shrink: 0;
-        overflow-y: auto;
-        max-height: 35vh;
-    }
-    
-    .game-detail-info h2 {
-        font-size: 1.0em;
-        margin: 0;
-    }
-    
-    .detail-field {
-        padding: 0px 0;
-        min-height: 28px;
-    }
-    
-    .detail-label {
-        font-size: 12px;
-        min-width: 70px;
-    }
-    
-    .detail-value {
-        font-size: 12px;
-    }
-    
-    .youtube-link {
-        padding: 7px 10px;
-        font-size: 12px;
-        margin-top: 6px;
-    }
-    
-    .modal-close-btn {
-        width: 30px;
-        height: 30px;
-        font-size: 13px;
-        top: 8px;
-        right: 8px;
-    }
-    
-    /* 그리드 헤더 최소화 */
-    .grid-header-left h2 {
-        font-size: 1.0em;
-    }
-    
-    .game-count {
-        font-size: 8px;
-    }
-    
-    .dropdown-selected {
-        padding: 3px 4px;
-        font-size: 9px;
-        min-width: 45px;
-        border-radius: 12px;
-    }
-    
-    .dropdown-arrow {
-        font-size: 5px;
-        margin-left: 1px;
-    }
-    
-    .sort-order-btn {
-        width: 20px;
-        height: 20px;
-        font-size: 10px;
-    }
-    
-    .status-filter-btn {
-        width: 20px;
-        height: 20px;
-        font-size: 9px;
     }
 }

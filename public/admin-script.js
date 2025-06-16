@@ -3,21 +3,30 @@ let currentGames = [];
 let editingGameId = null;
 let gameToDelete = null;
 
+let allRentals = [];
+let currentRentals = [];
+
+// 현재 활성 탭
+let currentTab = 'games';
+
 // 페이지 로드 시 실행
 document.addEventListener('DOMContentLoaded', function() {
     loadGames();
+    loadAllRentals();
     setupEventListeners();
 });
 
 // 이벤트 리스너 설정
 function setupEventListeners() {
-    // 정렬 변경
+    // 게임 관리 이벤트 리스너
     document.getElementById('sortBy').addEventListener('change', sortGames);
-    
-    // 상태 필터 변경
     document.getElementById('statusFilter').addEventListener('change', searchGames);
     
-    // 검색 입력 디바운싱
+    // 대여 관리 이벤트 리스너
+    document.getElementById('rentalSortBy').addEventListener('change', sortRentals);
+    document.getElementById('rentalStatusFilter').addEventListener('change', searchRentals);
+    
+    // 검색 입력 디바운싱 (게임)
     let searchTimeout;
     document.getElementById('searchInput').addEventListener('input', function() {
         clearTimeout(searchTimeout);
@@ -30,10 +39,29 @@ function setupEventListeners() {
         }, 500);
     });
     
+    // 검색 입력 디바운싱 (대여)
+    let rentalSearchTimeout;
+    document.getElementById('rentalSearchInput').addEventListener('input', function() {
+        clearTimeout(rentalSearchTimeout);
+        rentalSearchTimeout = setTimeout(() => {
+            if (this.value.trim() === '') {
+                clearRentalSearch();
+            } else {
+                searchRentals();
+            }
+        }, 500);
+    });
+    
     // 엔터키로 검색
     document.getElementById('searchInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             searchGames();
+        }
+    });
+    
+    document.getElementById('rentalSearchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchRentals();
         }
     });
     
@@ -49,6 +77,36 @@ function setupEventListeners() {
             closeDeleteModal();
         }
     });
+    
+    document.getElementById('rejectModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeRejectModal();
+        }
+    });
+}
+
+// 탭 전환
+function switchTab(tabName) {
+    // 탭 버튼 상태 업데이트
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(tabName + 'Tab').classList.add('active');
+    
+    // 탭 콘텐츠 상태 업데이트
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+    document.getElementById(tabName + 'TabContent').classList.remove('hidden');
+    
+    currentTab = tabName;
+    
+    // 탭별 데이터 로드
+    if (tabName === 'games') {
+        if (allGames.length === 0) {
+            loadGames();
+        }
+    } else if (tabName === 'rentals') {
+        if (allRentals.length === 0) {
+            loadAllRentals();
+        }
+    }
 }
 
 // 게임 데이터 로드
@@ -168,7 +226,8 @@ function getStatusTag(status) {
     const statusMap = {
         'new': { text: 'NEW', class: 'status-new' },
         'shipping': { text: '배송중', class: 'status-shipping' },
-        'purchasing': { text: '구매중', class: 'status-purchasing' }
+        'purchasing': { text: '구매중', class: 'status-purchasing' },
+        'rented': { text: '대여중', class: 'status-rented' }
     };
     
     const statusInfo = statusMap[status];
@@ -182,7 +241,8 @@ function getStatusText(status) {
     const statusMap = {
         'new': '신상',
         'shipping': '배송중',
-        'purchasing': '구매중'
+        'purchasing': '구매중',
+        'rented': '대여중'
     };
     
     return statusMap[status] || '일반';
@@ -194,11 +254,26 @@ function updateStats() {
     const newGames = allGames.filter(game => game.status === 'new').length;
     const shippingGames = allGames.filter(game => game.status === 'shipping').length;
     const purchasingGames = allGames.filter(game => game.status === 'purchasing').length;
+    const rentedGames = allGames.filter(game => game.status === 'rented').length;
     
     document.getElementById('totalGames').textContent = totalGames;
     document.getElementById('newGames').textContent = newGames;
     document.getElementById('shippingGames').textContent = shippingGames;
     document.getElementById('purchasingGames').textContent = purchasingGames;
+    document.getElementById('rentedGames').textContent = rentedGames;
+}
+
+// 대여 통계 업데이트
+function updateRentalStats() {
+    const pendingRentals = allRentals.filter(rental => rental.status === 'pending').length;
+    const approvedRentals = allRentals.filter(rental => rental.status === 'approved').length;
+    const activeRentals = allRentals.filter(rental => rental.status === 'rented').length;
+    const totalRentals = allRentals.length;
+    
+    document.getElementById('pendingRentals').textContent = pendingRentals;
+    document.getElementById('approvedRentals').textContent = approvedRentals;
+    document.getElementById('activeRentals').textContent = activeRentals;
+    document.getElementById('totalRentals').textContent = totalRentals;
 }
 
 // 게임 검색 (상태 필터 포함)
@@ -223,10 +298,35 @@ function searchGames() {
     renderGames();
 }
 
+// 대여 검색
+function searchRentals() {
+    const query = document.getElementById('rentalSearchInput').value.trim().toLowerCase();
+    const statusFilter = document.getElementById('rentalStatusFilter').value;
+    
+    currentRentals = allRentals.filter(rental => {
+        // 텍스트 검색 (이메일 또는 게임명)
+        const matchesText = !query || 
+            (rental.userEmail && rental.userEmail.toLowerCase().includes(query)) ||
+            (rental.gameName && rental.gameName.toLowerCase().includes(query));
+        
+        // 상태 필터
+        const matchesStatus = !statusFilter || rental.status === statusFilter;
+        
+        return matchesText && matchesStatus;
+    });
+    
+    renderAdminRentals(currentRentals);
+}
+
 // 검색 초기화
 function clearSearch() {
     currentGames = allGames;
     renderGames();
+}
+
+function clearRentalSearch() {
+    currentRentals = allRentals;
+    renderAdminRentals(currentRentals);
 }
 
 // 게임 정렬
@@ -237,10 +337,10 @@ function sortGames() {
         if (sortBy === 'name') {
             return (a.name || '').localeCompare(b.name || '');
         } else if (sortBy === 'status') {
-            // 상태순 정렬: new → purchasing → shipping → normal
-            const statusOrder = { 'new': 0, 'purchasing': 1, 'shipping': 2, 'normal': 3, '': 3 };
-            const statusA = statusOrder[a.status] !== undefined ? statusOrder[a.status] : 3;
-            const statusB = statusOrder[b.status] !== undefined ? statusOrder[b.status] : 3;
+            // 상태순 정렬: new → purchasing → shipping → rented → normal
+            const statusOrder = { 'new': 0, 'purchasing': 1, 'shipping': 2, 'rented': 3, 'normal': 4, '': 4 };
+            const statusA = statusOrder[a.status] !== undefined ? statusOrder[a.status] : 4;
+            const statusB = statusOrder[b.status] !== undefined ? statusOrder[b.status] : 4;
             
             if (statusA !== statusB) {
                 return statusA - statusB;
@@ -256,6 +356,39 @@ function sortGames() {
     });
     
     renderGames();
+}
+
+// 대여 정렬
+function sortRentals() {
+    const sortBy = document.getElementById('rentalSortBy').value;
+    
+    currentRentals.sort((a, b) => {
+        if (sortBy === 'createdAt') {
+            const dateA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt)) : new Date(0);
+            const dateB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt)) : new Date(0);
+            return dateB - dateA; // 최신순
+        } else if (sortBy === 'startDate') {
+            const dateA = a.startDate ? (a.startDate.toDate ? a.startDate.toDate() : new Date(a.startDate)) : new Date(0);
+            const dateB = b.startDate ? (b.startDate.toDate ? b.startDate.toDate() : new Date(b.startDate)) : new Date(0);
+            return dateA - dateB; // 가까운 순
+        } else if (sortBy === 'status') {
+            // 상태순 정렬: pending → approved → rented → returned → rejected
+            const statusOrder = { 'pending': 0, 'approved': 1, 'rented': 2, 'returned': 3, 'rejected': 4 };
+            const statusA = statusOrder[a.status] !== undefined ? statusOrder[a.status] : 5;
+            const statusB = statusOrder[b.status] !== undefined ? statusOrder[b.status] : 5;
+            
+            if (statusA !== statusB) {
+                return statusA - statusB;
+            }
+            // 같은 상태일 경우 최신순
+            const dateA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt)) : new Date(0);
+            const dateB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt)) : new Date(0);
+            return dateB - dateA;
+        }
+        return 0;
+    });
+    
+    renderAdminRentals(currentRentals);
 }
 
 // 모달 열기 (새 게임 추가)
@@ -455,7 +588,7 @@ function previewBulkData() {
                 
                 if (header === 'status' && value) {
                     // 상태 값 검증
-                    const validStatuses = ['new', 'shipping', 'purchasing', 'normal', ''];
+                    const validStatuses = ['new', 'shipping', 'purchasing', 'rented', 'normal', ''];
                     gameData[header] = validStatuses.includes(value) ? (value === 'normal' ? '' : value) : null;
                 } else if (header === 'difficulty' && value) {
                     gameData[header] = parseFloat(value) || null;
@@ -572,6 +705,164 @@ async function saveBulkData() {
     }
     
     showLoading(false);
+}
+
+// === 대여 관리 함수들 ===
+
+// 관리자 - 모든 대여 신청 로드
+async function loadAllRentals() {
+    if (currentTab !== 'rentals') return;
+    
+    showLoading(true);
+    
+    try {
+        const rentalsRef = firebase.firestore()
+            .collection('rentals')
+            .orderBy('createdAt', 'desc');
+        
+        const snapshot = await rentalsRef.get();
+        allRentals = [];
+        
+        snapshot.forEach(doc => {
+            allRentals.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        
+        currentRentals = allRentals;
+        renderAdminRentals(currentRentals);
+        updateRentalStats();
+        
+    } catch (error) {
+        console.error('대여 목록 로드 실패:', error);
+        showError('대여 목록을 불러오는데 실패했습니다.');
+    }
+    
+    showLoading(false);
+}
+
+// 관리자 - 대여 목록 렌더링
+function renderAdminRentals(rentals) {
+    const rentalsList = document.getElementById('adminRentalsList');
+    
+    if (rentals.length === 0) {
+        rentalsList.innerHTML = '<div class="no-rentals">대여 신청이 없습니다.</div>';
+        return;
+    }
+    
+    rentalsList.innerHTML = rentals.map(rental => {
+        const statusText = getRentalStatusText(rental.status);
+        const statusClass = getRentalStatusClass(rental.status);
+        
+        return `
+            <div class="admin-rental-item">
+                <div class="rental-header">
+                    <h4>${rental.gameName}</h4>
+                    <span class="rental-status ${statusClass}">${statusText}</span>
+                </div>
+                <div class="rental-details">
+                    <p><strong>신청자:</strong> ${rental.userEmail}</p>
+                    <p><strong>대여 기간:</strong> ${formatDate(rental.startDate)} ~ ${formatDate(rental.endDate)}</p>
+                    <p><strong>신청일:</strong> ${formatDate(rental.createdAt)}</p>
+                    ${rental.rejectionReason ? `<p class="rejection-reason"><strong>거절 사유:</strong> ${rental.rejectionReason}</p>` : ''}
+                    ${rental.actualStartDate ? `<p><strong>실제 대여일:</strong> ${formatDate(rental.actualStartDate)}</p>` : ''}
+                    ${rental.actualEndDate ? `<p><strong>실제 반납일:</strong> ${formatDate(rental.actualEndDate)}</p>` : ''}
+                </div>
+                <div class="admin-rental-actions">
+                    ${getAdminActionButtons(rental)}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// 대여 상태 텍스트
+function getRentalStatusText(status) {
+    const statusMap = {
+        'pending': '신청중',
+        'approved': '승인됨',
+        'rented': '대여중',
+        'returned': '반납완료',
+        'rejected': '거절됨'
+    };
+    return statusMap[status] || status;
+}
+
+// 대여 상태 클래스
+function getRentalStatusClass(status) {
+    return `status-${status}`;
+}
+
+// 관리자 액션 버튼들
+function getAdminActionButtons(rental) {
+    if (rental.status === 'pending') {
+        return `
+            <button onclick="approveRental('${rental.id}')" class="action-btn approve-btn">승인</button>
+            <button onclick="showRejectModal('${rental.id}')" class="action-btn reject-btn">거절</button>
+        `;
+    }
+    return '';
+}
+
+// 대여 승인
+async function approveRental(rentalId) {
+    if (!confirm('이 대여 신청을 승인하시겠습니까?')) return;
+    
+    try {
+        await firebase.firestore().collection('rentals').doc(rentalId).update({
+            status: 'approved',
+            approvedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        showSuccess('대여 신청이 승인되었습니다.');
+        loadAllRentals();
+        
+    } catch (error) {
+        console.error('대여 승인 실패:', error);
+        showError('대여 승인에 실패했습니다.');
+    }
+}
+
+// 거절 모달 표시
+function showRejectModal(rentalId) {
+    document.getElementById('rejectRentalId').value = rentalId;
+    document.getElementById('rejectModal').classList.remove('hidden');
+    document.getElementById('rejectionReason').focus();
+}
+
+// 거절 모달 닫기
+function closeRejectModal() {
+    document.getElementById('rejectModal').classList.add('hidden');
+    document.getElementById('rejectionReason').value = '';
+    document.getElementById('rejectRentalId').value = '';
+}
+
+// 대여 거절
+async function rejectRental() {
+    const rentalId = document.getElementById('rejectRentalId').value;
+    const reason = document.getElementById('rejectionReason').value.trim();
+    
+    if (!reason) {
+        showError('거절 사유를 입력해주세요.');
+        return;
+    }
+    
+    try {
+        await firebase.firestore().collection('rentals').doc(rentalId).update({
+            status: 'rejected',
+            rejectionReason: reason,
+            rejectedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        showSuccess('대여 신청이 거절되었습니다.');
+        closeRejectModal();
+        loadAllRentals();
+        
+    } catch (error) {
+        console.error('대여 거절 실패:', error);
+        showError('대여 거절에 실패했습니다.');
+    }
 }
 
 // 유틸리티 함수들

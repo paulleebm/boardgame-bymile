@@ -18,8 +18,8 @@
         <header>
             <h1>🎲 꿈엘청 보드게임 동아리</h1>
             <div class="header-info">
-                <div class="header-controls desktop-only">
-                    <button onclick="checkAdminPassword()" class="admin-btn">⚙️ 관리자</button>
+                <div class="header-controls">
+                    <button id="authBtn" class="login-btn">로그인</button>
                 </div>
             </div>
         </header>
@@ -139,69 +139,104 @@
         </div>
     </div>
 
-    <!-- 관리자 비밀번호 모달 -->
-    <div class="admin-password-modal hidden" id="adminPasswordModal" onclick="closeAdminPasswordModal()">
+    <!-- 실명 입력 모달 -->
+    <div class="admin-password-modal hidden" id="realNameModal">
         <div class="admin-password-content" onclick="event.stopPropagation()">
             <div class="admin-password-header">
-                <h2>🔐 관리자 인증</h2>
-                <button class="modal-close-btn" onclick="closeAdminPasswordModal()" aria-label="모달 닫기">&times;</button>
+                <h2>👋 환영합니다!</h2>
             </div>
             
             <div class="admin-password-body">
-                <p>관리자 페이지에 접근하려면 비밀번호를 입력하세요.</p>
+                <p>서비스 이용을 위해 실명을 입력해주세요.</p>
                 <div class="password-input-group">
-                    <input type="password" id="adminPasswordInput" placeholder="비밀번호 입력" maxlength="50">
-                    <button onclick="verifyAdminPassword()" class="verify-btn">확인</button>
-                </div>
-                <div class="password-error hidden" id="passwordError">
-                    ❌ 비밀번호가 올바르지 않습니다.
+                    <input type="text" id="realNameInput" placeholder="실명 입력 (한글 2-4글자)" maxlength="4">
+                    <button onclick="saveRealName()" class="verify-btn">확인</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- 마이페이지 모달 -->
+    <div class="mypage-modal hidden" id="myPageModal" onclick="closeMyPage()">
+        <div class="mypage-content" onclick="event.stopPropagation()">
+            <div class="mypage-header">
+                <h2>👤 마이페이지</h2>
+                <button class="modal-close-btn" onclick="closeMyPage()" aria-label="모달 닫기">&times;</button>
+            </div>
+            
+            <div class="mypage-body">
+                <div class="user-info">
+                    <h3 id="userRealName">사용자명</h3>
+                    <p id="userEmail">이메일</p>
+                    <button onclick="signOut()" class="logout-btn">로그아웃</button>
+                </div>
+                
+                <div class="mypage-actions">
+                    <button onclick="openRentalModal()" class="action-btn rental-btn">📋 대여 신청</button>
+                </div>
+                
+                <div class="user-rentals">
+                    <h3>내 대여 기록</h3>
+                    <div id="userRentalsList" class="rentals-list">
+                        <!-- 대여 기록이 여기에 표시됩니다 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 대여 신청 모달 -->
+    <div class="rental-modal hidden" id="rentalModal" onclick="closeRentalModal()">
+        <div class="rental-content" onclick="event.stopPropagation()">
+            <div class="rental-header">
+                <h2>📋 대여 신청</h2>
+                <button class="modal-close-btn" onclick="closeRentalModal()" aria-label="모달 닫기">&times;</button>
+            </div>
+            
+            <form id="rentalForm" class="rental-body">
+                <div class="form-group">
+                    <label for="gameSelect">게임 선택</label>
+                    <select id="gameSelect" required>
+                        <option value="">게임을 선택하세요</option>
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="startDate">시작일</label>
+                        <input type="date" id="startDate" required onchange="updateEndDate()">
+                    </div>
+                    <div class="form-group">
+                        <label for="endDate">종료일</label>
+                        <input type="date" id="endDate" required>
+                    </div>
+                </div>
+                
+                <div class="rental-info">
+                    <p>• 대여 기간은 최대 8일입니다.</p>
+                    <p>• 승인 후 직접 대여 시작해야 합니다.</p>
+                    <p>• 반납도 직접 처리해주세요.</p>
+                </div>
+            </form>
+            
+            <div class="rental-footer">
+                <button type="button" onclick="closeRentalModal()" class="cancel-btn">취소</button>
+                <button type="button" onclick="submitRental()" class="submit-btn">신청하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    
     <script type="module" src="firebase-config.js"></script>
+    <script src="firebase-auth.js"></script>
+    <script src="rental-system.js"></script>
     <script src="script.js"></script>
     
     <script>
-        // 관리자 비밀번호 설정 (실제 사용시 더 복잡한 비밀번호로 변경하세요)
-        const ADMIN_PASSWORD = '0220';
-        
-        // 관리자 비밀번호 확인 모달 열기
-        function checkAdminPassword() {
-            document.getElementById('adminPasswordModal').classList.remove('hidden');
-            document.getElementById('adminPasswordInput').focus();
-            document.getElementById('passwordError').classList.add('hidden');
-        }
-        
-        // 관리자 비밀번호 모달 닫기
-        function closeAdminPasswordModal() {
-            document.getElementById('adminPasswordModal').classList.add('hidden');
-            document.getElementById('adminPasswordInput').value = '';
-            document.getElementById('passwordError').classList.add('hidden');
-        }
-        
-        // 비밀번호 검증
-        function verifyAdminPassword() {
-            const inputPassword = document.getElementById('adminPasswordInput').value;
-            const errorDiv = document.getElementById('passwordError');
-            
-            if (inputPassword === ADMIN_PASSWORD) {
-                // 비밀번호가 맞으면 관리자 페이지로 이동
-                window.location.href = 'admin.html';
-            } else {
-                // 틀리면 에러 메시지 표시
-                errorDiv.classList.remove('hidden');
-                document.getElementById('adminPasswordInput').value = '';
-                document.getElementById('adminPasswordInput').focus();
-                
-                // 3초 후 에러 메시지 자동 숨김
-                setTimeout(() => {
-                    errorDiv.classList.add('hidden');
-                }, 3000);
-            }
-        }
-        
         // 커스텀 드롭다운 기능
         function toggleDropdown() {
             const dropdown = document.getElementById('dropdownOptions');
@@ -301,18 +336,6 @@
                 if (arrow) {
                     arrow.style.transform = 'rotate(0deg)';
                 }
-            }
-        });
-        
-        // 엔터키로 비밀번호 확인
-        document.addEventListener('DOMContentLoaded', function() {
-            const passwordInput = document.getElementById('adminPasswordInput');
-            if (passwordInput) {
-                passwordInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        verifyAdminPassword();
-                    }
-                });
             }
         });
     </script>

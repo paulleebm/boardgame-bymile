@@ -614,7 +614,8 @@ function getStatusTag(status) {
     const statusMap = {
         'new': { text: 'NEW', class: 'status-new' },
         'shipping': { text: '배송중', class: 'status-shipping' },
-        'purchasing': { text: '구매중', class: 'status-purchasing' }
+        'purchasing': { text: '구매중', class: 'status-purchasing' },
+        'rented': { text: '대여중', class: 'status-rented' }
     };
     
     const statusInfo = statusMap[status];
@@ -691,6 +692,61 @@ function clearAll() {
     updateGameCount();
 }
 
+// 유튜브 URL에서 비디오 ID 추출
+function getYouTubeVideoId(url) {
+    if (!url) return null;
+    
+    const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[7].length === 11) ? match[7] : null;
+}
+
+// 유튜브 영상을 모달에 임베드
+function embedYouTubeVideo(youtubeUrl) {
+    const videoId = getYouTubeVideoId(youtubeUrl);
+    if (!videoId) return;
+    
+    const modalGameImage = document.querySelector('.modal-game-image');
+    const originalContent = modalGameImage.innerHTML; // 원본 이미지 저장
+    
+    // 유튜브 iframe 생성
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
+    iframe.width = '100%';
+    iframe.height = '100%';
+    iframe.frameBorder = '0';
+    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+    iframe.allowFullscreen = true;
+    iframe.style.borderRadius = '0';
+    
+    // x 닫기 버튼 생성
+    const closeVideoBtn = document.createElement('button');
+    closeVideoBtn.innerHTML = '&times;';
+    closeVideoBtn.className = 'close-video-btn';
+    closeVideoBtn.onclick = function() {
+        modalGameImage.innerHTML = originalContent;
+        
+        // 유튜브 링크 버튼 이벤트 다시 연결
+        const youtubeLink = modalGameImage.parentElement.querySelector('.youtube-link:not(.disabled)');
+        if (youtubeLink) {
+            youtubeLink.onclick = function(e) {
+                e.preventDefault();
+                embedYouTubeVideo(youtubeUrl);
+            };
+        }
+    };
+    
+    // 비디오 컨테이너 생성
+    const videoContainer = document.createElement('div');
+    videoContainer.className = 'video-container';
+    videoContainer.appendChild(closeVideoBtn);
+    videoContainer.appendChild(iframe);
+    
+    // 이미지 영역을 비디오로 교체
+    modalGameImage.innerHTML = '';
+    modalGameImage.appendChild(videoContainer);
+}
+
 // 게임 상세 모달 열기
 function openGameModal(gameId) {
     const game = currentData.find(g => g.id === gameId);
@@ -740,9 +796,9 @@ function openGameModal(gameId) {
         </div>
         ${game.youtubeUrl && game.youtubeUrl.trim() ? `
             <div class="youtube-link-container">
-                <a href="${game.youtubeUrl}" target="_blank" class="youtube-link">
+                <button class="youtube-link" onclick="embedYouTubeVideo('${game.youtubeUrl}')">
                     📺 룰 설명 영상 보기
-                </a>
+                </button>
             </div>
         ` : `
             <div class="youtube-link-container">
