@@ -29,8 +29,9 @@ const firebaseConfig = {
 // Firebase 초기화
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const FieldValue = { serverTimestamp };
 
-export { db }; 
+export { app, db, FieldValue };
 
 // 전역 플래그 설정
 window.firebaseInitialized = true;
@@ -219,5 +220,4 @@ class BoardGameAPI {
 
 // 전역 API 인스턴스
 window.boardGameAPI = new BoardGameAPI();
-
 console.log('Firebase 초기화 완료');

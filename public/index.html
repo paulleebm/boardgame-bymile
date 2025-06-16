@@ -127,7 +127,7 @@
     <!-- 게임 상세 모달 -->
     <div class="game-detail-modal hidden" id="gameDetailModal" onclick="closeGameModal()" role="dialog" aria-modal="true" aria-labelledby="modalGameName">
         <div class="game-detail-content" onclick="event.stopPropagation()">
-            <button class="modal-close-btn" onclick="closeGameModal()" aria-label="모달 닫기">&times;</button>
+            <button id="modalCloseBtn" class="modal-close-btn" onclick="closeGameModal()" aria-label="모달 닫기">&times;</button>
             
             <div class="modal-game-image">
                 <img id="modalGameImage" src="" alt="게임 이미지">

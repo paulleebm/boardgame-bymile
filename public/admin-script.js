@@ -1,3 +1,14 @@
+import { db, FieldValue } from './firebase-config.js';
+
+import {
+  doc,
+  updateDoc,
+  collection,
+  getDocs,
+  query,
+  orderBy
+} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
 let allGames = [];
 let currentGames = [];
 let editingGameId = null;
@@ -178,7 +189,7 @@ function renderGames() {
             <div class="game-info">
                 <div class="game-field">
                     <span class="field-label">상태:</span>
-                    <span class="field-value">${getStatusText(game.status)}</span>
+                    <span class="field-value">${getGameStatusText(game.status)}</span>
                 </div>
                 <div class="game-field">
                     <span class="field-label">난이도:</span>
@@ -206,7 +217,7 @@ function renderGames() {
                 </div>
                 <div class="game-field">
                     <span class="field-label">등록일:</span>
-                    <span class="field-value">${formatDate(game.createdAt)}</span>
+                    <span class="field-value">${formatDateShort(game.createdAt)}</span>
                 </div>
             </div>
             
@@ -237,16 +248,27 @@ function getStatusTag(status) {
 }
 
 // 상태 텍스트 반환
-function getStatusText(status) {
-    const statusMap = {
-        'new': '신상',
-        'shipping': '배송중',
-        'purchasing': '구매중',
-        'rented': '대여중'
-    };
-    
-    return statusMap[status] || '일반';
+function getGameStatusText(status) {
+  const map = {
+    new: '신상',
+    shipping: '배송중',
+    purchasing: '구매중',
+    rented: '대여중'
+  };
+  return map[status] || '일반';
 }
+
+function getRentalStatusText(status) {
+  const map = {
+    pending: '신청중',
+    approved: '승인됨',
+    rented: '대여중',
+    returned: '반납완료',
+    rejected: '거절됨'
+  };
+  return map[status] || status;
+}
+
 
 // 통계 업데이트
 function updateStats() {
@@ -711,83 +733,102 @@ async function saveBulkData() {
 
 // 관리자 - 모든 대여 신청 로드
 async function loadAllRentals() {
-    if (currentTab !== 'rentals') return;
-    
-    showLoading(true);
-    
-    try {
-        const rentalsRef = firebase.firestore()
-            .collection('rentals')
-            .orderBy('createdAt', 'desc');
-        
-        const snapshot = await rentalsRef.get();
-        allRentals = [];
-        
-        snapshot.forEach(doc => {
-            allRentals.push({
-                id: doc.id,
-                ...doc.data()
-            });
-        });
-        
-        currentRentals = allRentals;
-        renderAdminRentals(currentRentals);
-        updateRentalStats();
-        
-    } catch (error) {
-        console.error('대여 목록 로드 실패:', error);
-        showError('대여 목록을 불러오는데 실패했습니다.');
-    }
-    
-    showLoading(false);
+  if (currentTab !== 'rentals') return;
+
+  try {
+    const q = query(collection(db, 'rentals'), orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+
+    allRentals = [];
+    snapshot.forEach(docSnap => {
+      allRentals.push({
+        id: docSnap.id,
+        ...docSnap.data()
+      });
+    });
+
+    renderAdminRentals(allRentals);
+  } catch (error) {
+    console.error('대여 목록 로드 실패:', error);
+    alert('대여 목록을 불러오는데 실패했습니다.');
+  }
 }
 
 // 관리자 - 대여 목록 렌더링
 function renderAdminRentals(rentals) {
-    const rentalsList = document.getElementById('adminRentalsList');
-    
-    if (rentals.length === 0) {
-        rentalsList.innerHTML = '<div class="no-rentals">대여 신청이 없습니다.</div>';
-        return;
-    }
-    
-    rentalsList.innerHTML = rentals.map(rental => {
-        const statusText = getRentalStatusText(rental.status);
-        const statusClass = getRentalStatusClass(rental.status);
-        
-        return `
-            <div class="admin-rental-item">
-                <div class="rental-header">
-                    <h4>${rental.gameName}</h4>
-                    <span class="rental-status ${statusClass}">${statusText}</span>
-                </div>
-                <div class="rental-details">
-                    <p><strong>신청자:</strong> ${rental.userEmail}</p>
-                    <p><strong>대여 기간:</strong> ${formatDate(rental.startDate)} ~ ${formatDate(rental.endDate)}</p>
-                    <p><strong>신청일:</strong> ${formatDate(rental.createdAt)}</p>
-                    ${rental.rejectionReason ? `<p class="rejection-reason"><strong>거절 사유:</strong> ${rental.rejectionReason}</p>` : ''}
-                    ${rental.actualStartDate ? `<p><strong>실제 대여일:</strong> ${formatDate(rental.actualStartDate)}</p>` : ''}
-                    ${rental.actualEndDate ? `<p><strong>실제 반납일:</strong> ${formatDate(rental.actualEndDate)}</p>` : ''}
-                </div>
-                <div class="admin-rental-actions">
-                    ${getAdminActionButtons(rental)}
-                </div>
-            </div>
-        `;
-    }).join('');
+  const list = document.getElementById('adminRentalsList');
+  if (!list) return;
+
+  if (rentals.length === 0) {
+    list.innerHTML = '<p>대여 신청이 없습니다.</p>';
+    return;
+  }
+
+  list.innerHTML = rentals.map(rental => `
+    <div class="rental-item">
+      <h3>${rental.gameName}</h3>
+      <p>신청자: ${rental.userEmail}</p>
+      <p>기간: ${formatDateFull(rental.startDate)} ~ ${formatDateFull(rental.endDate)}</p>
+      <p>상태: ${getRentalStatusText(rental.status)}</p>
+      <button onclick="approveRental('${rental.id}')">승인</button>
+      <button onclick="rejectRental('${rental.id}')">거절</button>
+    </div>
+  `).join('');
 }
 
-// 대여 상태 텍스트
-function getRentalStatusText(status) {
-    const statusMap = {
-        'pending': '신청중',
-        'approved': '승인됨',
-        'rented': '대여중',
-        'returned': '반납완료',
-        'rejected': '거절됨'
-    };
-    return statusMap[status] || status;
+// 대여 승인
+window.approveRental = async function (id) {
+  if (!confirm('승인하시겠습니까?')) return;
+
+  try {
+    const rentalRef = doc(db, 'rentals', id);
+    await updateDoc(rentalRef, {
+      status: 'approved',
+      approvedAt: FieldValue.serverTimestamp()
+    });
+
+    alert('승인되었습니다.');
+    await loadAllRentals();
+  } catch (error) {
+    console.error('승인 실패:', error);
+    alert('승인에 실패했습니다.');
+  }
+};
+
+// 대여 거절
+window.rejectRental = async function (id) {
+  const reason = prompt('거절 사유를 입력하세요:');
+  if (!reason) return;
+
+  try {
+    const rentalRef = doc(db, 'rentals', id);
+    await updateDoc(rentalRef, {
+      status: 'rejected',
+      rejectionReason: reason,
+      rejectedAt: FieldValue.serverTimestamp()
+    });
+
+    alert('거절되었습니다.');
+    await loadAllRentals();
+  } catch (error) {
+    console.error('거절 실패:', error);
+    alert('거절에 실패했습니다.');
+  }
+};
+
+function formatDateShort(ts) {
+  const date = ts.toDate ? ts.toDate() : new Date(ts);
+  return date.toLocaleDateString('ko-KR');
 }
+
+function formatDateFull(ts) {
+  const date = ts.toDate ? ts.toDate() : new Date(ts);
+  return date.toLocaleString('ko-KR', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+}
+
 
 // 대여 상태 클래스
 function getRentalStatusClass(status) {
@@ -805,25 +846,6 @@ function getAdminActionButtons(rental) {
     return '';
 }
 
-// 대여 승인
-async function approveRental(rentalId) {
-    if (!confirm('이 대여 신청을 승인하시겠습니까?')) return;
-    
-    try {
-        await firebase.firestore().collection('rentals').doc(rentalId).update({
-            status: 'approved',
-            approvedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        showSuccess('대여 신청이 승인되었습니다.');
-        loadAllRentals();
-        
-    } catch (error) {
-        console.error('대여 승인 실패:', error);
-        showError('대여 승인에 실패했습니다.');
-    }
-}
-
 // 거절 모달 표시
 function showRejectModal(rentalId) {
     document.getElementById('rejectRentalId').value = rentalId;
@@ -836,33 +858,6 @@ function closeRejectModal() {
     document.getElementById('rejectModal').classList.add('hidden');
     document.getElementById('rejectionReason').value = '';
     document.getElementById('rejectRentalId').value = '';
-}
-
-// 대여 거절
-async function rejectRental() {
-    const rentalId = document.getElementById('rejectRentalId').value;
-    const reason = document.getElementById('rejectionReason').value.trim();
-    
-    if (!reason) {
-        showError('거절 사유를 입력해주세요.');
-        return;
-    }
-    
-    try {
-        await firebase.firestore().collection('rentals').doc(rentalId).update({
-            status: 'rejected',
-            rejectionReason: reason,
-            rejectedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        showSuccess('대여 신청이 거절되었습니다.');
-        closeRejectModal();
-        loadAllRentals();
-        
-    } catch (error) {
-        console.error('대여 거절 실패:', error);
-        showError('대여 거절에 실패했습니다.');
-    }
 }
 
 // 유틸리티 함수들
@@ -914,23 +909,6 @@ function formatPlayerCount(min, max) {
     return `${min}-${max}명`;
 }
 
-function formatDate(timestamp) {
-    if (!timestamp) return '-';
-    
-    let date;
-    if (timestamp.toDate) {
-        date = timestamp.toDate();
-    } else {
-        date = new Date(timestamp);
-    }
-    
-    return date.toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-    });
-}
-
 function showLoading(show) {
     const loading = document.getElementById('loading');
     loading.classList.toggle('show', show);
@@ -970,3 +948,5 @@ function hideMessages() {
     hideError();
     hideSuccess();
 }
+
+window.switchTab = switchTab;

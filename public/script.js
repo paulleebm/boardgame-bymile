@@ -703,6 +703,12 @@ function getYouTubeVideoId(url) {
 
 // 유튜브 영상을 모달에 임베드
 function embedYouTubeVideo(youtubeUrl) {
+    // 모달 닫기 버튼 숨기기
+    const modalCloseBtn = document.getElementById('modalCloseBtn');
+    if (modalCloseBtn) {
+        modalCloseBtn.style.display = 'none';
+    }
+
     const videoId = getYouTubeVideoId(youtubeUrl);
     if (!videoId) return;
     
@@ -724,6 +730,12 @@ function embedYouTubeVideo(youtubeUrl) {
     closeVideoBtn.innerHTML = '&times;';
     closeVideoBtn.className = 'close-video-btn';
     closeVideoBtn.onclick = function() {
+        // 기존 닫기 버튼 다시 보이기
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+        if (modalCloseBtn) {
+            modalCloseBtn.style.display = '';
+        }
+
         modalGameImage.innerHTML = originalContent;
         
         // 유튜브 링크 버튼 이벤트 다시 연결
