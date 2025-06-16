@@ -29,7 +29,7 @@ const firebaseConfig = {
     apiKey: "AIzaSyA4Q7fbrhlXG9LU67MpUovSLkXrqtHhftc",
     authDomain: "boardgame-bymile.firebaseapp.com",
     projectId: "boardgame-bymile",
-    storageBucket: "boardgame-bymile.firebasestorage.app",
+    storageBucket: "boardgame-bymile.appspot.com",
     messagingSenderId: "450054853638",
     appId: "1:450054853638:web:f0c7895aa7e38cd7915f87",
     measurementId: "G-F5FS0S6VTE"
