@@ -79,7 +79,7 @@ async function signInWithGoogle() {
         await waitForFirebaseInit();
         
         if (typeof firebase === 'undefined' || !firebase.auth) {
-            alert('인증 시스템이 로드되지 않았습니다. 페이지를 새로고침해주세요.');
+            alert('인증 시스템이 로드되지 않았습니다. firebase-config.js 파일을 확인해 주세요.');
             return;
         }
         
