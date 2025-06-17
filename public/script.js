@@ -124,29 +124,27 @@ function advancedSearchAndFilter() {
     
     if (searchInput) {
         if (searchType === 'name') {
-            // 게임 이름 검색 (기존 로직)
+            // 게임 이름 검색 (수정된 로직)
             const searchTerm = searchInput.toLowerCase();
             const searchTermNoSpaces = searchTerm.replace(/\s/g, '');
-            const searchInitials = getKoreanInitials(searchTerm);
             
-            // 검색어가 모두 자음인지 확인 (초성 검색 여부 판단)
-            const isInitialSearch = /^[ㄱ-ㅎ]+$/.test(searchTermNoSpaces);
+            // 검색어가 순수한 자음으로만 이루어져있는지 확인 (초성 검색 여부 판단)
+            const isOnlyInitials = /^[ㄱ-ㅎ]+$/.test(searchTermNoSpaces);
             
             filteredData = filteredData.filter(game => {
                 const gameName = (game.name || '').toLowerCase();
                 const gameNameNoSpaces = gameName.replace(/\s/g, '');
-                const gameNameInitials = getKoreanInitials(gameName);
                 
-                // 초성 검색인 경우
-                if (isInitialSearch) {
-                    return gameNameInitials.includes(searchInitials);
+                // 초성 검색인 경우 (순수 자음으로만 검색한 경우)
+                if (isOnlyInitials) {
+                    const gameNameInitials = getKoreanInitials(gameName);
+                    return gameNameInitials.includes(searchTermNoSpaces);
                 }
                 
-                // 일반 검색인 경우
+                // 일반 검색인 경우 (완전한 글자로 검색한 경우)
                 return (
                     gameName.includes(searchTerm) ||
-                    gameNameNoSpaces.includes(searchTermNoSpaces) ||
-                    gameNameInitials.includes(searchInitials)
+                    gameNameNoSpaces.includes(searchTermNoSpaces)
                 );
             });
             
@@ -191,29 +189,27 @@ function advancedSearchAndFilter() {
             }
             
         } else if (searchType === 'genre') {
-            // 장르 검색
+            // 장르 검색 (수정된 로직)
             const searchTerm = searchInput.toLowerCase();
             const searchTermNoSpaces = searchTerm.replace(/\s/g, '');
-            const searchInitials = getKoreanInitials(searchTerm);
             
-            // 검색어가 모두 자음인지 확인 (초성 검색 여부 판단)
-            const isInitialSearch = /^[ㄱ-ㅎ]+$/.test(searchTermNoSpaces);
+            // 검색어가 순수한 자음으로만 이루어져있는지 확인 (초성 검색 여부 판단)
+            const isOnlyInitials = /^[ㄱ-ㅎ]+$/.test(searchTermNoSpaces);
             
             filteredData = filteredData.filter(game => {
                 const gameGenre = (game.genre || '').toLowerCase();
                 const gameGenreNoSpaces = gameGenre.replace(/\s/g, '');
-                const gameGenreInitials = getKoreanInitials(gameGenre);
                 
-                // 초성 검색인 경우
-                if (isInitialSearch) {
-                    return gameGenreInitials.includes(searchInitials);
+                // 초성 검색인 경우 (순수 자음으로만 검색한 경우)
+                if (isOnlyInitials) {
+                    const gameGenreInitials = getKoreanInitials(gameGenre);
+                    return gameGenreInitials.includes(searchTermNoSpaces);
                 }
                 
-                // 일반 검색인 경우
+                // 일반 검색인 경우 (완전한 글자로 검색한 경우)
                 return (
                     gameGenre.includes(searchTerm) ||
-                    gameGenreNoSpaces.includes(searchTermNoSpaces) ||
-                    gameGenreInitials.includes(searchInitials)
+                    gameGenreNoSpaces.includes(searchTermNoSpaces)
                 );
             });
         }

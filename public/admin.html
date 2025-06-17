@@ -15,131 +15,64 @@
                     마지막 업데이트: <span id="lastUpdate">-</span>
                 </div>
                 <a href="index.html" class="view-btn">📋 사용자 페이지</a>
-                <button class="bulk-btn" onclick="openBulkModal()">📦 csv 등록</button>
+                <button class="bulk-btn" onclick="openBulkModal()">📦 CSV 등록</button>
                 <button class="add-btn" onclick="openModal()">➕ 새 게임 추가</button>
             </div>
         </header>
 
-        <!-- 탭 네비게이션 -->
-        <div class="tab-navigation">
-            <button class="tab-btn active" onclick="switchTab('games')" id="gamesTab">
-                🎲 게임 관리
-            </button>
-            <button class="tab-btn" onclick="switchTab('rentals')" id="rentalsTab">
-                📋 대여 관리
-            </button>
-        </div>
-
-        <!-- 게임 관리 탭 -->
-        <div id="gamesTabContent" class="tab-content active">
-            <div class="stats">
-                <div class="stat-card">
-                    <div class="stat-number" id="totalGames">0</div>
-                    <div class="stat-label">총 게임 수</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="newGames">0</div>
-                    <div class="stat-label">신상 게임</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="shippingGames">0</div>
-                    <div class="stat-label">배송중</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="purchasingGames">0</div>
-                    <div class="stat-label">구매중</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="rentedGames">0</div>
-                    <div class="stat-label">대여중</div>
-                </div>
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalGames">0</div>
+                <div class="stat-label">총 게임 수</div>
             </div>
-
-            <div class="controls">
-                <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="게임 검색...">
-                    <button onclick="searchGames()">🔍 검색</button>
-                    <select id="statusFilter" title="상태 필터" aria-label="상태 필터">
-                        <option value="">전체 상태</option>
-                        <option value="new">신상</option>
-                        <option value="shipping">배송중</option>
-                        <option value="purchasing">구매중</option>
-                        <option value="rented">대여중</option>
-                        <option value="normal">일반</option>
-                    </select>
-                </div>
+            <div class="stat-card">
+                <div class="stat-number" id="newGames">0</div>
+                <div class="stat-label">신상 게임</div>
             </div>
-
-            <div class="games-container">
-                <div class="games-header">
-                    <h2>게임 목록</h2>
-                    <div class="sort-controls">
-                        <select id="sortBy" title="정렬 기준 선택" aria-label="정렬 기준">
-                            <option value="createdAt">등록일순</option>
-                            <option value="name">이름순</option>
-                            <option value="updatedAt">수정일순</option>
-                            <option value="status">상태순</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div id="gamesList" class="games-list">
-                    <!-- 게임 목록이 여기에 표시됩니다 -->
-                </div>
+            <div class="stat-card">
+                <div class="stat-number" id="shippingGames">0</div>
+                <div class="stat-label">배송중</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="purchasingGames">0</div>
+                <div class="stat-label">구매중</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="rentedGames">0</div>
+                <div class="stat-label">대여중</div>
             </div>
         </div>
 
-        <!-- 대여 관리 탭 -->
-        <div id="rentalsTabContent" class="tab-content hidden">
-            <div class="rental-stats">
-                <div class="stat-card">
-                    <div class="stat-number" id="pendingRentals">0</div>
-                    <div class="stat-label">대기중 신청</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="approvedRentals">0</div>
-                    <div class="stat-label">승인된 대여</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="activeRentals">0</div>
-                    <div class="stat-label">진행중 대여</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="totalRentals">0</div>
-                    <div class="stat-label">전체 대여</div>
-                </div>
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="게임 검색...">
+                <button onclick="searchGames()">🔍 검색</button>
+                <select id="statusFilter" title="상태 필터" aria-label="상태 필터">
+                    <option value="">전체 상태</option>
+                    <option value="new">신상</option>
+                    <option value="shipping">배송중</option>
+                    <option value="purchasing">구매중</option>
+                    <option value="rented">대여중</option>
+                    <option value="normal">일반</option>
+                </select>
             </div>
+        </div>
 
-            <div class="rental-controls">
-                <div class="search-box">
-                    <input type="text" id="rentalSearchInput" placeholder="사용자 이메일 또는 게임명 검색...">
-                    <button onclick="searchRentals()">🔍 검색</button>
-                    <select id="rentalStatusFilter" title="대여 상태 필터" aria-label="대여 상태 필터">
-                        <option value="">전체 상태</option>
-                        <option value="pending">신청중</option>
-                        <option value="approved">승인됨</option>
-                        <option value="rented">대여중</option>
-                        <option value="returned">반납완료</option>
-                        <option value="rejected">거절됨</option>
+        <div class="games-container">
+            <div class="games-header">
+                <h2>게임 목록</h2>
+                <div class="sort-controls">
+                    <select id="sortBy" title="정렬 기준 선택" aria-label="정렬 기준">
+                        <option value="createdAt">등록일순</option>
+                        <option value="name">이름순</option>
+                        <option value="updatedAt">수정일순</option>
+                        <option value="status">상태순</option>
                     </select>
                 </div>
             </div>
-
-            <div class="rentals-container">
-                <div class="rentals-header">
-                    <h2>대여 신청 목록</h2>
-                    <div class="sort-controls">
-                        <select id="rentalSortBy" title="정렬 기준 선택" aria-label="정렬 기준">
-                            <option value="createdAt">신청일순</option>
-                            <option value="startDate">시작일순</option>
-                            <option value="status">상태순</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div id="adminRentalsList" class="admin-rentals-list">
-                    <!-- 대여 목록이 여기에 표시됩니다 -->
-                </div>
+            
+            <div id="gamesList" class="games-list">
+                <!-- 게임 목록이 여기에 표시됩니다 -->
             </div>
         </div>
 
@@ -297,37 +230,25 @@
         </div>
     </div>
 
-    <!-- 대여 거절 모달 -->
-    <div class="modal hidden" id="rejectModal">
-        <div class="modal-content small">
-            <div class="modal-header">
-                <h2>대여 거절</h2>
-                <button class="close-btn" onclick="closeRejectModal()">&times;</button>
-            </div>
-            
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="rejectionReason">거절 사유</label>
-                    <textarea id="rejectionReason" rows="4" placeholder="거절 사유를 입력해주세요..." required></textarea>
-                </div>
-                <input type="hidden" id="rejectRentalId">
-            </div>
-            
-            <div class="modal-footer">
-                <button type="button" onclick="closeRejectModal()" class="cancel-btn">취소</button>
-                <button type="button" onclick="rejectRental()" class="delete-btn">거절</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
     
+    <!-- Firebase 설정 먼저 로드 -->
     <script type="module" src="firebase-config.js"></script>
-    <script type="module" src="firebase-auth.js"></script>
-    <script type="module" src="rental-system.js"></script>
-    <script type="module" src="admin-script.js"></script>
+    
+    <!-- Firebase 설정이 로드된 후 관리자 스크립트 로드 -->
+    <script type="module">
+        // Firebase 초기화 완료를 기다림
+        function waitForFirebase() {
+            if (window.firebaseInitialized && window.boardGameAPI) {
+                import('./admin-script.js');
+            } else {
+                setTimeout(waitForFirebase, 100);
+            }
+        }
+        waitForFirebase();
+    </script>
 </body>
 </html>

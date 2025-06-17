@@ -1,123 +1,110 @@
 import { db, FieldValue } from './firebase-config.js';
 
-import {
-  doc,
-  updateDoc,
-  collection,
-  getDocs,
-  query,
-  orderBy
-} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-
 let allGames = [];
 let currentGames = [];
 let editingGameId = null;
 let gameToDelete = null;
 
-let allRentals = [];
-let currentRentals = [];
-
-// 현재 활성 탭
-let currentTab = 'games';
+// 대량 등록 관련 변수
+let bulkGameData = [];
 
 // 페이지 로드 시 실행
 document.addEventListener('DOMContentLoaded', function() {
-    loadGames();
-    loadAllRentals();
-    setupEventListeners();
+    console.log('DOM 로드 완료');
+    
+    // Firebase API가 준비될 때까지 기다림
+    function waitForAPI() {
+        if (window.boardGameAPI) {
+            console.log('BoardGame API 준비 완료');
+            loadGames();
+            setupEventListeners();
+        } else {
+            console.log('BoardGame API 대기 중...');
+            setTimeout(waitForAPI, 100);
+        }
+    }
+    
+    waitForAPI();
 });
 
 // 이벤트 리스너 설정
 function setupEventListeners() {
+    console.log('이벤트 리스너 설정 시작');
+    
+    // DOM 요소들이 존재하는지 확인
+    const sortByElement = document.getElementById('sortBy');
+    const statusFilterElement = document.getElementById('statusFilter');
+    const searchInputElement = document.getElementById('searchInput');
+    const gameModalElement = document.getElementById('gameModal');
+    const deleteModalElement = document.getElementById('deleteModal');
+    
+    console.log('DOM 요소 확인:', {
+        sortBy: !!sortByElement,
+        statusFilter: !!statusFilterElement,
+        searchInput: !!searchInputElement,
+        gameModal: !!gameModalElement,
+        deleteModal: !!deleteModalElement
+    });
+    
     // 게임 관리 이벤트 리스너
-    document.getElementById('sortBy').addEventListener('change', sortGames);
-    document.getElementById('statusFilter').addEventListener('change', searchGames);
+    if (sortByElement) {
+        sortByElement.addEventListener('change', sortGames);
+    } else {
+        console.warn('sortBy 요소를 찾을 수 없습니다.');
+    }
     
-    // 대여 관리 이벤트 리스너
-    document.getElementById('rentalSortBy').addEventListener('change', sortRentals);
-    document.getElementById('rentalStatusFilter').addEventListener('change', searchRentals);
+    if (statusFilterElement) {
+        statusFilterElement.addEventListener('change', searchGames);
+    } else {
+        console.warn('statusFilter 요소를 찾을 수 없습니다.');
+    }
     
-    // 검색 입력 디바운싱 (게임)
-    let searchTimeout;
-    document.getElementById('searchInput').addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            if (this.value.trim() === '') {
-                clearSearch();
-            } else {
+    // 검색 입력 디바운싱
+    if (searchInputElement) {
+        let searchTimeout;
+        searchInputElement.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                if (this.value.trim() === '') {
+                    clearSearch();
+                } else {
+                    searchGames();
+                }
+            }, 500);
+        });
+        
+        // 엔터키로 검색
+        searchInputElement.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
                 searchGames();
             }
-        }, 500);
-    });
-    
-    // 검색 입력 디바운싱 (대여)
-    let rentalSearchTimeout;
-    document.getElementById('rentalSearchInput').addEventListener('input', function() {
-        clearTimeout(rentalSearchTimeout);
-        rentalSearchTimeout = setTimeout(() => {
-            if (this.value.trim() === '') {
-                clearRentalSearch();
-            } else {
-                searchRentals();
-            }
-        }, 500);
-    });
-    
-    // 엔터키로 검색
-    document.getElementById('searchInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            searchGames();
-        }
-    });
-    
-    document.getElementById('rentalSearchInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            searchRentals();
-        }
-    });
+        });
+    } else {
+        console.warn('searchInput 요소를 찾을 수 없습니다.');
+    }
     
     // 모달 외부 클릭시 닫기
-    document.getElementById('gameModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeModal();
-        }
-    });
-    
-    document.getElementById('deleteModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeDeleteModal();
-        }
-    });
-    
-    document.getElementById('rejectModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeRejectModal();
-        }
-    });
-}
-
-// 탭 전환
-function switchTab(tabName) {
-    // 탭 버튼 상태 업데이트
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(tabName + 'Tab').classList.add('active');
-    
-    // 탭 콘텐츠 상태 업데이트
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
-    document.getElementById(tabName + 'TabContent').classList.remove('hidden');
-    
-    currentTab = tabName;
-    
-    // 탭별 데이터 로드
-    if (tabName === 'games') {
-        if (allGames.length === 0) {
-            loadGames();
-        }
-    } else if (tabName === 'rentals') {
-        if (allRentals.length === 0) {
-            loadAllRentals();
-        }
+    if (gameModalElement) {
+        gameModalElement.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    } else {
+        console.warn('gameModal 요소를 찾을 수 없습니다.');
     }
+    
+    if (deleteModalElement) {
+        deleteModalElement.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDeleteModal();
+            }
+        });
+    } else {
+        console.warn('deleteModal 요소를 찾을 수 없습니다.');
+    }
+    
+    console.log('이벤트 리스너 설정 완료');
 }
 
 // 게임 데이터 로드
@@ -142,7 +129,7 @@ async function loadGames() {
     showLoading(false);
 }
 
-// 마지막 업데이트 시간 표시 (관리자 페이지용)
+// 마지막 업데이트 시간 표시
 function updateLastUpdateTime() {
     const lastUpdate = document.getElementById('lastUpdate');
     if (lastUpdate) {
@@ -161,6 +148,11 @@ function updateLastUpdateTime() {
 // 게임 목록 렌더링
 function renderGames() {
     const gamesList = document.getElementById('gamesList');
+    
+    if (!gamesList) {
+        console.error('gamesList 요소를 찾을 수 없습니다.');
+        return;
+    }
     
     if (currentGames.length === 0) {
         gamesList.innerHTML = `
@@ -249,26 +241,14 @@ function getStatusTag(status) {
 
 // 상태 텍스트 반환
 function getGameStatusText(status) {
-  const map = {
-    new: '신상',
-    shipping: '배송중',
-    purchasing: '구매중',
-    rented: '대여중'
-  };
-  return map[status] || '일반';
+    const map = {
+        new: '신상',
+        shipping: '배송중',
+        purchasing: '구매중',
+        rented: '대여중'
+    };
+    return map[status] || '일반';
 }
-
-function getRentalStatusText(status) {
-  const map = {
-    pending: '신청중',
-    approved: '승인됨',
-    rented: '대여중',
-    returned: '반납완료',
-    rejected: '거절됨'
-  };
-  return map[status] || status;
-}
-
 
 // 통계 업데이트
 function updateStats() {
@@ -278,30 +258,26 @@ function updateStats() {
     const purchasingGames = allGames.filter(game => game.status === 'purchasing').length;
     const rentedGames = allGames.filter(game => game.status === 'rented').length;
     
-    document.getElementById('totalGames').textContent = totalGames;
-    document.getElementById('newGames').textContent = newGames;
-    document.getElementById('shippingGames').textContent = shippingGames;
-    document.getElementById('purchasingGames').textContent = purchasingGames;
-    document.getElementById('rentedGames').textContent = rentedGames;
-}
-
-// 대여 통계 업데이트
-function updateRentalStats() {
-    const pendingRentals = allRentals.filter(rental => rental.status === 'pending').length;
-    const approvedRentals = allRentals.filter(rental => rental.status === 'approved').length;
-    const activeRentals = allRentals.filter(rental => rental.status === 'rented').length;
-    const totalRentals = allRentals.length;
+    const totalElement = document.getElementById('totalGames');
+    const newElement = document.getElementById('newGames');
+    const shippingElement = document.getElementById('shippingGames');
+    const purchasingElement = document.getElementById('purchasingGames');
+    const rentedElement = document.getElementById('rentedGames');
     
-    document.getElementById('pendingRentals').textContent = pendingRentals;
-    document.getElementById('approvedRentals').textContent = approvedRentals;
-    document.getElementById('activeRentals').textContent = activeRentals;
-    document.getElementById('totalRentals').textContent = totalRentals;
+    if (totalElement) totalElement.textContent = totalGames;
+    if (newElement) newElement.textContent = newGames;
+    if (shippingElement) shippingElement.textContent = shippingGames;
+    if (purchasingElement) purchasingElement.textContent = purchasingGames;
+    if (rentedElement) rentedElement.textContent = rentedGames;
 }
 
 // 게임 검색 (상태 필터 포함)
 function searchGames() {
-    const query = document.getElementById('searchInput').value.trim().toLowerCase();
-    const statusFilter = document.getElementById('statusFilter').value;
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    
+    const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    const statusFilterValue = statusFilter ? statusFilter.value : '';
     
     currentGames = allGames.filter(game => {
         // 텍스트 검색
@@ -310,34 +286,14 @@ function searchGames() {
         );
         
         // 상태 필터
-        const matchesStatus = !statusFilter || 
-            (statusFilter === 'normal' && (!game.status || game.status === 'normal')) ||
-            (statusFilter !== 'normal' && game.status === statusFilter);
+        const matchesStatus = !statusFilterValue || 
+            (statusFilterValue === 'normal' && (!game.status || game.status === 'normal')) ||
+            (statusFilterValue !== 'normal' && game.status === statusFilterValue);
         
         return matchesText && matchesStatus;
     });
     
     renderGames();
-}
-
-// 대여 검색
-function searchRentals() {
-    const query = document.getElementById('rentalSearchInput').value.trim().toLowerCase();
-    const statusFilter = document.getElementById('rentalStatusFilter').value;
-    
-    currentRentals = allRentals.filter(rental => {
-        // 텍스트 검색 (이메일 또는 게임명)
-        const matchesText = !query || 
-            (rental.userEmail && rental.userEmail.toLowerCase().includes(query)) ||
-            (rental.gameName && rental.gameName.toLowerCase().includes(query));
-        
-        // 상태 필터
-        const matchesStatus = !statusFilter || rental.status === statusFilter;
-        
-        return matchesText && matchesStatus;
-    });
-    
-    renderAdminRentals(currentRentals);
 }
 
 // 검색 초기화
@@ -346,19 +302,15 @@ function clearSearch() {
     renderGames();
 }
 
-function clearRentalSearch() {
-    currentRentals = allRentals;
-    renderAdminRentals(currentRentals);
-}
-
 // 게임 정렬
 function sortGames() {
-    const sortBy = document.getElementById('sortBy').value;
+    const sortBy = document.getElementById('sortBy');
+    const sortByValue = sortBy ? sortBy.value : 'createdAt';
     
     currentGames.sort((a, b) => {
-        if (sortBy === 'name') {
+        if (sortByValue === 'name') {
             return (a.name || '').localeCompare(b.name || '');
-        } else if (sortBy === 'status') {
+        } else if (sortByValue === 'status') {
             // 상태순 정렬: new → purchasing → shipping → rented → normal
             const statusOrder = { 'new': 0, 'purchasing': 1, 'shipping': 2, 'rented': 3, 'normal': 4, '': 4 };
             const statusA = statusOrder[a.status] !== undefined ? statusOrder[a.status] : 4;
@@ -369,9 +321,9 @@ function sortGames() {
             }
             // 같은 상태일 경우 이름순
             return (a.name || '').localeCompare(b.name || '');
-        } else if (sortBy === 'createdAt' || sortBy === 'updatedAt') {
-            const dateA = a[sortBy] ? (a[sortBy].toDate ? a[sortBy].toDate() : new Date(a[sortBy])) : new Date(0);
-            const dateB = b[sortBy] ? (b[sortBy].toDate ? b[sortBy].toDate() : new Date(b[sortBy])) : new Date(0);
+        } else if (sortByValue === 'createdAt' || sortByValue === 'updatedAt') {
+            const dateA = a[sortByValue] ? (a[sortByValue].toDate ? a[sortByValue].toDate() : new Date(a[sortByValue])) : new Date(0);
+            const dateB = b[sortByValue] ? (b[sortByValue].toDate ? b[sortByValue].toDate() : new Date(b[sortByValue])) : new Date(0);
             return dateB - dateA; // 최신순
         }
         return 0;
@@ -380,46 +332,18 @@ function sortGames() {
     renderGames();
 }
 
-// 대여 정렬
-function sortRentals() {
-    const sortBy = document.getElementById('rentalSortBy').value;
-    
-    currentRentals.sort((a, b) => {
-        if (sortBy === 'createdAt') {
-            const dateA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt)) : new Date(0);
-            const dateB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt)) : new Date(0);
-            return dateB - dateA; // 최신순
-        } else if (sortBy === 'startDate') {
-            const dateA = a.startDate ? (a.startDate.toDate ? a.startDate.toDate() : new Date(a.startDate)) : new Date(0);
-            const dateB = b.startDate ? (b.startDate.toDate ? b.startDate.toDate() : new Date(b.startDate)) : new Date(0);
-            return dateA - dateB; // 가까운 순
-        } else if (sortBy === 'status') {
-            // 상태순 정렬: pending → approved → rented → returned → rejected
-            const statusOrder = { 'pending': 0, 'approved': 1, 'rented': 2, 'returned': 3, 'rejected': 4 };
-            const statusA = statusOrder[a.status] !== undefined ? statusOrder[a.status] : 5;
-            const statusB = statusOrder[b.status] !== undefined ? statusOrder[b.status] : 5;
-            
-            if (statusA !== statusB) {
-                return statusA - statusB;
-            }
-            // 같은 상태일 경우 최신순
-            const dateA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt)) : new Date(0);
-            const dateB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt)) : new Date(0);
-            return dateB - dateA;
-        }
-        return 0;
-    });
-    
-    renderAdminRentals(currentRentals);
-}
-
 // 모달 열기 (새 게임 추가)
 function openModal() {
     editingGameId = null;
-    document.getElementById('modalTitle').textContent = '새 게임 추가';
-    document.getElementById('saveBtn').textContent = '추가';
+    const modalTitle = document.getElementById('modalTitle');
+    const saveBtn = document.getElementById('saveBtn');
+    const gameModal = document.getElementById('gameModal');
+    
+    if (modalTitle) modalTitle.textContent = '새 게임 추가';
+    if (saveBtn) saveBtn.textContent = '추가';
+    if (gameModal) gameModal.classList.remove('hidden');
+    
     clearForm();
-    document.getElementById('gameModal').classList.remove('hidden');
 }
 
 // 게임 수정
@@ -428,63 +352,93 @@ function editGame(gameId) {
     if (!game) return;
     
     editingGameId = gameId;
-    document.getElementById('modalTitle').textContent = '게임 수정';
-    document.getElementById('saveBtn').textContent = '수정';
+    const modalTitle = document.getElementById('modalTitle');
+    const saveBtn = document.getElementById('saveBtn');
+    const gameModal = document.getElementById('gameModal');
+    
+    if (modalTitle) modalTitle.textContent = '게임 수정';
+    if (saveBtn) saveBtn.textContent = '수정';
+    if (gameModal) gameModal.classList.remove('hidden');
     
     // 폼에 데이터 채우기
-    document.getElementById('gameName').value = game.name || '';
-    document.getElementById('gameStatus').value = game.status || '';
-    document.getElementById('gameDifficulty').value = game.difficulty || '';
-    document.getElementById('gameMinPlayers').value = game.minPlayers || '';
-    document.getElementById('gameMaxPlayers').value = game.maxPlayers || '';
-    document.getElementById('gameBestPlayers').value = game.bestPlayers || '';
-    document.getElementById('gamePlayTime').value = game.playTime || '';
-    document.getElementById('gameGenre').value = game.genre || '';
-    document.getElementById('gameBuyer').value = game.buyer || '';
-    document.getElementById('gameImageUrl').value = game.imageUrl || '';
-    document.getElementById('gameYoutubeUrl').value = game.youtubeUrl || '';
+    const fields = [
+        'gameName', 'gameStatus', 'gameDifficulty', 'gameMinPlayers', 
+        'gameMaxPlayers', 'gameBestPlayers', 'gamePlayTime', 'gameGenre', 
+        'gameBuyer', 'gameImageUrl', 'gameYoutubeUrl'
+    ];
     
-    document.getElementById('gameModal').classList.remove('hidden');
+    const gameKeys = [
+        'name', 'status', 'difficulty', 'minPlayers', 
+        'maxPlayers', 'bestPlayers', 'playTime', 'genre', 
+        'buyer', 'imageUrl', 'youtubeUrl'
+    ];
+    
+    fields.forEach((fieldId, index) => {
+        const element = document.getElementById(fieldId);
+        if (element) {
+            element.value = game[gameKeys[index]] || '';
+        }
+    });
 }
 
 // 게임 삭제 (확인 모달)
 function deleteGame(gameId, gameName) {
     gameToDelete = gameId;
-    document.getElementById('deleteGameName').textContent = gameName;
-    document.getElementById('deleteModal').classList.remove('hidden');
+    const deleteGameNameElement = document.getElementById('deleteGameName');
+    const deleteModal = document.getElementById('deleteModal');
+    
+    if (deleteGameNameElement) deleteGameNameElement.textContent = gameName;
+    if (deleteModal) deleteModal.classList.remove('hidden');
 }
 
 // 모달 닫기
 function closeModal() {
-    document.getElementById('gameModal').classList.add('hidden');
+    const gameModal = document.getElementById('gameModal');
+    if (gameModal) gameModal.classList.add('hidden');
     clearForm();
     editingGameId = null;
 }
 
 function closeDeleteModal() {
-    document.getElementById('deleteModal').classList.add('hidden');
+    const deleteModal = document.getElementById('deleteModal');
+    if (deleteModal) deleteModal.classList.add('hidden');
     gameToDelete = null;
 }
 
 // 폼 초기화
 function clearForm() {
-    document.getElementById('gameForm').reset();
+    const gameForm = document.getElementById('gameForm');
+    if (gameForm) gameForm.reset();
 }
 
 // 게임 저장 (추가/수정)
 async function saveGame() {
+    const fields = {
+        name: document.getElementById('gameName'),
+        status: document.getElementById('gameStatus'),
+        difficulty: document.getElementById('gameDifficulty'),
+        minPlayers: document.getElementById('gameMinPlayers'),
+        maxPlayers: document.getElementById('gameMaxPlayers'),
+        bestPlayers: document.getElementById('gameBestPlayers'),
+        playTime: document.getElementById('gamePlayTime'),
+        genre: document.getElementById('gameGenre'),
+        buyer: document.getElementById('gameBuyer'),
+        imageUrl: document.getElementById('gameImageUrl'),
+        youtubeUrl: document.getElementById('gameYoutubeUrl')
+    };
+    
     const formData = {
-        name: document.getElementById('gameName').value.trim(),
-        status: document.getElementById('gameStatus').value.trim() || null,
-        difficulty: parseFloat(document.getElementById('gameDifficulty').value) || null,
-        minPlayers: parseInt(document.getElementById('gameMinPlayers').value) || null,
-        maxPlayers: parseInt(document.getElementById('gameMaxPlayers').value) || null,
-        bestPlayers: document.getElementById('gameBestPlayers').value.trim(),
-        playTime: parseInt(document.getElementById('gamePlayTime').value) || null,
-        genre: document.getElementById('gameGenre').value.trim(),
-        buyer: document.getElementById('gameBuyer').value.trim(),
-        imageUrl: document.getElementById('gameImageUrl').value.trim(),
-        youtubeUrl: document.getElementById('gameYoutubeUrl').value.trim()
+        name: fields.name ? fields.name.value.trim() : '',
+        status: fields.status ? fields.status.value.trim() || null : null,
+        difficulty: fields.difficulty ? parseFloat(fields.difficulty.value) || null : null,
+        minPlayers: fields.minPlayers ? parseInt(fields.minPlayers.value) || null : null,
+        maxPlayers: fields.maxPlayers ? parseInt(fields.maxPlayers.value) || null : null,
+        bestPlayers: fields.bestPlayers ? fields.bestPlayers.value.trim() : '',
+        playTime: fields.playTime ? parseInt(fields.playTime.value) || null : null,
+        genre: fields.genre ? fields.genre.value.trim() : '',
+        buyer: fields.buyer ? fields.buyer.value.trim() : '',
+        imageUrl: fields.imageUrl ? fields.imageUrl.value.trim() : '',
+        youtubeUrl: fields.youtubeUrl ? fields.youtubeUrl.value.trim() : ''
     };
     
     // 필수 필드 검증
@@ -552,23 +506,29 @@ async function confirmDelete() {
 }
 
 // 대량 등록 모달 관련
-let bulkGameData = [];
-
 function openBulkModal() {
-    document.getElementById('bulkModal').classList.remove('hidden');
-    document.getElementById('bulkData').value = '';
-    document.getElementById('bulkPreview').classList.add('hidden');
-    document.getElementById('bulkSaveBtn').disabled = true;
+    const bulkModal = document.getElementById('bulkModal');
+    const bulkData = document.getElementById('bulkData');
+    const bulkPreview = document.getElementById('bulkPreview');
+    const bulkSaveBtn = document.getElementById('bulkSaveBtn');
+    
+    if (bulkModal) bulkModal.classList.remove('hidden');
+    if (bulkData) bulkData.value = '';
+    if (bulkPreview) bulkPreview.classList.add('hidden');
+    if (bulkSaveBtn) bulkSaveBtn.disabled = true;
+    
     bulkGameData = [];
 }
 
 function closeBulkModal() {
-    document.getElementById('bulkModal').classList.add('hidden');
+    const bulkModal = document.getElementById('bulkModal');
+    if (bulkModal) bulkModal.classList.add('hidden');
     bulkGameData = [];
 }
 
 function previewBulkData() {
-    const csvData = document.getElementById('bulkData').value.trim();
+    const bulkDataElement = document.getElementById('bulkData');
+    const csvData = bulkDataElement ? bulkDataElement.value.trim() : '';
     
     if (!csvData) {
         showError('CSV 데이터를 입력해주세요.');
@@ -585,7 +545,6 @@ function previewBulkData() {
         
         // 헤더 파싱
         const headers = parseCSVLine(lines[0]);
-        const expectedHeaders = ['name', 'status', 'difficulty', 'minPlayers', 'maxPlayers', 'bestPlayers', 'playTime', 'genre', 'buyer', 'imageUrl', 'youtubeUrl'];
         
         // 필수 헤더 체크 (name만 필수)
         if (!headers.includes('name')) {
@@ -595,7 +554,7 @@ function previewBulkData() {
         
         bulkGameData = [];
         const previewList = document.getElementById('previewList');
-        previewList.innerHTML = '';
+        if (previewList) previewList.innerHTML = '';
         
         // 데이터 파싱
         for (let i = 1; i < lines.length; i++) {
@@ -626,20 +585,26 @@ function previewBulkData() {
                 bulkGameData.push(gameData);
                 
                 // 미리보기 추가
-                const previewItem = document.createElement('div');
-                previewItem.className = 'preview-item';
-                previewItem.innerHTML = `
-                    ${gameData.name} 
-                    ${getStatusTag(gameData.status)}
-                    (난이도: ${gameData.difficulty || '-'}, 인원: ${formatPlayerInfoForAdmin(gameData)})
-                `;
-                previewList.appendChild(previewItem);
+                if (previewList) {
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'preview-item';
+                    previewItem.innerHTML = `
+                        ${gameData.name} 
+                        ${getStatusTag(gameData.status)}
+                        (난이도: ${gameData.difficulty || '-'}, 인원: ${formatPlayerInfoForAdmin(gameData)})
+                    `;
+                    previewList.appendChild(previewItem);
+                }
             }
         }
         
-        document.getElementById('previewCount').textContent = bulkGameData.length;
-        document.getElementById('bulkPreview').classList.remove('hidden');
-        document.getElementById('bulkSaveBtn').disabled = bulkGameData.length === 0;
+        const previewCount = document.getElementById('previewCount');
+        const bulkPreview = document.getElementById('bulkPreview');
+        const bulkSaveBtn = document.getElementById('bulkSaveBtn');
+        
+        if (previewCount) previewCount.textContent = bulkGameData.length;
+        if (bulkPreview) bulkPreview.classList.remove('hidden');
+        if (bulkSaveBtn) bulkSaveBtn.disabled = bulkGameData.length === 0;
         
         if (bulkGameData.length === 0) {
             showError('유효한 게임 데이터가 없습니다.');
@@ -729,137 +694,6 @@ async function saveBulkData() {
     showLoading(false);
 }
 
-// === 대여 관리 함수들 ===
-
-// 관리자 - 모든 대여 신청 로드
-async function loadAllRentals() {
-  if (currentTab !== 'rentals') return;
-
-  try {
-    const q = query(collection(db, 'rentals'), orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
-
-    allRentals = [];
-    snapshot.forEach(docSnap => {
-      allRentals.push({
-        id: docSnap.id,
-        ...docSnap.data()
-      });
-    });
-
-    renderAdminRentals(allRentals);
-  } catch (error) {
-    console.error('대여 목록 로드 실패:', error);
-    alert('대여 목록을 불러오는데 실패했습니다.');
-  }
-}
-
-// 관리자 - 대여 목록 렌더링
-function renderAdminRentals(rentals) {
-  const list = document.getElementById('adminRentalsList');
-  if (!list) return;
-
-  if (rentals.length === 0) {
-    list.innerHTML = '<p>대여 신청이 없습니다.</p>';
-    return;
-  }
-
-  list.innerHTML = rentals.map(rental => `
-    <div class="rental-item">
-      <h3>${rental.gameName}</h3>
-      <p>신청자: ${rental.userEmail}</p>
-      <p>기간: ${formatDateFull(rental.startDate)} ~ ${formatDateFull(rental.endDate)}</p>
-      <p>상태: ${getRentalStatusText(rental.status)}</p>
-      <button onclick="approveRental('${rental.id}')">승인</button>
-      <button onclick="rejectRental('${rental.id}')">거절</button>
-    </div>
-  `).join('');
-}
-
-// 대여 승인
-window.approveRental = async function (id) {
-  if (!confirm('승인하시겠습니까?')) return;
-
-  try {
-    const rentalRef = doc(db, 'rentals', id);
-    await updateDoc(rentalRef, {
-      status: 'approved',
-      approvedAt: FieldValue.serverTimestamp()
-    });
-
-    alert('승인되었습니다.');
-    await loadAllRentals();
-  } catch (error) {
-    console.error('승인 실패:', error);
-    alert('승인에 실패했습니다.');
-  }
-};
-
-// 대여 거절
-window.rejectRental = async function (id) {
-  const reason = prompt('거절 사유를 입력하세요:');
-  if (!reason) return;
-
-  try {
-    const rentalRef = doc(db, 'rentals', id);
-    await updateDoc(rentalRef, {
-      status: 'rejected',
-      rejectionReason: reason,
-      rejectedAt: FieldValue.serverTimestamp()
-    });
-
-    alert('거절되었습니다.');
-    await loadAllRentals();
-  } catch (error) {
-    console.error('거절 실패:', error);
-    alert('거절에 실패했습니다.');
-  }
-};
-
-function formatDateShort(ts) {
-  const date = ts.toDate ? ts.toDate() : new Date(ts);
-  return date.toLocaleDateString('ko-KR');
-}
-
-function formatDateFull(ts) {
-  const date = ts.toDate ? ts.toDate() : new Date(ts);
-  return date.toLocaleString('ko-KR', {
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit'
-  });
-}
-
-
-// 대여 상태 클래스
-function getRentalStatusClass(status) {
-    return `status-${status}`;
-}
-
-// 관리자 액션 버튼들
-function getAdminActionButtons(rental) {
-    if (rental.status === 'pending') {
-        return `
-            <button onclick="approveRental('${rental.id}')" class="action-btn approve-btn">승인</button>
-            <button onclick="showRejectModal('${rental.id}')" class="action-btn reject-btn">거절</button>
-        `;
-    }
-    return '';
-}
-
-// 거절 모달 표시
-function showRejectModal(rentalId) {
-    document.getElementById('rejectRentalId').value = rentalId;
-    document.getElementById('rejectModal').classList.remove('hidden');
-    document.getElementById('rejectionReason').focus();
-}
-
-// 거절 모달 닫기
-function closeRejectModal() {
-    document.getElementById('rejectModal').classList.add('hidden');
-    document.getElementById('rejectionReason').value = '';
-    document.getElementById('rejectRentalId').value = '';
-}
-
 // 유틸리티 함수들
 function formatPlayerInfoForAdmin(game) {
     const min = game.minPlayers;
@@ -909,9 +743,17 @@ function formatPlayerCount(min, max) {
     return `${min}-${max}명`;
 }
 
+function formatDateShort(ts) {
+    if (!ts) return '-';
+    const date = ts.toDate ? ts.toDate() : new Date(ts);
+    return date.toLocaleDateString('ko-KR');
+}
+
 function showLoading(show) {
     const loading = document.getElementById('loading');
-    loading.classList.toggle('show', show);
+    if (loading) {
+        loading.classList.toggle('show', show);
+    }
 }
 
 function showError(message) {
@@ -919,8 +761,8 @@ function showError(message) {
     const errorMessage = document.getElementById('errorMessage');
     const errorText = document.getElementById('errorText');
     
-    errorText.textContent = message;
-    errorMessage.classList.remove('hidden');
+    if (errorText) errorText.textContent = message;
+    if (errorMessage) errorMessage.classList.remove('hidden');
     
     setTimeout(hideError, 5000);
 }
@@ -930,18 +772,20 @@ function showSuccess(message) {
     const successMessage = document.getElementById('successMessage');
     const successText = document.getElementById('successText');
     
-    successText.textContent = message;
-    successMessage.classList.remove('hidden');
+    if (successText) successText.textContent = message;
+    if (successMessage) successMessage.classList.remove('hidden');
     
     setTimeout(hideSuccess, 3000);
 }
 
 function hideError() {
-    document.getElementById('errorMessage').classList.add('hidden');
+    const errorMessage = document.getElementById('errorMessage');
+    if (errorMessage) errorMessage.classList.add('hidden');
 }
 
 function hideSuccess() {
-    document.getElementById('successMessage').classList.add('hidden');
+    const successMessage = document.getElementById('successMessage');
+    if (successMessage) successMessage.classList.add('hidden');
 }
 
 function hideMessages() {
@@ -949,4 +793,18 @@ function hideMessages() {
     hideSuccess();
 }
 
-window.switchTab = switchTab;
+// 전역 함수로 노출 (HTML onclick 이벤트에서 사용하기 위해)
+window.openModal = openModal;
+window.editGame = editGame;
+window.deleteGame = deleteGame;
+window.closeModal = closeModal;
+window.closeDeleteModal = closeDeleteModal;
+window.saveGame = saveGame;
+window.confirmDelete = confirmDelete;
+window.searchGames = searchGames;
+window.openBulkModal = openBulkModal;
+window.closeBulkModal = closeBulkModal;
+window.previewBulkData = previewBulkData;
+window.saveBulkData = saveBulkData;
+window.hideError = hideError;
+window.hideSuccess = hideSuccess;
