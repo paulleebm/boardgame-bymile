@@ -4,58 +4,73 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- 사파리 상태바 및 브라우저 UI 색상 설정 -->
+    <!-- PWA 및 모바일 최적화 -->
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="msapplication-navbutton-color" content="#667eea">
+    <meta name="theme-color" content="#667eea">
     <meta name="msapplication-TileColor" content="#667eea">
     
     <title>꿈엘청 보드게임 동아리</title>
     <link rel="stylesheet" href="style.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🎲 꿈엘청 보드게임 동아리</h1>
-            <div class="header-info">
-                <div class="header-controls">
-                    <!-- 로그인 버튼 숨김 (향후 사용 가능) -->
-                    <button id="authBtn" class="login-btn hidden">로그인</button>
-                </div>
-            </div>
         </header>
 
+        <!-- 검색 및 필터 컨트롤 -->
         <div class="controls">
             <div class="search-box">
                 <div class="search-main-group">
                     <div class="search-type-group">
                         <select id="searchType" aria-label="검색 타입">
-                            <option value="name">게임 이름</option>
                             <option value="players">플레이 인원</option>
                             <option value="players-best">베스트 인원</option>
+                            <option value="name">게임 이름</option>
                             <option value="genre">장르</option>
                         </select>
                     </div>
                     
                     <div class="search-input-group">
-                        <input type="text" id="searchInput" placeholder="게임 이름으로 검색...">
-                        <button onclick="searchAndFilter()" class="search-btn" title="검색">🔍</button>
+                        <input type="text" id="searchInput" placeholder="인원 수로 검색">
                     </div>
                 </div>
             </div>
             
             <div class="filter-box">
-                
+                <!-- 난이도 필터 -->
                 <div class="filter-group">
                     <label>난이도:</label>
                     <div class="slider-container">
                         <div class="slider-track">
                             <div class="slider-range" id="difficultyRange"></div>
-                            <div class="slider-handle min-handle" id="difficultyMinHandle" data-slider="difficulty" data-type="min" role="slider" aria-label="최소 난이도" aria-valuenow="1" aria-valuemin="1" aria-valuemax="3" tabindex="0"></div>
-                            <div class="slider-handle max-handle" id="difficultyMaxHandle" data-slider="difficulty" data-type="max" role="slider" aria-label="최대 난이도" aria-valuenow="3" aria-valuemin="1" aria-valuemax="3" tabindex="0"></div>
+                            <div class="slider-handle min-handle" id="difficultyMinHandle" 
+                                 role="slider" 
+                                 aria-label="최소 난이도" 
+                                 aria-valuenow="1" 
+                                 aria-valuemin="1" 
+                                 aria-valuemax="3" 
+                                 tabindex="0"></div>
+                            <div class="slider-handle max-handle" id="difficultyMaxHandle" 
+                                 role="slider" 
+                                 aria-label="최대 난이도" 
+                                 aria-valuenow="3" 
+                                 aria-valuemin="1" 
+                                 aria-valuemax="3" 
+                                 tabindex="0"></div>
                         </div>
-                        <input type="range" id="difficultyMin" class="slider-input" min="1" max="3" value="1" step="0.1" aria-label="최소 난이도" title="최소 난이도">
-                        <input type="range" id="difficultyMax" class="slider-input" min="1" max="3" value="3" step="0.1" aria-label="최대 난이도" title="최대 난이도">
+                        <input type="range" id="difficultyMin" class="slider-input" 
+                               min="1" max="3" value="1" step="0.1" 
+                               aria-label="최소 난이도" title="최소 난이도">
+                        <input type="range" id="difficultyMax" class="slider-input" 
+                               min="1" max="3" value="3" step="0.1" 
+                               aria-label="최대 난이도" title="최대 난이도">
                     </div>
                     <div class="slider-values">
                         <span id="difficultyMinValue">1.0</span>
@@ -63,16 +78,33 @@
                     </div>
                 </div>
                 
+                <!-- 플레이 시간 필터 -->
                 <div class="filter-group">
                     <label>플레이 시간:</label>
                     <div class="slider-container">
                         <div class="slider-track">
                             <div class="slider-range" id="timeRange"></div>
-                            <div class="slider-handle min-handle" id="timeMinHandle" data-slider="time" data-type="min" role="slider" aria-label="최소 플레이 시간" aria-valuenow="10" aria-valuemin="10" aria-valuemax="120" tabindex="0"></div>
-                            <div class="slider-handle max-handle" id="timeMaxHandle" data-slider="time" data-type="max" role="slider" aria-label="최대 플레이 시간" aria-valuenow="120" aria-valuemin="10" aria-valuemax="120" tabindex="0"></div>
+                            <div class="slider-handle min-handle" id="timeMinHandle" 
+                                 role="slider" 
+                                 aria-label="최소 플레이 시간" 
+                                 aria-valuenow="10" 
+                                 aria-valuemin="10" 
+                                 aria-valuemax="120" 
+                                 tabindex="0"></div>
+                            <div class="slider-handle max-handle" id="timeMaxHandle" 
+                                 role="slider" 
+                                 aria-label="최대 플레이 시간" 
+                                 aria-valuenow="120" 
+                                 aria-valuemin="10" 
+                                 aria-valuemax="120" 
+                                 tabindex="0"></div>
                         </div>
-                        <input type="range" id="timeMin" class="slider-input" min="10" max="120" value="10" step="5" aria-label="최소 플레이 시간" title="최소 플레이 시간">
-                        <input type="range" id="timeMax" class="slider-input" min="10" max="120" value="120" step="5" aria-label="최대 플레이 시간" title="최대 플레이 시간">
+                        <input type="range" id="timeMin" class="slider-input" 
+                               min="10" max="120" value="10" step="5" 
+                               aria-label="최소 플레이 시간" title="최소 플레이 시간">
+                        <input type="range" id="timeMax" class="slider-input" 
+                               min="10" max="120" value="120" step="5" 
+                               aria-label="최대 플레이 시간" title="최대 플레이 시간">
                     </div>
                     <div class="slider-values">
                         <span id="timeMinValue">10분</span>
@@ -82,7 +114,7 @@
             </div>
         </div>
 
-        <!-- 그리드 뷰 -->
+        <!-- 게임 그리드 뷰 -->
         <div id="gridView" class="grid-container">
             <div class="grid-header">
                 <div class="grid-header-left">
@@ -92,43 +124,47 @@
                 <div class="sort-controls">
                     <!-- 커스텀 드롭다운 -->
                     <div class="custom-dropdown" id="customDropdown">
-                        <div class="dropdown-selected" onclick="toggleDropdown()">
+                        <div class="dropdown-selected">
                             <span id="selectedOption">가나다순</span>
                             <span class="dropdown-arrow">▼</span>
                         </div>
                         <div class="dropdown-options hidden" id="dropdownOptions">
-                            <div class="dropdown-option" data-value="name" onclick="selectOption('name', '가나다순')">가나다순</div>
-                            <div class="dropdown-option" data-value="difficulty" onclick="selectOption('difficulty', '난이도순')">난이도순</div>
+                            <div class="dropdown-option" data-value="name">가나다순</div>
+                            <div class="dropdown-option" data-value="difficulty">난이도순</div>
                         </div>
                     </div>
                     
-                    <button id="sortOrderBtn" onclick="toggleSortOrder()" class="sort-order-btn" title="정렬 순서 변경" aria-label="정렬 순서 토글">
+                    <button id="sortOrderBtn" class="sort-order-btn" title="정렬 순서 변경" aria-label="정렬 순서 토글">
                         <span id="sortOrderIcon">↑</span>
                     </button>
                     
-                    <button id="statusFilterBtn" onclick="toggleStatusFilter()" class="status-filter-btn" title="특별 상태 게임만 보기" aria-label="상태 필터 토글">
+                    <button id="statusFilterBtn" class="status-filter-btn" title="특별 상태 게임만 보기" aria-label="상태 필터 토글">
                         ❗
                     </button>
                 </div>
             </div>
-            <div id="gameGrid" class="game-grid" role="grid" aria-label="보드게임 목록"></div>
+            <div id="gameGrid" class="game-grid" role="grid" aria-label="보드게임 목록">
+                <!-- 게임 카드들이 여기에 동적으로 표시됩니다 -->
+            </div>
         </div>
 
+        <!-- 로딩 인디케이터 -->
         <div class="loading" id="loading" aria-live="polite">
             <div class="spinner"></div>
             데이터를 불러오는 중...
         </div>
 
+        <!-- 에러 메시지 -->
         <div class="error-message hidden" id="errorMessage" role="alert" aria-live="assertive">
             <span id="errorText"></span>
-            <button onclick="hideError()">닫기</button>
+            <button id="errorCloseBtn">닫기</button>
         </div>
     </div>
 
     <!-- 게임 상세 모달 -->
-    <div class="game-detail-modal hidden" id="gameDetailModal" onclick="closeGameModal()" role="dialog" aria-modal="true" aria-labelledby="modalGameName">
-        <div class="game-detail-content" onclick="event.stopPropagation()">
-            <button id="modalCloseBtn" class="modal-close-btn" onclick="closeGameModal()" aria-label="모달 닫기">&times;</button>
+    <div class="game-detail-modal hidden" id="gameDetailModal" role="dialog" aria-modal="true" aria-labelledby="modalGameName">
+        <div class="game-detail-content">
+            <button id="modalCloseBtn" class="modal-close-btn" aria-label="모달 닫기">&times;</button>
             
             <div class="modal-game-image">
                 <img id="modalGameImage" src="" alt="게임 이미지">
@@ -140,116 +176,8 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
-    
+    <!-- Scripts -->
     <script type="module" src="firebase-config.js"></script>
-    <script src="script.js"></script>
-    
-    <script>
-        // 커스텀 드롭다운 기능
-        function toggleDropdown() {
-            const dropdown = document.getElementById('dropdownOptions');
-            const arrow = document.querySelector('.dropdown-arrow');
-            
-            if (dropdown && arrow) {
-                dropdown.classList.toggle('hidden');
-                arrow.style.transform = dropdown.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
-            }
-        }
-        
-        // 개선된 정렬 옵션 선택 함수
-        function selectOption(value, text) {
-            const selectedOption = document.getElementById('selectedOption');
-            const dropdown = document.getElementById('dropdownOptions');
-            const arrow = document.querySelector('.dropdown-arrow');
-            
-            // UI 업데이트
-            if (selectedOption) {
-                selectedOption.textContent = text;
-            }
-            if (dropdown) {
-                dropdown.classList.add('hidden');
-            }
-            if (arrow) {
-                arrow.style.transform = 'rotate(0deg)';
-            }
-            
-            // 디버깅 로그 (개발 중에만 사용)
-            console.log('정렬 기준 변경:', value, '→', text);
-            
-            // script.js의 전역 변수 및 함수 확인 후 업데이트
-            if (typeof currentSortBy !== 'undefined') {
-                currentSortBy = value;
-                console.log('currentSortBy 업데이트됨:', currentSortBy);
-            }
-            
-            if (typeof window.currentSortBy !== 'undefined') {
-                window.currentSortBy = value;
-            }
-            
-            // 정렬 적용 함수 호출
-            if (typeof applySortingAndRender === 'function') {
-                applySortingAndRender();
-                console.log('정렬 적용 완료');
-            } else if (typeof window.applySortingAndRender === 'function') {
-                window.applySortingAndRender();
-                console.log('정렬 적용 완료 (window)');
-            } else {
-                console.error('applySortingAndRender 함수를 찾을 수 없습니다.');
-            }
-        }
-        
-        // 정렬 순서 토글 함수
-        function toggleSortOrder() {
-            // script.js의 전역 변수들 직접 조작
-            if (typeof currentSortOrder !== 'undefined') {
-                currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
-                console.log('정렬 순서 변경:', currentSortOrder);
-                
-                // 아이콘 업데이트
-                const sortOrderIcon = document.getElementById('sortOrderIcon');
-                const sortOrderBtn = document.getElementById('sortOrderBtn');
-                
-                if (sortOrderIcon && sortOrderBtn) {
-                    if (currentSortOrder === 'asc') {
-                        sortOrderIcon.textContent = '↑';
-                        sortOrderBtn.title = '오름차순 → 내림차순으로 변경';
-                    } else {
-                        sortOrderIcon.textContent = '↓';
-                        sortOrderBtn.title = '내림차순 → 오름차순으로 변경';
-                    }
-                }
-                
-                // 정렬 적용
-                if (typeof applySortingAndRender === 'function') {
-                    applySortingAndRender();
-                } else if (typeof window.applySortingAndRender === 'function') {
-                    window.applySortingAndRender();
-                }
-                
-            } else {
-                console.error('currentSortOrder 변수를 찾을 수 없습니다.');
-            }
-        }
-        
-        // 외부 클릭시 드롭다운 닫기
-        document.addEventListener('click', function(event) {
-            const dropdown = document.getElementById('customDropdown');
-            const dropdownOptions = document.getElementById('dropdownOptions');
-            const arrow = document.querySelector('.dropdown-arrow');
-            
-            if (dropdown && !dropdown.contains(event.target)) {
-                if (dropdownOptions) {
-                    dropdownOptions.classList.add('hidden');
-                }
-                if (arrow) {
-                    arrow.style.transform = 'rotate(0deg)';
-                }
-            }
-        });
-    </script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
