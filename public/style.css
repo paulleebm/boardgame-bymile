@@ -194,6 +194,7 @@ header h1 {
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     padding: var(--spacing-xl);
+    padding-bottom: 0;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-medium);
     margin-bottom: var(--spacing-xl);
@@ -298,11 +299,93 @@ header h1 {
 /* ===== 필터 박스 ===== */
 .filter-box {
     border-top: 1px solid rgba(102, 126, 234, 0.2);
-    padding-top: var(--spacing-lg);
+    padding: 5px 0 10px 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-content {
+    overflow: hidden;
+    transition: max-height 0.4s ease-out, opacity 0.3s ease-out, margin-top 0.3s ease-out;
+    opacity: 1;
+    max-height: 300px;
+    position: relative;
+}
+
+.filter-content.collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+    transition: max-height 0.3s ease-in, opacity 0.2s ease-in, margin-top 0.3s ease-in;
+}
+
+.filter-groups {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--spacing-lg);
     align-items: start;
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-sm);
+    padding-bottom: 0;
+}
+
+.filter-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    margin: 2px 0 0 0;
+    transition: all var(--transition-normal);
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    height: 20px;
+    line-height: 1;
+}
+
+.filter-toggle-icon {
+    color: var(--primary-color);
+    transition: all var(--transition-normal);
+    padding: 0;
+    margin: 0;
+    border-radius: 0;
+    background: none;
+    height: 20px;
+    width: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.filter-toggle-icon::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid var(--primary-color);
+    border-right: 2px solid var(--primary-color);
+    transform: translate(-50%, -50%) rotate(-45deg);
+    transition: all var(--transition-normal);
+}
+
+.filter-toggle:hover .filter-toggle-icon::before {
+    border-color: var(--secondary-color);
+    transform: translate(-50%, -50%) rotate(-45deg) scale(1.2);
+}
+
+.filter-toggle.collapsed .filter-toggle-icon::before {
+    transform: translate(-50%, -50%) rotate(135deg);
+}
+
+.filter-toggle.collapsed:hover .filter-toggle-icon::before {
+    border-color: var(--secondary-color);
+    transform: translate(-50%, -50%) rotate(135deg) scale(1.2);
 }
 
 .filter-group {
@@ -1051,7 +1134,21 @@ button:disabled {
     
     .filter-box {
         grid-template-columns: 1fr;
-        gap: var(--spacing-xs);
+        padding: 0 0 5px 0;
+        gap: 0;
+    }
+
+    .filter-groups {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .filter-toggle {
+        padding: 0;
+    }
+
+    .filter-toggle-icon {
+        font-size: 14;
     }
     
     .game-grid {

@@ -79,6 +79,27 @@ class BoardGameViewer {
 
     // 이벤트 리스너 설정
     setupEventListeners() {
+
+        // 필터 토글 이벤트 리스너 추가 (맨 앞에 추가)
+        const filterToggle = document.getElementById('filterToggle');
+        const filterContent = document.getElementById('filterContent');
+        
+        if (filterToggle && filterContent) {
+            filterToggle.addEventListener('click', () => {
+                const isCollapsed = filterContent.classList.contains('collapsed');
+                
+                if (isCollapsed) {
+                    // 펼치기
+                    filterToggle.classList.remove('collapsed');
+                    filterContent.classList.remove('collapsed');
+                } else {
+                    // 접기
+                    filterToggle.classList.add('collapsed');
+                    filterContent.classList.add('collapsed');
+                }
+            });
+        }
+
         // 검색 타입 변경
         this.elements.searchType.addEventListener('change', () => this.handleSearchTypeChange());
         
@@ -94,7 +115,7 @@ class BoardGameViewer {
                 clearTimeout(searchTimeout);
                 this.advancedSearchAndFilter();
             }
-        });
+        });      
         
         // 정렬 및 필터
         this.elements.sortOrderBtn.addEventListener('click', () => this.toggleSortOrder());

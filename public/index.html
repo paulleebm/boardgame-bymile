@@ -44,72 +44,82 @@
             </div>
             
             <div class="filter-box">
-                <!-- 난이도 필터 -->
-                <div class="filter-group">
-                    <label>난이도:</label>
-                    <div class="slider-container">
-                        <div class="slider-track">
-                            <div class="slider-range" id="difficultyRange"></div>
-                            <div class="slider-handle min-handle" id="difficultyMinHandle" 
-                                 role="slider" 
-                                 aria-label="최소 난이도" 
-                                 aria-valuenow="1" 
-                                 aria-valuemin="1" 
-                                 aria-valuemax="3" 
-                                 tabindex="0"></div>
-                            <div class="slider-handle max-handle" id="difficultyMaxHandle" 
-                                 role="slider" 
-                                 aria-label="최대 난이도" 
-                                 aria-valuenow="3" 
-                                 aria-valuemin="1" 
-                                 aria-valuemax="3" 
-                                 tabindex="0"></div>
+                <!-- 접기/펼치기 가능한 필터 내용 -->
+                <div class="filter-content collapsed" id="filterContent">
+                    <div class="filter-groups">
+                        <!-- 난이도 필터 -->
+                        <div class="filter-group">
+                            <label>난이도:</label>
+                            <div class="slider-container">
+                                <div class="slider-track">
+                                    <div class="slider-range" id="difficultyRange"></div>
+                                    <div class="slider-handle min-handle" id="difficultyMinHandle" 
+                                         role="slider" 
+                                         aria-label="최소 난이도" 
+                                         aria-valuenow="1" 
+                                         aria-valuemin="1" 
+                                         aria-valuemax="3" 
+                                         tabindex="0"></div>
+                                    <div class="slider-handle max-handle" id="difficultyMaxHandle" 
+                                         role="slider" 
+                                         aria-label="최대 난이도" 
+                                         aria-valuenow="3" 
+                                         aria-valuemin="1" 
+                                         aria-valuemax="3" 
+                                         tabindex="0"></div>
+                                </div>
+                                <input type="range" id="difficultyMin" class="slider-input" 
+                                       min="1" max="3" value="1" step="0.1" 
+                                       aria-label="최소 난이도" title="최소 난이도">
+                                <input type="range" id="difficultyMax" class="slider-input" 
+                                       min="1" max="3" value="3" step="0.1" 
+                                       aria-label="최대 난이도" title="최대 난이도">
+                            </div>
+                            <div class="slider-values">
+                                <span id="difficultyMinValue">1.0</span>
+                                <span id="difficultyMaxValue">3.0+</span>
+                            </div>
                         </div>
-                        <input type="range" id="difficultyMin" class="slider-input" 
-                               min="1" max="3" value="1" step="0.1" 
-                               aria-label="최소 난이도" title="최소 난이도">
-                        <input type="range" id="difficultyMax" class="slider-input" 
-                               min="1" max="3" value="3" step="0.1" 
-                               aria-label="최대 난이도" title="최대 난이도">
-                    </div>
-                    <div class="slider-values">
-                        <span id="difficultyMinValue">1.0</span>
-                        <span id="difficultyMaxValue">3.0+</span>
+                        
+                        <!-- 플레이 시간 필터 -->
+                        <div class="filter-group">
+                            <label>플레이 시간:</label>
+                            <div class="slider-container">
+                                <div class="slider-track">
+                                    <div class="slider-range" id="timeRange"></div>
+                                    <div class="slider-handle min-handle" id="timeMinHandle" 
+                                         role="slider" 
+                                         aria-label="최소 플레이 시간" 
+                                         aria-valuenow="10" 
+                                         aria-valuemin="10" 
+                                         aria-valuemax="120" 
+                                         tabindex="0"></div>
+                                    <div class="slider-handle max-handle" id="timeMaxHandle" 
+                                         role="slider" 
+                                         aria-label="최대 플레이 시간" 
+                                         aria-valuenow="120" 
+                                         aria-valuemin="10" 
+                                         aria-valuemax="120" 
+                                         tabindex="0"></div>
+                                </div>
+                                <input type="range" id="timeMin" class="slider-input" 
+                                       min="10" max="120" value="10" step="5" 
+                                       aria-label="최소 플레이 시간" title="최소 플레이 시간">
+                                <input type="range" id="timeMax" class="slider-input" 
+                                       min="10" max="120" value="120" step="5" 
+                                       aria-label="최대 플레이 시간" title="최대 플레이 시간">
+                            </div>
+                            <div class="slider-values">
+                                <span id="timeMinValue">10분</span>
+                                <span id="timeMaxValue">120분+</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- 플레이 시간 필터 -->
-                <div class="filter-group">
-                    <label>플레이 시간:</label>
-                    <div class="slider-container">
-                        <div class="slider-track">
-                            <div class="slider-range" id="timeRange"></div>
-                            <div class="slider-handle min-handle" id="timeMinHandle" 
-                                 role="slider" 
-                                 aria-label="최소 플레이 시간" 
-                                 aria-valuenow="10" 
-                                 aria-valuemin="10" 
-                                 aria-valuemax="120" 
-                                 tabindex="0"></div>
-                            <div class="slider-handle max-handle" id="timeMaxHandle" 
-                                 role="slider" 
-                                 aria-label="최대 플레이 시간" 
-                                 aria-valuenow="120" 
-                                 aria-valuemin="10" 
-                                 aria-valuemax="120" 
-                                 tabindex="0"></div>
-                        </div>
-                        <input type="range" id="timeMin" class="slider-input" 
-                               min="10" max="120" value="10" step="5" 
-                               aria-label="최소 플레이 시간" title="최소 플레이 시간">
-                        <input type="range" id="timeMax" class="slider-input" 
-                               min="10" max="120" value="120" step="5" 
-                               aria-label="최대 플레이 시간" title="최대 플레이 시간">
-                    </div>
-                    <div class="slider-values">
-                        <span id="timeMinValue">10분</span>
-                        <span id="timeMaxValue">120분+</span>
-                    </div>
+                <!-- 토글 버튼 (하단 고정) -->
+                <div class="filter-toggle collapsed" id="filterToggle">
+                    <span class="filter-toggle-icon"></span>
                 </div>
             </div>
         </div>
