@@ -180,7 +180,6 @@ class BoardGameViewer {
             input.type = 'text';
         }
         
-        input.value = '';
         this.advancedSearchAndFilter();
     }
 
