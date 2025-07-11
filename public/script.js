@@ -416,15 +416,14 @@ class BoardGameViewer {
         const game = this.currentData.find(g => g.id === gameId);
         if (!game) return;
         
-        const imageUrl = game.imageUrl || this.DEFAULT_IMAGE_URL;
+        // 1. 먼저 모달을 보이게 하고 로딩 상태 표시
+        this.elements.gameDetailModal.classList.remove('hidden');
         
-        // 모달 이미지 설정
-        this.elements.modalGameImage.src = imageUrl;
-        this.elements.modalGameImage.onerror = function() {
-            this.src = this.DEFAULT_IMAGE_URL;
-        }.bind(this);
+        // 2. 이전 이미지 즉시 제거하고 로딩 표시
+        this.elements.modalGameImage.src = '';
+        this.elements.modalGameImage.style.display = 'none';
         
-        // 게임 정보 렌더링
+        // 3. 게임 정보 먼저 렌더링 (이미지와 독립적으로)
         const gameDetailInfo = document.querySelector('.game-detail-info');
         gameDetailInfo.innerHTML = `
             <h2>${this.escapeHtml(game.name || '제목 없음')} ${this.getStatusTag(game.status)}</h2>
@@ -461,10 +460,31 @@ class BoardGameViewer {
             `}
         `;
         
+        // 4. 이미지 로딩 처리
+        const imageUrl = game.imageUrl || this.DEFAULT_IMAGE_URL;
+        
+        // 새 이미지 객체 생성하여 preload
+        const tempImage = new Image();
+        
+        tempImage.onload = () => {
+            // 이미지 로딩 완료 후 모달 이미지에 적용
+            this.elements.modalGameImage.src = imageUrl;
+            this.elements.modalGameImage.style.display = 'block';
+        };
+        
+        tempImage.onerror = () => {
+            // 이미지 로딩 실패 시 기본 이미지 사용
+            this.elements.modalGameImage.src = this.DEFAULT_IMAGE_URL;
+            this.elements.modalGameImage.style.display = 'block';
+        };
+        
+        // 이미지 로딩 시작
+        tempImage.src = imageUrl;
+        
+        // 5. 모달 닫기 버튼 복원
         this.elements.modalCloseBtn.style.display = '';
-        this.elements.gameDetailModal.classList.remove('hidden');
     }
-
+    
     // 게임 상세 모달 닫기
     closeGameModal() {
         this.elements.gameDetailModal.classList.add('hidden');
