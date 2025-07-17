@@ -7,6 +7,7 @@ class BoardGameViewer {
         this.currentSortOrder = 'asc';
         this.statusFilterActive = false;
         this.DEFAULT_IMAGE_URL = 'https://placehold.co/300x300/667eea/ffffff?text=No+Image';
+        this.currentModalGame = null; // 현재 모달에 표시된 게임 저장
         
         // DOM 요소 캐싱
         this.elements = {};
@@ -416,6 +417,9 @@ class BoardGameViewer {
         const game = this.currentData.find(g => g.id === gameId);
         if (!game) return;
         
+        // 현재 게임 정보 저장
+        this.currentModalGame = game;
+        
         // 1. 먼저 모달을 보이게 하고 로딩 상태 표시
         this.elements.gameDetailModal.classList.remove('hidden');
         
@@ -424,6 +428,17 @@ class BoardGameViewer {
         this.elements.modalGameImage.style.display = 'none';
         
         // 3. 게임 정보 먼저 렌더링 (이미지와 독립적으로)
+        this.renderGameInfo(game);
+        
+        // 4. 이미지 로딩 처리
+        this.loadModalImage(game);
+        
+        // 5. 모달 닫기 버튼 복원
+        this.elements.modalCloseBtn.style.display = '';
+    }
+
+    // 게임 정보 렌더링
+    renderGameInfo(game) {
         const gameDetailInfo = document.querySelector('.game-detail-info');
         gameDetailInfo.innerHTML = `
             <h2>${this.escapeHtml(game.name || '제목 없음')} ${this.getStatusTag(game.status)}</h2>
@@ -459,8 +474,10 @@ class BoardGameViewer {
                 </div>
             `}
         `;
-        
-        // 4. 이미지 로딩 처리
+    }
+
+    // 모달 이미지 로딩
+    loadModalImage(game) {
         const imageUrl = game.imageUrl || this.DEFAULT_IMAGE_URL;
         
         // 새 이미지 객체 생성하여 preload
@@ -480,25 +497,48 @@ class BoardGameViewer {
         
         // 이미지 로딩 시작
         tempImage.src = imageUrl;
-        
-        // 5. 모달 닫기 버튼 복원
-        this.elements.modalCloseBtn.style.display = '';
     }
     
     // 게임 상세 모달 닫기
     closeGameModal() {
         this.elements.gameDetailModal.classList.add('hidden');
+        this.currentModalGame = null; // 현재 게임 정보 초기화
+        
+        // 모달 내용 초기화 (비디오나 다른 상태 완전히 리셋)
+        this.resetModalContent();
+    }
+
+    // 모달 내용 완전 초기화
+    resetModalContent() {
+        // 이미지 컨테이너 완전 초기화
+        const modalGameImage = document.querySelector('.modal-game-image');
+        if (modalGameImage) {
+            modalGameImage.innerHTML = '<img id="modalGameImage" src="" alt="게임 이미지">';
+            
+            // 요소 재참조
+            this.elements.modalGameImage = document.getElementById('modalGameImage');
+        }
+        
+        // 게임 정보 컨테이너 초기화
+        const gameDetailInfo = document.querySelector('.game-detail-info');
+        if (gameDetailInfo) {
+            gameDetailInfo.innerHTML = '';
+        }
+        
+        // 닫기 버튼 복원
+        this.elements.modalCloseBtn.style.display = '';
     }
 
     // 유튜브 영상 임베드
     embedYouTubeVideo(youtubeUrl) {
+        if (!this.currentModalGame || !youtubeUrl) return;
+        
         this.elements.modalCloseBtn.style.display = 'none';
         
         const videoId = this.getYouTubeVideoId(youtubeUrl);
         if (!videoId) return;
         
         const modalGameImage = document.querySelector('.modal-game-image');
-        const originalContent = modalGameImage.innerHTML;
         
         const iframe = document.createElement('iframe');
         iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
@@ -513,16 +553,8 @@ class BoardGameViewer {
         closeVideoBtn.innerHTML = '&times;';
         closeVideoBtn.className = 'close-video-btn';
         closeVideoBtn.onclick = () => {
-            this.elements.modalCloseBtn.style.display = '';
-            modalGameImage.innerHTML = originalContent;
-            
-            const youtubeLink = modalGameImage.parentElement.querySelector('.youtube-link:not(.disabled)');
-            if (youtubeLink) {
-                youtubeLink.onclick = (e) => {
-                    e.preventDefault();
-                    this.embedYouTubeVideo(youtubeUrl);
-                };
-            }
+            // 비디오 닫기 시 원래 이미지로 복원
+            this.restoreOriginalImage();
         };
         
         const videoContainer = document.createElement('div');
@@ -532,6 +564,26 @@ class BoardGameViewer {
         
         modalGameImage.innerHTML = '';
         modalGameImage.appendChild(videoContainer);
+    }
+
+    // 원래 이미지로 복원
+    restoreOriginalImage() {
+        if (!this.currentModalGame) return;
+        
+        this.elements.modalCloseBtn.style.display = '';
+        
+        // 이미지 컨테이너 완전 초기화 후 재생성
+        const modalGameImage = document.querySelector('.modal-game-image');
+        modalGameImage.innerHTML = '<img id="modalGameImage" src="" alt="게임 이미지">';
+        
+        // 요소 재참조
+        this.elements.modalGameImage = document.getElementById('modalGameImage');
+        
+        // 원래 게임의 이미지 다시 로드
+        this.loadModalImage(this.currentModalGame);
+        
+        // 게임 정보도 다시 렌더링 (유튜브 버튼 복원)
+        this.renderGameInfo(this.currentModalGame);
     }
 
     // 유튜브 비디오 ID 추출
