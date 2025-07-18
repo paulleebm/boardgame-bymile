@@ -139,8 +139,16 @@
                             <span class="dropdown-arrow">▼</span>
                         </div>
                         <div class="dropdown-options hidden" id="dropdownOptions">
-                            <div class="dropdown-option" data-value="name">가나다순</div>
-                            <div class="dropdown-option" data-value="difficulty">난이도순</div>
+                            <div class="dropdown-option" 
+                                data-value="name" 
+                                onclick="window.boardGameViewer.selectOption('name', '가나다순')">
+                                가나다순
+                            </div>
+                            <div class="dropdown-option" 
+                                data-value="difficulty" 
+                                onclick="window.boardGameViewer.selectOption('difficulty', '난이도순')">
+                                난이도순
+                            </div>
                         </div>
                     </div>
                     

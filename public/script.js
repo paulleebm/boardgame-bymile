@@ -158,7 +158,20 @@ class BoardGameViewer {
             const dropdown = document.getElementById('customDropdown');
             if (dropdown && !dropdown.contains(event.target)) {
                 this.elements.dropdownOptions.classList.add('hidden');
-                document.querySelector('.dropdown-arrow').style.transform = 'rotate(0deg)';
+                const arrow = document.querySelector('.dropdown-arrow');
+                if (arrow) {
+                    arrow.style.transform = 'rotate(0deg)';
+                }
+            }
+        });
+        
+        // 드롭다운 옵션에 이벤트 위임 사용
+        this.elements.dropdownOptions.addEventListener('click', (e) => {
+            if (e.target.classList.contains('dropdown-option')) {
+                const value = e.target.getAttribute('data-value');
+                const text = e.target.textContent;
+                console.log('드롭다운 옵션 클릭:', value, text); // 디버깅용
+                this.selectOption(value, text);
             }
         });
     }
@@ -606,11 +619,21 @@ class BoardGameViewer {
     }
 
     selectOption(value, text) {
+        console.log('selectOption 호출:', value, text); // 디버깅용
+        
         this.elements.selectedOption.textContent = text;
         this.elements.dropdownOptions.classList.add('hidden');
-        document.querySelector('.dropdown-arrow').style.transform = 'rotate(0deg)';
         
+        const arrow = document.querySelector('.dropdown-arrow');
+        if (arrow) {
+            arrow.style.transform = 'rotate(0deg)';
+        }
+        
+        // 정렬 기준 변경
         this.currentSortBy = value;
+        console.log('현재 정렬 기준:', this.currentSortBy); // 디버깅용
+        
+        // 정렬 적용
         this.applySortingAndRender();
     }
 
