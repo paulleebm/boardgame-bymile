@@ -211,7 +211,7 @@ button:disabled {
     padding: var(--spacing-xl);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-medium);
-    margin-bottom: var(--spacing-xl);
+    margin-bottom: var(--spacing-lg);
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -255,6 +255,62 @@ button:disabled {
     box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
 }
 
+/* ===== 대량 작업 컨트롤 ===== */
+.bulk-controls {
+    background: var(--bg-primary);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-medium);
+    margin-bottom: var(--spacing-xl);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(45deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    border: 2px solid rgba(102, 126, 234, 0.2);
+}
+
+.bulk-info {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.bulk-actions-buttons {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+}
+
+.bulk-action-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+    background: linear-gradient(45deg, var(--info-color), #1976D2);
+    border-radius: 20px;
+}
+
+.bulk-status-select {
+    padding: 8px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 20px;
+    font-size: 13px;
+    background: white;
+    cursor: pointer;
+    min-width: 120px;
+}
+
+.bulk-apply-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+    background: linear-gradient(45deg, var(--success-color), #45a049);
+    border-radius: 20px;
+}
+
+.bulk-apply-btn:disabled {
+    background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+}
+
 /* ===== 게임 목록 ===== */
 .games-container {
     background: var(--bg-primary);
@@ -280,20 +336,32 @@ button:disabled {
     font-size: 1.5em;
 }
 
-.sort-controls select {
+.bulk-action-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+    background: linear-gradient(45deg, var(--info-color), #1976D2);
+    border-radius: 20px;
+}
+
+.bulk-status-select {
     padding: 8px 16px;
     border: 2px solid var(--border-color);
     border-radius: 20px;
+    font-size: 13px;
     background: white;
-    font-size: 14px;
     cursor: pointer;
-    transition: all var(--transition-normal);
+    min-width: 120px;
 }
 
-.sort-controls select:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 10px rgba(102, 126, 234, 0.15);
+.bulk-apply-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+    background: linear-gradient(45deg, var(--success-color), #45a049);
+    border-radius: 20px;
+}
+
+.bulk-apply-btn:disabled {
+    background: linear-gradient(45deg, #95a5a6, #7f8c8d);
 }
 
 .games-list {
@@ -317,11 +385,38 @@ button:disabled {
     box-shadow: 0 8px 30px rgba(0,0,0,0.15);
 }
 
+.game-item.selected {
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+    background: linear-gradient(to bottom, rgba(102, 126, 234, 0.05), white);
+}
+
 .game-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: var(--spacing-md);
+}
+
+.game-title-section {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    flex: 1;
+}
+
+.game-checkbox-container {
+    display: flex;
+    align-items: center;
+    margin-top: 2px;
+}
+
+.game-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+    transform: scale(1.2);
 }
 
 .game-title {
@@ -330,12 +425,14 @@ button:disabled {
     color: var(--text-primary);
     margin: 0;
     flex: 1;
+    line-height: 1.3;
 }
 
 .game-actions {
     display: flex;
     gap: var(--spacing-xs);
     margin-left: var(--spacing-sm);
+    flex-shrink: 0;
 }
 
 .action-btn {
@@ -766,10 +863,20 @@ button:disabled {
     }
     
     .search-box input,
-    .search-box select,
-    .search-box button {
+    .search-box select {
         width: 100%;
         margin-bottom: var(--spacing-sm);
+    }
+    
+    .bulk-controls {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        align-items: stretch;
+    }
+    
+    .bulk-actions-buttons {
+        justify-content: center;
+        flex-wrap: wrap;
     }
     
     .games-list {
@@ -780,6 +887,10 @@ button:disabled {
         flex-direction: column;
         align-items: flex-start;
         gap: var(--spacing-sm);
+    }
+    
+    .game-title-section {
+        width: 100%;
     }
     
     .game-actions {
@@ -852,6 +963,12 @@ button:disabled {
         margin-left: 0;
         margin-right: 0;
     }
+    
+    .game-checkbox {
+        width: 16px;
+        height: 16px;
+        transform: scale(1.1);
+    }
 }
 
 /* ===== 프린트 스타일 ===== */
@@ -879,7 +996,7 @@ button:disabled {
         page-break-inside: avoid;
     }
     
-    .action-btn {
+    .action-btn, .game-checkbox {
         display: none;
     }
 }

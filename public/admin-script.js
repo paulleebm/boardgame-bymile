@@ -1,4 +1,4 @@
-// 관리자 페이지 메인 스크립트
+// 관리자 페이지 메인 스크립트 (개선된 버전)
 class AdminManager {
     constructor() {
         this.allGames = [];
@@ -7,6 +7,11 @@ class AdminManager {
         this.gameToDelete = null;
         this.bulkGameData = [];
         this.searchTimeout = null;
+        this.selectedGameIds = new Set(); // 선택된 게임 ID들
+        
+        // 이벤트 핸들러 초기화
+        this.gameListClickHandler = null;
+        this.gameListChangeHandler = null;
         
         // DOM 요소 캐싱
         this.elements = {};
@@ -32,9 +37,14 @@ class AdminManager {
             
             // 컨트롤
             searchInput: document.getElementById('searchInput'),
-            searchBtn: document.getElementById('searchBtn'),
             statusFilter: document.getElementById('statusFilter'),
-            sortBy: document.getElementById('sortBy'),
+            
+            // 대량 작업 관련
+            selectAllBtn: document.getElementById('selectAllBtn'),
+            bulkStatusSelect: document.getElementById('bulkStatusSelect'),
+            applyBulkStatusBtn: document.getElementById('applyBulkStatusBtn'),
+            selectedCount: document.getElementById('selectedCount'),
+            selectedInfo: document.getElementById('selectedInfo'),
             
             // 게임 목록
             gamesList: document.getElementById('gamesList'),
@@ -74,16 +84,22 @@ class AdminManager {
         document.getElementById('addGameBtn').addEventListener('click', () => this.openModal());
         document.getElementById('bulkUploadBtn').addEventListener('click', () => this.openBulkModal());
         
-        // 검색
-        this.elements.searchBtn.addEventListener('click', () => this.searchGames());
+        // 검색 (버튼 제거)
         this.elements.searchInput.addEventListener('input', () => this.debounceSearch());
         this.elements.searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.searchGames();
         });
         
-        // 필터 및 정렬
+        // 필터
         this.elements.statusFilter.addEventListener('change', () => this.searchGames());
-        this.elements.sortBy.addEventListener('change', () => this.sortGames());
+        
+        // 대량 작업 이벤트 (null 체크 추가)
+        if (this.elements.selectAllBtn) {
+            this.elements.selectAllBtn.addEventListener('click', () => this.toggleSelectAll());
+        }
+        if (this.elements.applyBulkStatusBtn) {
+            this.elements.applyBulkStatusBtn.addEventListener('click', () => this.applyBulkStatusChange());
+        }
         
         // 게임 모달
         document.getElementById('modalCloseBtn').addEventListener('click', () => this.closeModal());
@@ -130,6 +146,7 @@ class AdminManager {
             this.renderGames();
             this.updateStats();
             this.updateLastUpdateTime();
+            this.updateBulkActions();
             
         } catch (error) {
             console.error('게임 데이터 로드 실패:', error);
@@ -161,32 +178,104 @@ class AdminManager {
         }
         
         this.elements.gamesList.innerHTML = this.currentGames.map(game => this.createGameItem(game)).join('');
+        this.setupGameListEvents();
+    }
+
+    // 게임 목록 이벤트 설정 (별도 함수로 분리)
+    setupGameListEvents() {
+        // 이벤트 위임으로 한 번만 등록
+        this.elements.gamesList.removeEventListener('click', this.gameListClickHandler);
+        this.elements.gamesList.removeEventListener('change', this.gameListChangeHandler);
         
-        // 이벤트 위임으로 버튼 클릭 처리
-        this.elements.gamesList.addEventListener('click', (e) => {
-            const editBtn = e.target.closest('.edit-btn');
-            const deleteBtn = e.target.closest('.delete-btn');
+        // 이벤트 핸들러를 인스턴스 메서드로 저장
+        this.gameListClickHandler = (e) => {
+            console.log('클릭 이벤트 발생:', e.target); // 디버깅용
             
+            // 체크박스 직접 클릭
+            if (e.target.type === 'checkbox' && e.target.classList.contains('game-checkbox')) {
+                e.stopPropagation();
+                const gameId = e.target.dataset.gameId;
+                console.log('체크박스 클릭:', gameId); // 디버깅용
+                this.toggleGameSelection(gameId);
+                return;
+            }
+            
+            // 수정 버튼 클릭 처리
+            const editBtn = e.target.closest('.edit-btn');
             if (editBtn) {
+                e.stopPropagation();
                 const gameId = editBtn.dataset.gameId;
                 this.editGame(gameId);
-            } else if (deleteBtn) {
+                return;
+            }
+            
+            // 삭제 버튼 클릭 처리
+            const deleteBtn = e.target.closest('.delete-btn');
+            if (deleteBtn) {
+                e.stopPropagation();
                 const gameId = deleteBtn.dataset.gameId;
                 const gameName = deleteBtn.dataset.gameName;
                 this.deleteGame(gameId, gameName);
+                return;
             }
-        });
+        };
+        
+        this.gameListChangeHandler = (e) => {
+            if (e.target.type === 'checkbox' && e.target.classList.contains('game-checkbox')) {
+                e.stopPropagation();
+                const gameId = e.target.dataset.gameId;
+                console.log('체크박스 change 이벤트:', gameId, e.target.checked); // 디버깅용
+                
+                // 체크박스 상태와 선택 상태 동기화
+                if (e.target.checked && !this.selectedGameIds.has(gameId)) {
+                    this.selectedGameIds.add(gameId);
+                    this.updateGameItemVisualState(gameId, true);
+                    this.updateBulkActions();
+                } else if (!e.target.checked && this.selectedGameIds.has(gameId)) {
+                    this.selectedGameIds.delete(gameId);
+                    this.updateGameItemVisualState(gameId, false);
+                    this.updateBulkActions();
+                }
+            }
+        };
+        
+        this.elements.gamesList.addEventListener('click', this.gameListClickHandler);
+        this.elements.gamesList.addEventListener('change', this.gameListChangeHandler);
+    }
+
+    // 게임 아이템 시각적 상태만 업데이트
+    updateGameItemVisualState(gameId, isSelected) {
+        const checkbox = this.elements.gamesList.querySelector(`[data-game-id="${gameId}"].game-checkbox`);
+        const gameItem = checkbox ? checkbox.closest('.game-item') : null;
+        
+        if (gameItem) {
+            if (isSelected) {
+                gameItem.classList.add('selected');
+            } else {
+                gameItem.classList.remove('selected');
+            }
+        }
     }
 
     // 게임 아이템 HTML 생성
     createGameItem(game) {
+        const isSelected = this.selectedGameIds.has(game.id);
+        
         return `
-            <div class="game-item">
+            <div class="game-item ${isSelected ? 'selected' : ''}">
                 <div class="game-header">
-                    <h3 class="game-title">
-                        ${this.escapeHtml(game.name || '이름 없음')}
-                        ${this.getStatusTag(game.status)}
-                    </h3>
+                    <div class="game-title-section">
+                        <div class="game-checkbox-container">
+                            <input type="checkbox" 
+                                   class="game-checkbox" 
+                                   data-game-id="${game.id}" 
+                                   ${isSelected ? 'checked' : ''}>
+                        </div>
+                        <h3 class="game-title">
+                            ${this.escapeHtml(game.name || '이름 없음')}
+                            ${this.getStatusTag(game.status)}
+                        </h3>
+                    </div>
                     <div class="game-actions">
                         <button class="action-btn edit-btn" data-game-id="${game.id}">✏️ 수정</button>
                         <button class="action-btn delete-btn" data-game-id="${game.id}" data-game-name="${this.escapeHtml(game.name)}">🗑️ 삭제</button>
@@ -237,6 +326,171 @@ class AdminManager {
         `;
     }
 
+    // 게임 선택/해제 토글
+    toggleGameSelection(gameId) {
+        if (!gameId) {
+            console.warn('게임 ID가 없습니다');
+            return;
+        }
+        
+        console.log('토글 게임 선택:', gameId); // 디버깅용
+        
+        const isCurrentlySelected = this.selectedGameIds.has(gameId);
+        
+        if (isCurrentlySelected) {
+            this.selectedGameIds.delete(gameId);
+            console.log('게임 선택 해제:', gameId);
+        } else {
+            this.selectedGameIds.add(gameId);
+            console.log('게임 선택:', gameId);
+        }
+        
+        // 체크박스와 시각적 상태 업데이트
+        this.updateGameItemSelection(gameId);
+        this.updateBulkActions();
+        
+        console.log('현재 선택된 게임들:', Array.from(this.selectedGameIds)); // 디버깅용
+    }
+
+    // 게임 아이템 선택 상태 업데이트
+    updateGameItemSelection(gameId) {
+        const checkbox = this.elements.gamesList.querySelector(`[data-game-id="${gameId}"].game-checkbox`);
+        const gameItem = checkbox ? checkbox.closest('.game-item') : null;
+        
+        if (!checkbox) {
+            console.warn('체크박스를 찾을 수 없습니다:', gameId);
+            return;
+        }
+        
+        if (!gameItem) {
+            console.warn('게임 아이템을 찾을 수 없습니다:', gameId);
+            return;
+        }
+        
+        const isSelected = this.selectedGameIds.has(gameId);
+        
+        // 체크박스 상태 업데이트
+        checkbox.checked = isSelected;
+        
+        // 게임 아이템 스타일 업데이트
+        if (isSelected) {
+            gameItem.classList.add('selected');
+        } else {
+            gameItem.classList.remove('selected');
+        }
+        
+        console.log(`게임 ${gameId} UI 업데이트 완료, 선택상태:`, isSelected); // 디버깅용
+    }
+
+    // 전체 선택/해제 토글
+    toggleSelectAll() {
+        console.log('전체 선택/해제 실행'); // 디버깅용
+        
+        const allSelected = this.currentGames.length > 0 && 
+                           this.currentGames.every(game => this.selectedGameIds.has(game.id));
+        
+        if (allSelected) {
+            // 전체 해제 - 현재 화면의 게임들만 해제
+            console.log('전체 해제'); // 디버깅용
+            this.currentGames.forEach(game => this.selectedGameIds.delete(game.id));
+        } else {
+            // 전체 선택 - 현재 화면의 게임들 모두 선택
+            console.log('전체 선택'); // 디버깅용
+            this.currentGames.forEach(game => this.selectedGameIds.add(game.id));
+        }
+        
+        // UI 업데이트를 위해 다시 렌더링
+        this.renderGames();
+        this.updateBulkActions();
+        
+        console.log('현재 선택된 게임들:', Array.from(this.selectedGameIds)); // 디버깅용
+    }
+
+    // 대량 작업 UI 업데이트
+    updateBulkActions() {
+        const selectedCount = this.selectedGameIds.size;
+        const currentGameIds = new Set(this.currentGames.map(game => game.id));
+        const selectedInCurrentView = Array.from(this.selectedGameIds).filter(id => currentGameIds.has(id)).length;
+        
+        if (this.elements.selectedCount) {
+            this.elements.selectedCount.textContent = `${selectedCount}개 선택됨`;
+        }
+        
+        // 대량 작업 버튼들 활성화/비활성화
+        if (this.elements.applyBulkStatusBtn) {
+            this.elements.applyBulkStatusBtn.disabled = selectedCount === 0;
+        }
+        
+        // 전체 선택 버튼 텍스트 업데이트
+        if (this.elements.selectAllBtn) {
+            const allCurrentSelected = this.currentGames.length > 0 && 
+                                     this.currentGames.every(game => this.selectedGameIds.has(game.id));
+            this.elements.selectAllBtn.textContent = allCurrentSelected ? '전체 해제' : '전체 선택';
+        }
+        
+        // 선택 정보 표시/숨김
+        if (this.elements.selectedInfo) {
+            this.elements.selectedInfo.style.display = selectedCount > 0 ? 'block' : 'none';
+        }
+    }
+
+    // 대량 상태 변경 적용
+    async applyBulkStatusChange() {
+        const selectedIds = Array.from(this.selectedGameIds);
+        if (selectedIds.length === 0) {
+            this.showError('선택된 게임이 없습니다.');
+            return;
+        }
+        
+        const newStatus = this.elements.bulkStatusSelect.value;
+        const statusText = this.getGameStatusText(newStatus);
+        
+        if (!confirm(`선택된 ${selectedIds.length}개 게임의 상태를 "${statusText}"로 변경하시겠습니까?`)) {
+            return;
+        }
+        
+        this.showLoading(true);
+        
+        try {
+            let successCount = 0;
+            let errorCount = 0;
+            const errors = [];
+            
+            for (const gameId of selectedIds) {
+                try {
+                    const updateData = { status: newStatus };
+                    await window.boardGameAPI.updateGame(gameId, updateData);
+                    successCount++;
+                } catch (error) {
+                    console.error(`게임 ID "${gameId}" 상태 변경 실패:`, error);
+                    errorCount++;
+                    errors.push(`ID ${gameId}: ${error.message}`);
+                }
+            }
+            
+            // 선택 해제
+            this.selectedGameIds.clear();
+            
+            // 데이터 다시 로드
+            await this.loadGames();
+            
+            if (errorCount === 0) {
+                this.showSuccess(`${successCount}개 게임의 상태가 "${statusText}"로 변경되었습니다.`);
+            } else {
+                this.showSuccess(`${successCount}개 성공, ${errorCount}개 실패했습니다.`);
+                if (errors.length > 0) {
+                    console.error('상태 변경 실패 목록:', errors);
+                }
+            }
+            
+        } catch (error) {
+            console.error('대량 상태 변경 실패:', error);
+            this.showError('대량 상태 변경에 실패했습니다.');
+        }
+        
+        this.showLoading(false);
+    }
+
     // 게임 검색 (디바운스)
     debounceSearch() {
         clearTimeout(this.searchTimeout);
@@ -250,6 +504,8 @@ class AdminManager {
         const query = this.elements.searchInput.value.trim().toLowerCase();
         const statusFilter = this.elements.statusFilter.value;
         
+        console.log('검색 실행:', { query, statusFilter }); // 디버깅용
+        
         this.currentGames = this.allGames.filter(game => {
             // 텍스트 검색
             const matchesText = !query || 
@@ -259,13 +515,29 @@ class AdminManager {
             
             // 상태 필터
             const matchesStatus = !statusFilter || 
-                (statusFilter === 'normal' && (!game.status || game.status === 'normal')) ||
+                (statusFilter === 'normal' && (!game.status || game.status === 'normal' || game.status === '')) ||
                 (statusFilter !== 'normal' && game.status === statusFilter);
             
             return matchesText && matchesStatus;
         });
         
+        // 항상 수정일순으로 정렬
+        this.sortGamesByUpdatedAt();
+        
+        console.log('필터링된 게임 수:', this.currentGames.length); // 디버깅용
+        
+        // 현재 화면에 없는 게임들의 선택 상태는 유지하되, UI에서는 현재 화면 게임들만 표시
         this.renderGames();
+        this.updateBulkActions();
+    }
+
+    // 수정일순 정렬 (고정)
+    sortGamesByUpdatedAt() {
+        this.currentGames.sort((a, b) => {
+            const dateA = this.getDate(a.updatedAt);
+            const dateB = this.getDate(b.updatedAt);
+            return dateB - dateA; // 최신순 (내림차순)
+        });
     }
 
     // 게임 정렬
@@ -404,6 +676,10 @@ class AdminManager {
             await window.boardGameAPI.deleteGame(this.gameToDelete);
             this.closeDeleteModal();
             this.showSuccess('게임이 삭제되었습니다.');
+            
+            // 선택된 목록에서도 제거
+            this.selectedGameIds.delete(this.gameToDelete);
+            
             await this.loadGames();
             
         } catch (error) {
