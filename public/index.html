@@ -17,11 +17,24 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🎲 꿈엘청 보드게임 동아리</h1>
+            <div class="header-info">
+                <!-- 로그인/로그아웃 버튼 -->
+                <div class="auth-section" id="authSection">
+                    <div class="user-profile hidden" id="userProfile">
+                        <img class="user-avatar-btn" id="userAvatarBtn" src="" alt="프로필" onclick="openProfileModal()">
+                    </div>
+                    <button class="login-btn" id="loginBtn">
+                        <span class="google-icon">G</span>
+                        Google 로그인
+                    </button>
+                </div>
+            </div>
         </header>
 
         <!-- 검색 및 필터 컨트롤 -->
@@ -114,6 +127,35 @@
                                 <span id="timeMaxValue">120분+</span>
                             </div>
                         </div>
+                        
+                        <!-- 정렬 컨트롤 -->
+                        <div class="filter-group">
+                            <label>정렬:</label>
+                            <div class="sort-controls-filter">
+                                <div class="custom-dropdown" id="customDropdown">
+                                    <div class="dropdown-selected">
+                                        <span id="selectedOption">가나다순</span>
+                                        <span class="dropdown-arrow">▼</span>
+                                    </div>
+                                    <div class="dropdown-options hidden" id="dropdownOptions">
+                                        <div class="dropdown-option" 
+                                            data-value="name" 
+                                            onclick="window.boardGameViewer.selectOption('name', '가나다순')">
+                                            가나다순
+                                        </div>
+                                        <div class="dropdown-option" 
+                                            data-value="difficulty" 
+                                            onclick="window.boardGameViewer.selectOption('difficulty', '난이도순')">
+                                            난이도순
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button id="sortOrderBtn" class="sort-order-btn" title="정렬 순서 변경" aria-label="정렬 순서 토글">
+                                    <span id="sortOrderIcon">↑</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -132,28 +174,9 @@
                     <div class="game-count" id="gameCount">총 0개</div>
                 </div>
                 <div class="sort-controls">
-                    <!-- 커스텀 드롭다운 -->
-                    <div class="custom-dropdown" id="customDropdown">
-                        <div class="dropdown-selected">
-                            <span id="selectedOption">가나다순</span>
-                            <span class="dropdown-arrow">▼</span>
-                        </div>
-                        <div class="dropdown-options hidden" id="dropdownOptions">
-                            <div class="dropdown-option" 
-                                data-value="name" 
-                                onclick="window.boardGameViewer.selectOption('name', '가나다순')">
-                                가나다순
-                            </div>
-                            <div class="dropdown-option" 
-                                data-value="difficulty" 
-                                onclick="window.boardGameViewer.selectOption('difficulty', '난이도순')">
-                                난이도순
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <button id="sortOrderBtn" class="sort-order-btn" title="정렬 순서 변경" aria-label="정렬 순서 토글">
-                        <span id="sortOrderIcon">↑</span>
+                    <!-- 즐겨찾기 필터 버튼 -->
+                    <button id="favoriteFilterBtn" class="favorite-filter-btn hidden" title="즐겨찾기만 보기" aria-label="즐겨찾기 필터 토글">
+                        ❤️
                     </button>
                     
                     <button id="statusFilterBtn" class="status-filter-btn" title="특별 상태 게임만 보기" aria-label="상태 필터 토글">
@@ -177,6 +200,12 @@
             <span id="errorText"></span>
             <button id="errorCloseBtn">닫기</button>
         </div>
+
+        <!-- 성공 메시지 -->
+        <div class="success-message hidden" id="successMessage" role="alert" aria-live="polite">
+            <span id="successText"></span>
+            <button id="successCloseBtn">닫기</button>
+        </div>
     </div>
 
     <!-- 게임 상세 모달 -->
@@ -190,6 +219,30 @@
             
             <div class="game-detail-info">
                 <!-- 내용은 JavaScript로 동적 생성 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 프로필 모달 -->
+    <div class="profile-modal hidden" id="profileModal" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
+        <div class="profile-modal-content">
+            <div class="profile-modal-header">
+                <h3 id="profileModalTitle">프로필</h3>
+                <button class="close-btn" id="profileModalCloseBtn" aria-label="모달 닫기">&times;</button>
+            </div>
+            
+            <div class="profile-modal-body">
+                <div class="profile-info">
+                    <img class="profile-avatar" id="profileAvatar" src="" alt="프로필 이미지">
+                    <div class="profile-details">
+                        <div class="profile-name" id="profileName"></div>
+                        <div class="profile-email" id="profileEmail"></div>
+                    </div>
+                </div>
+                
+                <div class="profile-actions">
+                    <button class="logout-btn" id="logoutBtn">로그아웃</button>
+                </div>
             </div>
         </div>
     </div>

@@ -8,6 +8,7 @@
     --error-color: #ff6b6b;
     --warning-color: #ffa726;
     --info-color: #2196F3;
+    --favorite-color: #e91e63;
     
     --text-primary: #2c3e50;
     --text-secondary: #666;
@@ -134,7 +135,7 @@ header {
     background: var(--bg-primary);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
-    padding: var(--spacing-xl);
+    padding: var(--spacing-md);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-medium);
     margin-bottom: var(--spacing-xl);
@@ -142,23 +143,32 @@ header {
     justify-content: space-between;
     align-items: center;
     border: 1px solid rgba(255, 255, 255, 0.2);
+    flex-wrap: nowrap;
+    gap: var(--spacing-sm);
+    min-height: 50px;
 }
 
 header h1 {
     color: var(--text-primary);
-    font-size: 2.2em;
+    font-size: 1.6em;
     font-weight: 700;
     background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .header-info {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: var(--spacing-sm);
+    align-items: center;
+    gap: var(--spacing-xs);
+    flex-shrink: 0;
 }
 
 .header-controls {
@@ -166,26 +176,191 @@ header h1 {
     gap: var(--spacing-sm);
 }
 
-/* 관리자 링크 */
-.admin-link {
+/* ===== 인증 섹션 스타일 ===== */
+.auth-section {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    background: rgba(102, 126, 234, 0.1);
+    padding: 8px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid white;
+    object-fit: cover;
+}
+
+.user-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.login-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(45deg, #4285f4, #34a853);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--border-radius-button);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
+}
+
+.login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
+}
+
+.google-icon {
+    background: white;
+    color: #4285f4;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
-    background: rgba(102, 126, 234, 0.1);
-    border-radius: 50%;
-    text-decoration: none;
-    font-size: 20px;
-    transition: all var(--transition-normal);
-    opacity: 0.7;
+    font-weight: bold;
+    font-size: 12px;
 }
 
-.admin-link:hover {
-    background: var(--primary-color);
-    transform: scale(1.1);
-    opacity: 1;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+.logout-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+    border: 1px solid rgba(102, 126, 234, 0.3);
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: none;
+}
+
+.logout-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: none;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+/* ===== 프로필 모달 ===== */
+.profile-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    padding: var(--spacing-lg);
+}
+
+.profile-modal-content {
+    background: white;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: var(--shadow-heavy);
+    overflow: hidden;
+}
+
+.profile-modal-header {
+    padding: var(--spacing-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.profile-modal-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.3em;
+}
+
+.profile-modal-body {
+    padding: var(--spacing-xl);
+}
+
+.profile-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.profile-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    object-fit: cover;
+}
+
+.profile-details {
+    flex: 1;
+}
+
+.profile-name {
+    font-size: 1.2em;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.profile-email {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+.profile-actions {
+    display: flex;
+    justify-content: center;
+}
+
+.logout-btn {
+    background: linear-gradient(45deg, #e74c3c, #c0392b);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: var(--border-radius-button);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+}
+
+.logout-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
 }
 
 /* ===== 검색 및 컨트롤 영역 ===== */
@@ -321,7 +496,7 @@ header h1 {
 
 .filter-groups {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: var(--spacing-lg);
     align-items: start;
     margin-top: var(--spacing-md);
@@ -560,6 +735,39 @@ button:disabled {
     gap: 8px;
 }
 
+/* 즐겨찾기 필터 버튼 */
+.favorite-filter-btn {
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    background: white;
+    color: var(--favorite-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all var(--transition-normal);
+    padding: 0;
+    box-shadow: none;
+}
+
+.favorite-filter-btn:hover {
+    border-color: var(--favorite-color);
+    background: rgba(233, 30, 99, 0.1);
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(233, 30, 99, 0.2);
+}
+
+.favorite-filter-btn.active {
+    background: var(--favorite-color);
+    color: white;
+    border-color: var(--favorite-color);
+    box-shadow: 0 2px 12px rgba(233, 30, 99, 0.4);
+}
+
 /* 상태 필터 버튼 */
 .status-filter-btn {
     width: 32px;
@@ -593,7 +801,25 @@ button:disabled {
     box-shadow: 0 2px 12px rgba(255, 167, 38, 0.4);
 }
 
-/* 커스텀 드롭다운 */
+/* 필터 내 정렬 컨트롤 */
+.sort-controls-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sort-controls-filter .custom-dropdown {
+    flex: 1;
+    min-width: 90px;
+}
+
+.sort-controls-filter .sort-order-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    font-size: 14px;
+    flex-shrink: 0;
+}
 .custom-dropdown {
     position: relative;
     min-width: 100px;
@@ -631,6 +857,7 @@ button:disabled {
     font-weight: bold;
 }
 
+/* 드롭다운 옵션 개선 */
 .dropdown-options {
     position: absolute;
     top: 100%;
@@ -640,9 +867,18 @@ button:disabled {
     border: 2px solid var(--border-color);
     border-radius: 15px;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
+    z-index: 9999;
     margin-top: 4px;
     overflow: hidden;
+}
+
+/* 게임 목록과 충분한 간격 확보 */
+.controls {
+    margin-bottom: var(--spacing-lg);
+}
+
+.grid-container {
+    margin-top: var(--spacing-sm);
 }
 
 .dropdown-option {
@@ -727,6 +963,7 @@ button:disabled {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    position: relative;
 }
 
 .game-image img {
@@ -738,6 +975,19 @@ button:disabled {
 
 .game-card-grid:hover .game-image img {
     transform: scale(1.05);
+}
+
+/* 즐겨찾기 표시 (클릭 불가) */
+.favorite-indicator {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 18px;
+    z-index: 5;
+    color: var(--favorite-color);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.8));
+    pointer-events: none;
 }
 
 .game-title-grid {
@@ -835,12 +1085,52 @@ button:disabled {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
 }
 
 .modal-game-image img {
     width: 100%;
     height: 100%;
     object-fit: contain;
+}
+
+/* 모달 즐겨찾기 버튼 */
+.modal-favorite-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all var(--transition-normal);
+    z-index: 10;
+    padding: 0;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+}
+
+.modal-favorite-btn:hover {
+    transform: scale(1.1);
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.modal-favorite-btn.favorited {
+    color: var(--favorite-color);
+    background: rgba(233, 30, 99, 0.1);
+    border: 2px solid var(--favorite-color);
+}
+
+.modal-favorite-btn.favorited:hover {
+    background: rgba(233, 30, 99, 0.2);
 }
 
 /* 비디오 컨테이너 스타일 */
@@ -1047,19 +1337,29 @@ button:disabled {
     100% { transform: rotate(360deg); }
 }
 
-.error-message {
-    background: linear-gradient(45deg, var(--error-color), #ee5a52);
-    color: white;
+.error-message, .success-message {
     padding: var(--spacing-md) var(--spacing-lg);
     border-radius: var(--border-radius-small);
     margin: var(--spacing-lg) 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    font-weight: 600;
+}
+
+.error-message {
+    background: linear-gradient(45deg, var(--error-color), #ee5a52);
+    color: white;
     box-shadow: 0 4px 20px rgba(255, 107, 107, 0.3);
 }
 
-.error-message button {
+.success-message {
+    background: linear-gradient(45deg, var(--success-color), #45a049);
+    color: white;
+    box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
+}
+
+.error-message button, .success-message button {
     background: rgba(255, 255, 255, 0.2);
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -1101,12 +1401,30 @@ button:disabled {
     }
     
     header {
-        justify-content: space-between;
-        text-align: left;
+        padding: var(--spacing-md);
+        min-height: 50px;
+        gap: 8px;
     }
     
     header h1 {
-        font-size: 1.6em;
+        font-size: 1.2em;
+    }
+    
+    .user-avatar-btn {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .login-btn {
+        padding: 6px 12px;
+        font-size: 11px;
+        gap: 4px;
+    }
+    
+    .google-icon {
+        width: 16px;
+        height: 16px;
+        font-size: 10px;
     }
     
     .search-main-group {
@@ -1140,7 +1458,7 @@ button:disabled {
 
     .filter-groups {
         grid-template-columns: 1fr;
-        gap: 0;
+        gap: var(--spacing-md);
     }
 
     .filter-toggle {
@@ -1149,6 +1467,32 @@ button:disabled {
 
     .filter-toggle-icon {
         font-size: 14;
+    }
+    
+    /* 모바일에서 드롭다운 공간 확보 */
+    .filter-content.collapsed + .filter-toggle {
+        margin-bottom: 60px;
+    }
+    
+    /* 모바일에서 드롭다운 개선 */
+    .sort-controls-filter .custom-dropdown {
+        min-width: 100px;
+    }
+    
+    .dropdown-selected {
+        padding: 6px 8px;
+        font-size: 12px;
+        min-width: 80px;
+    }
+    
+    .dropdown-arrow {
+        font-size: 8px;
+        margin-left: 4px;
+    }
+    
+    .dropdown-option {
+        padding: 8px 10px;
+        font-size: 12px;
     }
     
     .game-grid {
@@ -1175,10 +1519,10 @@ button:disabled {
         padding: 3px 6px;
     }
     
-    .admin-link {
-        width: 36px;
-        height: 36px;
-        font-size: 18px;
+    .favorite-indicator {
+        font-size: 16px;
+        top: 6px;
+        right: 6px;
     }
     
     .game-detail-content {
@@ -1195,6 +1539,14 @@ button:disabled {
         font-size: 14px;
         padding: 10px 16px;
     }
+    
+    .modal-favorite-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+        top: 15px;
+        left: 15px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1207,8 +1559,20 @@ button:disabled {
         --font-size-2xl: 20px;
     }
     
+    header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
     header h1 {
         font-size: 1.4em;
+        order: 1;
+    }
+    
+    .header-info {
+        order: 2;
+        width: 100%;
+        justify-content: center;
     }
     
     .search-type-group select {
@@ -1238,6 +1602,12 @@ button:disabled {
         font-size: 0.75em;
     }
     
+    .favorite-indicator {
+        font-size: 14px;
+        top: 5px;
+        right: 5px;
+    }
+    
     .admin-link {
         width: 32px;
         height: 32px;
@@ -1246,8 +1616,36 @@ button:disabled {
 }
 
 @media (max-width: 360px) {
+    header {
+        padding: 8px;
+        min-height: 40px;
+        gap: 4px;
+    }
+    
     header h1 {
-        font-size: 1.2em;
+        font-size: 0.8em;
+    }
+    
+    .user-avatar-btn {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .login-btn {
+        padding: 3px 6px;
+        font-size: 9px;
+        gap: 2px;
+    }
+    
+    .google-icon {
+        width: 12px;
+        height: 12px;
+        font-size: 8px;
+    }
+    
+    /* 초소형 화면에서 드롭다운 공간 */
+    .filter-content.collapsed + .filter-toggle {
+        margin-bottom: 40px;
     }
     
     .search-type-group select {
@@ -1276,11 +1674,46 @@ button:disabled {
     .game-title-grid h3 {
         font-size: 0.7em;
     }
+    
+    .favorite-indicator {
+        font-size: 12px;
+        top: 4px;
+        right: 4px;
+    }
 }
 
 @media (max-width: 320px) {
+    header {
+        padding: 6px;
+        min-height: 35px;
+        gap: 3px;
+    }
+    
     header h1 {
-        font-size: 1.1em;
+        font-size: 0.9em;
+    }
+    
+    .user-avatar-btn {
+        width: 16px;
+        height: 16px;
+        border: 2px solid white;
+    }
+    
+    .login-btn {
+        padding: 2px 4px;
+        font-size: 8px;
+        gap: 1px;
+    }
+    
+    .google-icon {
+        width: 10px;
+        height: 10px;
+        font-size: 7px;
+    }
+    
+    /* 최소 화면에서 드롭다운 공간 */
+    .filter-content.collapsed + .filter-toggle {
+        margin-bottom: 35px;
     }
     
     .game-grid {
@@ -1299,6 +1732,12 @@ button:disabled {
     
     .game-title-grid h3 {
         font-size: 0.65em;
+    }
+    
+    .favorite-indicator {
+        font-size: 11px;
+        top: 3px;
+        right: 3px;
     }
 }
 
