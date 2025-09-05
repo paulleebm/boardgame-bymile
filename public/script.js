@@ -255,9 +255,6 @@ class BoardGameViewer {
         document.getElementById('errorCloseBtn')?.addEventListener('click', () => this.hideError());
         document.getElementById('successCloseBtn')?.addEventListener('click', () => this.hideSuccess());
         
-        // 커스텀 드롭다운
-        this.setupDropdownListeners();
-        
         // 전역 함수 노출 (HTML onclick 이벤트용)
         window.toggleDropdown = () => this.toggleDropdown();
         window.selectOption = (value, text) => this.selectOption(value, text);
@@ -370,36 +367,6 @@ class BoardGameViewer {
         }
         
         this.advancedSearchAndFilter();
-    }
-
-    // 커스텀 드롭다운 설정
-    setupDropdownListeners() {
-        const dropdownSelected = document.querySelector('.dropdown-selected');
-        if (dropdownSelected) {
-            dropdownSelected.addEventListener('click', () => this.toggleDropdown());
-        }
-        
-        // 외부 클릭시 드롭다운 닫기
-        document.addEventListener('click', (event) => {
-            const dropdown = document.getElementById('customDropdown');
-            if (dropdown && !dropdown.contains(event.target)) {
-                this.elements.dropdownOptions.classList.add('hidden');
-                const arrow = document.querySelector('.dropdown-arrow');
-                if (arrow) {
-                    arrow.style.transform = 'rotate(0deg)';
-                }
-            }
-        });
-        
-        // 드롭다운 옵션에 이벤트 위임 사용
-        this.elements.dropdownOptions.addEventListener('click', (e) => {
-            if (e.target.classList.contains('dropdown-option')) {
-                const value = e.target.getAttribute('data-value');
-                const text = e.target.textContent;
-                console.log('드롭다운 옵션 클릭:', value, text); // 디버깅용
-                this.selectOption(value, text);
-            }
-        });
     }
 
     // 검색 타입 변경 처리

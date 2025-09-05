@@ -1383,32 +1383,6 @@ button:disabled {
         font-size: 14;
     }
     
-    /* 모바일에서 드롭다운 공간 확보 */
-    .filter-content.collapsed + .filter-toggle {
-        margin-bottom: 60px;
-    }
-    
-    /* 모바일에서 드롭다운 개선 */
-    .sort-controls-filter .custom-dropdown {
-        min-width: 100px;
-    }
-    
-    .dropdown-selected {
-        padding: 6px 8px;
-        font-size: 12px;
-        min-width: 80px;
-    }
-    
-    .dropdown-arrow {
-        font-size: 8px;
-        margin-left: 4px;
-    }
-    
-    .dropdown-option {
-        padding: 8px 10px;
-        font-size: 12px;
-    }
-    
     .game-grid {
         grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
         gap: 12px;
