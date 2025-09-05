@@ -131,7 +131,7 @@ class BoardGameViewer {
             this.elements.userProfile.classList.remove('hidden');
             this.elements.favoriteFilterBtn.classList.remove('hidden');
             
-            this.elements.userAvatarBtn.src = user.photoURL || '';
+            this.elements.userAvatarImg.src = user.photoURL || '';
         } else {
             // 로그아웃 상태
             this.elements.loginBtn.classList.remove('hidden');
@@ -242,11 +242,6 @@ class BoardGameViewer {
                 this.advancedSearchAndFilter();
             }
         });      
-        
-        // 정렬 및 필터
-        this.elements.sortOrderBtn.addEventListener('click', () => this.toggleSortOrder());
-        this.elements.statusFilterBtn.addEventListener('click', () => this.toggleStatusFilter());
-        this.elements.favoriteFilterBtn.addEventListener('click', () => this.toggleFavoriteFilter());
         
         // 모달 닫기
         this.elements.modalCloseBtn.addEventListener('click', () => this.closeGameModal());

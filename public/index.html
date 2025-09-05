@@ -27,11 +27,13 @@
                 <!-- 로그인/로그아웃 버튼 -->
                 <div class="auth-section" id="authSection">
                     <div class="user-profile hidden" id="userProfile">
-                        <img class="user-avatar-btn" id="userAvatarBtn" src="" alt="프로필" onclick="openProfileModal()">
+                        <button class="user-avatar-btn" id="userAvatarBtn" onclick="openProfileModal()" aria-label="프로필 메뉴">
+                            <img class="user-avatar-img" id="userAvatarImg" src="" alt="프로필">
+                        </button>
                     </div>
                     <button class="login-btn" id="loginBtn">
                         <span class="google-icon">G</span>
-                        Google 로그인
+                        <span class="login-text">Google 로그인</span>
                     </button>
                 </div>
             </div>
@@ -128,34 +130,7 @@
                             </div>
                         </div>
                         
-                        <!-- 정렬 컨트롤 -->
-                        <div class="filter-group">
-                            <label>정렬:</label>
-                            <div class="sort-controls-filter">
-                                <div class="custom-dropdown" id="customDropdown">
-                                    <div class="dropdown-selected">
-                                        <span id="selectedOption">가나다순</span>
-                                        <span class="dropdown-arrow">▼</span>
-                                    </div>
-                                    <div class="dropdown-options hidden" id="dropdownOptions">
-                                        <div class="dropdown-option" 
-                                            data-value="name" 
-                                            onclick="window.boardGameViewer.selectOption('name', '가나다순')">
-                                            가나다순
-                                        </div>
-                                        <div class="dropdown-option" 
-                                            data-value="difficulty" 
-                                            onclick="window.boardGameViewer.selectOption('difficulty', '난이도순')">
-                                            난이도순
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <button id="sortOrderBtn" class="sort-order-btn" title="정렬 순서 변경" aria-label="정렬 순서 토글">
-                                    <span id="sortOrderIcon">↑</span>
-                                </button>
-                            </div>
-                        </div>
+
                     </div>
                 </div>
                 

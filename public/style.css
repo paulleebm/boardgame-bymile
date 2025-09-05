@@ -183,6 +183,38 @@ header h1 {
     gap: var(--spacing-sm);
 }
 
+.user-profile {
+    display: flex;
+    align-items: center;
+}
+
+.user-avatar-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid white;
+    background: white;
+    padding: 0;
+    cursor: pointer;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all var(--transition-normal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-avatar-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.user-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
 .user-info {
     display: flex;
     align-items: center;
@@ -243,6 +275,11 @@ header h1 {
     justify-content: center;
     font-weight: bold;
     font-size: 12px;
+    flex-shrink: 0;
+}
+
+.login-text {
+    white-space: nowrap;
 }
 
 .logout-btn {
@@ -801,133 +838,6 @@ button:disabled {
     box-shadow: 0 2px 12px rgba(255, 167, 38, 0.4);
 }
 
-/* 필터 내 정렬 컨트롤 */
-.sort-controls-filter {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.sort-controls-filter .custom-dropdown {
-    flex: 1;
-    min-width: 90px;
-}
-
-.sort-controls-filter .sort-order-btn {
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    font-size: 14px;
-    flex-shrink: 0;
-}
-.custom-dropdown {
-    position: relative;
-    min-width: 100px;
-}
-
-.dropdown-selected {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 12px;
-    border: 2px solid var(--border-color);
-    border-radius: 20px;
-    background: white;
-    font-size: 14px;
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: all var(--transition-normal);
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    min-width: 90px;
-}
-
-.dropdown-selected:hover {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 10px rgba(102, 126, 234, 0.15);
-}
-
-.dropdown-arrow {
-    font-size: 10px;
-    margin-left: 8px;
-    transition: transform var(--transition-normal);
-    color: var(--primary-color);
-    font-weight: bold;
-}
-
-/* 드롭다운 옵션 개선 */
-.dropdown-options {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: white;
-    border: 2px solid var(--border-color);
-    border-radius: 15px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    z-index: 9999;
-    margin-top: 4px;
-    overflow: hidden;
-}
-
-/* 게임 목록과 충분한 간격 확보 */
-.controls {
-    margin-bottom: var(--spacing-lg);
-}
-
-.grid-container {
-    margin-top: var(--spacing-sm);
-}
-
-.dropdown-option {
-    padding: 10px 12px;
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    font-size: 14px;
-    color: var(--text-primary);
-}
-
-.dropdown-option:hover {
-    background: rgba(102, 126, 234, 0.1);
-    color: var(--primary-color);
-}
-
-.dropdown-option:not(:last-child) {
-    border-bottom: 1px solid rgba(102, 126, 234, 0.1);
-}
-
-.sort-order-btn {
-    width: 32px;
-    height: 32px;
-    border: 2px solid var(--border-color);
-    border-radius: 50%;
-    background: white;
-    color: var(--primary-color);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    font-weight: bold;
-    transition: all var(--transition-normal);
-    padding: 0;
-    box-shadow: none;
-}
-
-.sort-order-btn:hover {
-    border-color: var(--primary-color);
-    background: rgba(102, 126, 234, 0.1);
-    transform: scale(1.1);
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
-}
-
-.sort-order-btn #sortOrderIcon {
-    line-height: 1;
-    transition: transform var(--transition-fast);
-}
-
 /* ===== 게임 그리드 ===== */
 .game-grid {
     display: grid;
@@ -1427,6 +1337,10 @@ button:disabled {
         font-size: 10px;
     }
     
+    .login-text {
+        display: none;
+    }
+    
     .search-main-group {
         min-width: 100%;
         flex: 1;
@@ -1560,19 +1474,33 @@ button:disabled {
     }
     
     header {
-        flex-direction: column;
-        text-align: center;
+        padding: var(--spacing-sm);
+        gap: 6px;
     }
     
     header h1 {
-        font-size: 1.4em;
-        order: 1;
+        font-size: 1.1em;
+    }
+    
+    .user-avatar-btn {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .login-btn {
+        padding: 4px 8px;
+        font-size: 10px;
+        gap: 3px;
+    }
+    
+    .google-icon {
+        width: 14px;
+        height: 14px;
+        font-size: 9px;
     }
     
     .header-info {
-        order: 2;
-        width: 100%;
-        justify-content: center;
+        gap: 4px;
     }
     
     .search-type-group select {
@@ -1617,24 +1545,26 @@ button:disabled {
 
 @media (max-width: 360px) {
     header {
-        padding: 8px;
+        padding: 6px;
         min-height: 40px;
         gap: 4px;
     }
     
     header h1 {
-        font-size: 0.8em;
+        font-size: 0.9em;
     }
     
     .user-avatar-btn {
         width: 24px;
         height: 24px;
+        border-width: 1px;
     }
     
     .login-btn {
         padding: 3px 6px;
         font-size: 9px;
         gap: 2px;
+        border-radius: 15px;
     }
     
     .google-icon {
@@ -1684,25 +1614,26 @@ button:disabled {
 
 @media (max-width: 320px) {
     header {
-        padding: 6px;
+        padding: 4px;
         min-height: 35px;
         gap: 3px;
     }
     
     header h1 {
-        font-size: 0.9em;
+        font-size: 0.8em;
     }
     
     .user-avatar-btn {
-        width: 16px;
-        height: 16px;
-        border: 2px solid white;
+        width: 20px;
+        height: 20px;
+        border-width: 1px;
     }
     
     .login-btn {
         padding: 2px 4px;
         font-size: 8px;
         gap: 1px;
+        border-radius: 12px;
     }
     
     .google-icon {
