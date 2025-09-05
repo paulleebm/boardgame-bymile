@@ -143,7 +143,7 @@ class AdminManager {
             this.allGames = data;
             this.currentGames = data;
             
-            this.renderGames();
+            this.searchGames(); // 검색 후 렌더링
             this.updateStats();
             this.updateLastUpdateTime();
             this.updateBulkActions();
@@ -538,39 +538,6 @@ class AdminManager {
             const dateB = this.getDate(b.updatedAt);
             return dateB - dateA; // 최신순 (내림차순)
         });
-    }
-
-    // 게임 정렬
-    sortGames() {
-        const sortBy = this.elements.sortBy.value;
-        
-        this.currentGames.sort((a, b) => {
-            switch (sortBy) {
-                case 'name':
-                    return (a.name || '').localeCompare(b.name || '', 'ko-KR');
-                    
-                case 'status':
-                    const statusOrder = { 'new': 0, 'purchasing': 1, 'shipping': 2, 'rented': 3, 'normal': 4, '': 4 };
-                    const statusA = statusOrder[a.status] !== undefined ? statusOrder[a.status] : 4;
-                    const statusB = statusOrder[b.status] !== undefined ? statusOrder[b.status] : 4;
-                    
-                    if (statusA !== statusB) {
-                        return statusA - statusB;
-                    }
-                    return (a.name || '').localeCompare(b.name || '', 'ko-KR');
-                    
-                case 'createdAt':
-                case 'updatedAt':
-                    const dateA = this.getDate(a[sortBy]);
-                    const dateB = this.getDate(b[sortBy]);
-                    return dateB - dateA; // 최신순
-                    
-                default:
-                    return 0;
-            }
-        });
-        
-        this.renderGames();
     }
 
     // 모달 열기 (새 게임 추가)

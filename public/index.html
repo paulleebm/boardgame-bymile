@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- PWA 및 모바일 최적화 -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,7 +13,6 @@
     <title>꿈엘청 보드게임 동아리</title>
     <link rel="stylesheet" href="style.css">
     
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -24,11 +22,10 @@
         <header>
             <h1>🎲 꿈엘청 보드게임 동아리</h1>
             <div class="header-info">
-                <!-- 로그인/로그아웃 버튼 -->
                 <div class="auth-section" id="authSection">
                     <div class="user-profile hidden" id="userProfile">
                         <button class="user-avatar-btn" id="userAvatarBtn" onclick="openProfileModal()" aria-label="프로필 메뉴">
-                            <img class="user-avatar-img" id="userAvatarImg" src="" alt="프로필">
+                            <img class="user-avatar-img" id="userAvatarImg" src="https://i.imgur.com/8Q6bXG3.png" alt="프로필">
                         </button>
                     </div>
                     <button class="login-btn" id="loginBtn">
@@ -39,7 +36,6 @@
             </div>
         </header>
 
-        <!-- 검색 및 필터 컨트롤 -->
         <div class="controls">
             <div class="search-box">
                 <div class="search-main-group">
@@ -59,10 +55,8 @@
             </div>
             
             <div class="filter-box">
-                <!-- 접기/펼치기 가능한 필터 내용 -->
                 <div class="filter-content collapsed" id="filterContent">
                     <div class="filter-groups">
-                        <!-- 난이도 필터 -->
                         <div class="filter-group">
                             <label>난이도:</label>
                             <div class="slider-container">
@@ -96,7 +90,6 @@
                             </div>
                         </div>
                         
-                        <!-- 플레이 시간 필터 -->
                         <div class="filter-group">
                             <label>플레이 시간:</label>
                             <div class="slider-container">
@@ -134,14 +127,12 @@
                     </div>
                 </div>
                 
-                <!-- 토글 버튼 (하단 고정) -->
                 <div class="filter-toggle collapsed" id="filterToggle">
                     <span class="filter-toggle-icon"></span>
                 </div>
             </div>
         </div>
 
-        <!-- 게임 그리드 뷰 -->
         <div id="gridView" class="grid-container">
             <div class="grid-header">
                 <div class="grid-header-left">
@@ -149,7 +140,6 @@
                     <div class="game-count" id="gameCount">총 0개</div>
                 </div>
                 <div class="sort-controls">
-                    <!-- 즐겨찾기 필터 버튼 -->
                     <button id="favoriteFilterBtn" class="favorite-filter-btn hidden" title="즐겨찾기만 보기" aria-label="즐겨찾기 필터 토글">
                         ❤️
                     </button>
@@ -160,30 +150,25 @@
                 </div>
             </div>
             <div id="gameGrid" class="game-grid" role="grid" aria-label="보드게임 목록">
-                <!-- 게임 카드들이 여기에 동적으로 표시됩니다 -->
-            </div>
+                </div>
         </div>
 
-        <!-- 로딩 인디케이터 -->
         <div class="loading" id="loading" aria-live="polite">
             <div class="spinner"></div>
             데이터를 불러오는 중...
         </div>
 
-        <!-- 에러 메시지 -->
         <div class="error-message hidden" id="errorMessage" role="alert" aria-live="assertive">
             <span id="errorText"></span>
             <button id="errorCloseBtn">닫기</button>
         </div>
 
-        <!-- 성공 메시지 -->
         <div class="success-message hidden" id="successMessage" role="alert" aria-live="polite">
             <span id="successText"></span>
             <button id="successCloseBtn">닫기</button>
         </div>
     </div>
 
-    <!-- 게임 상세 모달 -->
     <div class="game-detail-modal hidden" id="gameDetailModal" role="dialog" aria-modal="true" aria-labelledby="modalGameName">
         <div class="game-detail-content">
             <button id="modalCloseBtn" class="modal-close-btn" aria-label="모달 닫기">&times;</button>
@@ -193,12 +178,10 @@
             </div>
             
             <div class="game-detail-info">
-                <!-- 내용은 JavaScript로 동적 생성 -->
-            </div>
+                </div>
         </div>
     </div>
 
-    <!-- 프로필 모달 -->
     <div class="profile-modal hidden" id="profileModal" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
         <div class="profile-modal-content">
             <div class="profile-modal-header">
@@ -222,7 +205,6 @@
         </div>
     </div>
 
-    <!-- Scripts -->
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="script.js"></script>
 </body>

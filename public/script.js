@@ -3,11 +3,10 @@ class BoardGameViewer {
     constructor() {
         this.allData = [];
         this.currentData = [];
-        this.currentSortBy = 'name';
-        this.currentSortOrder = 'asc';
         this.statusFilterActive = false;
         this.favoriteFilterActive = false;
         this.DEFAULT_IMAGE_URL = 'https://placehold.co/300x300/667eea/ffffff?text=No+Image';
+        this.DEFAULT_PROFILE_IMAGE_URL = 'https://i.imgur.com/rWd9g3i.png'; // 새 기본 프로필 이미지 URL
         this.currentModalGame = null;
         this.currentUser = null;
         this.favorites = new Set();
@@ -29,6 +28,7 @@ class BoardGameViewer {
             logoutBtn: document.getElementById('logoutBtn'),
             userProfile: document.getElementById('userProfile'),
             userAvatarBtn: document.getElementById('userAvatarBtn'),
+            userAvatarImg: document.getElementById('userAvatarImg'),
             profileModal: document.getElementById('profileModal'),
             profileModalCloseBtn: document.getElementById('profileModalCloseBtn'),
             profileAvatar: document.getElementById('profileAvatar'),
@@ -49,11 +49,7 @@ class BoardGameViewer {
             timeMinValue: document.getElementById('timeMinValue'),
             timeMaxValue: document.getElementById('timeMaxValue'),
             
-            // 정렬 및 필터
-            selectedOption: document.getElementById('selectedOption'),
-            dropdownOptions: document.getElementById('dropdownOptions'),
-            sortOrderBtn: document.getElementById('sortOrderBtn'),
-            sortOrderIcon: document.getElementById('sortOrderIcon'),
+            // 필터
             statusFilterBtn: document.getElementById('statusFilterBtn'),
             favoriteFilterBtn: document.getElementById('favoriteFilterBtn'),
             
@@ -131,7 +127,8 @@ class BoardGameViewer {
             this.elements.userProfile.classList.remove('hidden');
             this.elements.favoriteFilterBtn.classList.remove('hidden');
             
-            this.elements.userAvatarImg.src = user.photoURL || '';
+            // 프로필 이미지가 있으면 사용, 없으면 기본 이미지 사용
+            this.elements.userAvatarImg.src = user.photoURL || this.DEFAULT_PROFILE_IMAGE_URL;
         } else {
             // 로그아웃 상태
             this.elements.loginBtn.classList.remove('hidden');
@@ -206,7 +203,7 @@ class BoardGameViewer {
             }
         });
 
-        // 필터 토글 이벤트 리스너 추가 (맨 앞에 추가)
+        // 필터 토글 이벤트 리스너 추가
         const filterToggle = document.getElementById('filterToggle');
         const filterContent = document.getElementById('filterContent');
         
@@ -225,7 +222,7 @@ class BoardGameViewer {
                 }
             });
         }
-
+        
         // 검색 타입 변경
         this.elements.searchType.addEventListener('change', () => this.handleSearchTypeChange());
         
@@ -255,9 +252,11 @@ class BoardGameViewer {
         document.getElementById('errorCloseBtn')?.addEventListener('click', () => this.hideError());
         document.getElementById('successCloseBtn')?.addEventListener('click', () => this.hideSuccess());
         
+        // 필터 버튼 이벤트
+        this.elements.favoriteFilterBtn.addEventListener('click', () => this.toggleFavoriteFilter());
+        this.elements.statusFilterBtn.addEventListener('click', () => this.toggleStatusFilter());
+        
         // 전역 함수 노출 (HTML onclick 이벤트용)
-        window.toggleDropdown = () => this.toggleDropdown();
-        window.selectOption = (value, text) => this.selectOption(value, text);
         window.openGameModal = (gameId) => this.openGameModal(gameId);
         window.closeGameModal = () => this.closeGameModal();
         window.embedYouTubeVideo = (url) => this.embedYouTubeVideo(url);
@@ -312,11 +311,6 @@ class BoardGameViewer {
         }
 
         try {
-            const button = event ? event.target : document.querySelector(`[data-game-id="${gameId}"]`);
-            if (button) {
-                button.disabled = true;
-            }
-
             const isFavorited = await window.favoriteManager.toggleFavorite(gameId);
             
             if (isFavorited) {
@@ -327,11 +321,6 @@ class BoardGameViewer {
         } catch (error) {
             console.error('즐겨찾기 토글 실패:', error);
             this.showError(error.message || '즐겨찾기 처리에 실패했습니다.');
-        } finally {
-            const button = event ? event.target : document.querySelector(`[data-game-id="${gameId}"]`);
-            if (button) {
-                button.disabled = false;
-            }
         }
     }
 
@@ -339,7 +328,7 @@ class BoardGameViewer {
     openProfileModal() {
         if (!this.currentUser) return;
         
-        this.elements.profileAvatar.src = this.currentUser.photoURL || '';
+        this.elements.profileAvatar.src = this.currentUser.photoURL || this.DEFAULT_PROFILE_IMAGE_URL;
         this.elements.profileName.textContent = this.currentUser.displayName || '이름 없음';
         this.elements.profileEmail.textContent = this.currentUser.email || '';
         
@@ -350,6 +339,8 @@ class BoardGameViewer {
     closeProfileModal() {
         this.elements.profileModal.classList.add('hidden');
     }
+
+    // 즐겨찾기 필터 토글
     toggleFavoriteFilter() {
         if (!this.currentUser) {
             this.showError('로그인 후 즐겨찾기 필터를 사용할 수 있습니다.');
@@ -364,6 +355,21 @@ class BoardGameViewer {
         } else {
             this.elements.favoriteFilterBtn.classList.remove('active');
             this.elements.favoriteFilterBtn.title = '즐겨찾기만 보기';
+        }
+        
+        this.advancedSearchAndFilter();
+    }
+    
+    // 상태 필터 토글
+    toggleStatusFilter() {
+        this.statusFilterActive = !this.statusFilterActive;
+        
+        if (this.statusFilterActive) {
+            this.elements.statusFilterBtn.classList.add('active');
+            this.elements.statusFilterBtn.title = '전체 게임 보기';
+        } else {
+            this.elements.statusFilterBtn.classList.remove('active');
+            this.elements.statusFilterBtn.title = '특별 상태 게임만 보기';
         }
         
         this.advancedSearchAndFilter();
@@ -398,11 +404,14 @@ class BoardGameViewer {
         
         try {
             const data = await window.boardGameAPI.getAllGames();
-            this.allData = data;
-            this.currentData = data;
+            this.allData = data.sort((a, b) => {
+                const dateA = this.getDate(a.createdAt);
+                const dateB = this.getDate(b.createdAt);
+                return dateB - dateA; // 최신 등록순으로 정렬
+            });
+            this.currentData = this.allData;
             
-            this.applySortingAndRender();
-            this.updateGameCount();
+            this.advancedSearchAndFilter();
             
         } catch (error) {
             console.error('데이터 로드 실패:', error);
@@ -443,7 +452,7 @@ class BoardGameViewer {
         }
         
         this.currentData = filteredData;
-        this.applySortingAndRender();
+        this.renderGridView();
         this.updateGameCount();
     }
 
@@ -556,44 +565,6 @@ class BoardGameViewer {
         return initials.join('');
     }
 
-    // 정렬 적용 및 렌더링
-    applySortingAndRender() {
-        this.sortGames();
-        this.renderGridView();
-    }
-
-    // 게임 정렬
-    sortGames() {
-        this.currentData.sort((a, b) => {
-            let comparison = 0;
-            
-            if (this.currentSortBy === 'name') {
-                const nameA = (a.name || '').toLowerCase();
-                const nameB = (b.name || '').toLowerCase();
-                comparison = nameA.localeCompare(nameB, 'ko-KR');
-            } else if (this.currentSortBy === 'difficulty') {
-                const diffA = a.difficulty !== null && a.difficulty !== undefined && a.difficulty !== '' 
-                    ? parseFloat(a.difficulty) : null;
-                const diffB = b.difficulty !== null && b.difficulty !== undefined && b.difficulty !== '' 
-                    ? parseFloat(b.difficulty) : null;
-                
-                if (diffA === null && diffB === null) {
-                    const nameA = (a.name || '').toLowerCase();
-                    const nameB = (b.name || '').toLowerCase();
-                    comparison = nameA.localeCompare(nameB, 'ko-KR');
-                } else if (diffA === null) {
-                    comparison = 1;
-                } else if (diffB === null) {
-                    comparison = -1;
-                } else {
-                    comparison = diffA - diffB;
-                }
-            }
-            
-            return this.currentSortOrder === 'asc' ? comparison : -comparison;
-        });
-    }
-
     // 그리드 뷰 렌더링
     renderGridView() {
         if (this.currentData.length === 0) {
@@ -615,7 +586,7 @@ class BoardGameViewer {
             const imageUrl = item.imageUrl || this.DEFAULT_IMAGE_URL;
             const statusTag = this.getStatusTag(item.status);
             
-            // 로그인했고 즐겨찾기된 게임만 하트 표시 (클릭 불가)
+            // 로그인했고 즐겨찾기된 게임만 하트 표시
             const favoriteIndicator = (this.currentUser && this.favorites.has(item.id)) ? `
                 <div class="favorite-indicator">❤️</div>
             ` : '';
@@ -846,69 +817,16 @@ class BoardGameViewer {
         return (match && match[7].length === 11) ? match[7] : null;
     }
 
-    // 정렬 관련 메서드
-    toggleDropdown() {
-        this.elements.dropdownOptions.classList.toggle('hidden');
-        const arrow = document.querySelector('.dropdown-arrow');
-        if (arrow) {
-            arrow.style.transform = this.elements.dropdownOptions.classList.contains('hidden') 
-                ? 'rotate(0deg)' : 'rotate(180deg)';
-        }
-    }
-
-    selectOption(value, text) {
-        console.log('selectOption 호출:', value, text); // 디버깅용
-        
-        this.elements.selectedOption.textContent = text;
-        this.elements.dropdownOptions.classList.add('hidden');
-        
-        const arrow = document.querySelector('.dropdown-arrow');
-        if (arrow) {
-            arrow.style.transform = 'rotate(0deg)';
-        }
-        
-        // 정렬 기준 변경
-        this.currentSortBy = value;
-        console.log('현재 정렬 기준:', this.currentSortBy); // 디버깅용
-        
-        // 정렬 적용
-        this.applySortingAndRender();
-    }
-
-    toggleSortOrder() {
-        this.currentSortOrder = this.currentSortOrder === 'asc' ? 'desc' : 'asc';
-        this.updateSortOrderIcon();
-        this.applySortingAndRender();
-    }
-
-    updateSortOrderIcon() {
-        if (this.currentSortOrder === 'asc') {
-            this.elements.sortOrderIcon.textContent = '↑';
-            this.elements.sortOrderBtn.title = '오름차순 → 내림차순으로 변경';
-        } else {
-            this.elements.sortOrderIcon.textContent = '↓';
-            this.elements.sortOrderBtn.title = '내림차순 → 오름차순으로 변경';
-        }
-    }
-
-    toggleStatusFilter() {
-        this.statusFilterActive = !this.statusFilterActive;
-        
-        if (this.statusFilterActive) {
-            this.elements.statusFilterBtn.classList.add('active');
-            this.elements.statusFilterBtn.title = '전체 게임 보기';
-        } else {
-            this.elements.statusFilterBtn.classList.remove('active');
-            this.elements.statusFilterBtn.title = '특별 상태 게임만 보기';
-        }
-        
-        this.advancedSearchAndFilter();
-    }
-
     // 슬라이더 초기화
     initializeSliders() {
         this.initializeCustomSlider('difficulty', 1, 3, 0.1);
         this.initializeCustomSlider('time', 10, 120, 5);
+        
+        // 슬라이더 이벤트 리스너 추가
+        document.getElementById('difficultyMin').addEventListener('input', () => this.advancedSearchAndFilter());
+        document.getElementById('difficultyMax').addEventListener('input', () => this.advancedSearchAndFilter());
+        document.getElementById('timeMin').addEventListener('input', () => this.advancedSearchAndFilter());
+        document.getElementById('timeMax').addEventListener('input', () => this.advancedSearchAndFilter());
     }
 
     // 커스텀 슬라이더 설정
@@ -1159,6 +1077,13 @@ class BoardGameViewer {
             "'": '&#039;'
         };
         return text ? text.replace(/[&<>"']/g, m => map[m]) : '';
+    }
+
+    getDate(ts) {
+        if (!ts) return new Date(0);
+        if (ts.toDate) return ts.toDate();
+        if (ts.seconds) return new Date(ts.seconds * 1000);
+        return new Date(ts);
     }
 
     // 메시지 표시
