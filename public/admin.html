@@ -6,10 +6,10 @@
     <title>관리자 페이지 - 꿈엘청 보드게임</title>
     <link rel="stylesheet" href="admin-style.css">
     
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-</head>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    </head>
 <body>
     <div class="container">
         <header>
@@ -24,7 +24,6 @@
             </div>
         </header>
 
-        <!-- 통계 카드 섹션 -->
         <div class="stats">
             <div class="stat-card">
                 <div class="stat-number" id="totalGames">0</div>
@@ -48,7 +47,6 @@
             </div>
         </div>
 
-        <!-- 검색 및 필터 컨트롤 -->
         <div class="controls">
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="게임 검색...">
@@ -63,7 +61,6 @@
             </div>
         </div>
 
-        <!-- 게임 목록 컨테이너 -->
         <div class="games-container">
             <div class="games-header">
                 <div class="games-header-left">
@@ -73,7 +70,6 @@
                     </div>
                 </div>
                 <div class="games-header-right">
-                    <!-- 대량 작업 컨트롤 -->
                     <div class="bulk-actions-inline">
                         <button class="bulk-action-btn" id="selectAllBtn">전체 선택</button>
                         <select id="bulkStatusSelect" class="bulk-status-select" title="변경할 상태 선택" aria-label="변경할 상태 선택">
@@ -90,30 +86,25 @@
             </div>
             
             <div id="gamesList" class="games-list">
-                <!-- 게임 목록이 여기에 동적으로 표시됩니다 -->
-            </div>
+                </div>
         </div>
 
-        <!-- 로딩 인디케이터 -->
         <div class="loading" id="loading">
             <div class="spinner"></div>
             데이터를 불러오는 중...
         </div>
 
-        <!-- 에러 메시지 -->
         <div class="error-message hidden" id="errorMessage">
             <span id="errorText"></span>
             <button id="errorCloseBtn">닫기</button>
         </div>
 
-        <!-- 성공 메시지 -->
         <div class="success-message hidden" id="successMessage">
             <span id="successText"></span>
             <button id="successCloseBtn">닫기</button>
         </div>
     </div>
 
-    <!-- 게임 추가/수정 모달 -->
     <div class="modal hidden" id="gameModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -192,7 +183,6 @@
         </div>
     </div>
 
-    <!-- 삭제 확인 모달 -->
     <div class="modal hidden" id="deleteModal">
         <div class="modal-content small">
             <div class="modal-header">
@@ -213,7 +203,6 @@
         </div>
     </div>
 
-    <!-- 대량 등록 모달 -->
     <div class="modal hidden" id="bulkModal">
         <div class="modal-content bulk-modal">
             <div class="modal-header">
@@ -251,7 +240,6 @@
         </div>
     </div>
 
-    <!-- Scripts -->
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="admin-script.js"></script>
 </body>
