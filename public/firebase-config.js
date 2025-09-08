@@ -9,25 +9,28 @@ const firebaseConfig = {
   measurementId: "G-F5FS0S6VTE"
 };
 
+// Firebase 초기화
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 
 const db = firebase.firestore();
 const auth = firebase.auth();
+const googleProvider = new firebase.auth.GoogleAuthProvider();
 
+// --- 인증 관리 클래스 ---
 class AuthManager {
     constructor() {
         this.currentUser = null;
         this.authCallbacks = [];
-        this.initializeAuth();
+        this._init();
     }
 
-    initializeAuth() {
-        auth.onAuthStateChanged((user) => {
+    _init() {
+        auth.onAuthStateChanged(user => {
             this.currentUser = user;
             this.notifyAuthCallbacks(user);
-            if (user) this.ensureUserDocument(user);
+            if(user) this.ensureUserDocument(user);
         });
     }
 
@@ -36,77 +39,92 @@ class AuthManager {
         const userDoc = await userRef.get();
         if (!userDoc.exists) {
             await userRef.set({
-                email: user.email,
                 displayName: user.displayName,
+                email: user.email,
                 photoURL: user.photoURL,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                lastLoginAt: firebase.firestore.FieldValue.serverTimestamp(),
+            });
+        } else {
+            await userRef.update({
+                lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
         }
     }
+    
+    onAuthStateChanged(callback) {
+        this.authCallbacks.push(callback);
+        if(this.currentUser !== undefined) callback(this.currentUser);
+    }
 
-    onAuthStateChanged(callback) { this.authCallbacks.push(callback); }
-    notifyAuthCallbacks(user) { this.authCallbacks.forEach(cb => cb(user)); }
-    async signInWithGoogle() { return (await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())).user; }
-    async signOut() { await auth.signOut(); }
-    async updateUserProfile(profile) {
-        if (!auth.currentUser) throw new Error("Not logged in");
-        await auth.currentUser.updateProfile(profile);
-        this.notifyAuthCallbacks(auth.currentUser);
+    notifyAuthCallbacks(user) {
+        (this.authCallbacks || []).forEach(cb => cb(user));
+    }
+    
+    async signInWithGoogle() {
+        return (await auth.signInWithPopup(googleProvider)).user;
+    }
+
+    async signOut() {
+        await auth.signOut();
+    }
+    
+    getCurrentUser() {
+        return auth.currentUser;
     }
 }
 
+// --- 즐겨찾기 관리 클래스 ---
 class FavoriteManager {
-    constructor(authManager) { this.authManager = authManager; this.favorites = new Set(); this.callbacks = []; }
-    onFavoritesChanged(callback) { this.callbacks.push(callback); }
-    notify() { this.callbacks.forEach(cb => cb(Array.from(this.favorites))); }
+    constructor(authManager) {
+        this.authManager = authManager;
+        this.favorites = new Set();
+        this.favoriteCallbacks = [];
+    }
+
+    onFavoritesChanged(callback) {
+        this.favoriteCallbacks.push(callback);
+    }
+
+    notifyFavoriteCallbacks() {
+        (this.favoriteCallbacks || []).forEach(cb => cb(Array.from(this.favorites)));
+    }
+
     async loadUserFavorites(userId) {
         const doc = await db.collection('userFavorites').doc(userId).get();
-        this.favorites = new Set(doc.data()?.gameIds || []);
-        this.notify();
+        this.favorites = doc.exists ? new Set(doc.data().gameIds || []) : new Set();
+        this.notifyFavoriteCallbacks();
     }
+
     async toggleFavorite(gameId) {
-        const user = this.authManager.currentUser;
-        if (!user) throw new Error("Login required");
+        const user = this.authManager.getCurrentUser();
+        if (!user) throw new Error('로그인이 필요합니다.');
         this.favorites.has(gameId) ? this.favorites.delete(gameId) : this.favorites.add(gameId);
         await db.collection('userFavorites').doc(user.uid).set({ gameIds: Array.from(this.favorites) }, { merge: true });
-        this.notify();
+        this.notifyFavoriteCallbacks();
         return this.favorites.has(gameId);
     }
 }
 
+// --- API 래퍼 클래스 ---
 class BoardGameAPI {
     constructor() { this.db = db; }
     
     // Games
     async getAllGames() { const snap = await this.db.collection('boardgames').get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
-    async addGame(data) { return await this.db.collection('boardgames').add({ ...this.sanitizeData(data), createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }
-    async updateGame(id, data) { await this.db.collection('boardgames').doc(id).update({ ...this.sanitizeData(data), updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }
+    async addGame(data) { const docRef = await this.db.collection('boardgames').add({...data, createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); return {id: docRef.id, ...data}; }
+    async updateGame(id, data) { await this.db.collection('boardgames').doc(id).update({...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}); }
     async deleteGame(id) { await this.db.collection('boardgames').doc(id).delete(); }
 
     // Comics
-    async getAllComics() { const snap = await this.db.collection('comics').get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
-    async addComic(data) { return await this.db.collection('comics').add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() }); }
+    async getComics() { const snap = await this.db.collection('comics').orderBy('createdAt', 'desc').get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
+    async addComic(data) { const docRef = await this.db.collection('comics').add({...data, createdAt: firebase.firestore.FieldValue.serverTimestamp()}); return {id: docRef.id, ...data}; }
     async updateComic(id, data) { await this.db.collection('comics').doc(id).update(data); }
     async deleteComic(id) { await this.db.collection('comics').doc(id).delete(); }
     
     // Comments
-    async getComments(comicId) {
-        const snap = await this.db.collection('comments').where('comicId', '==', comicId).orderBy('createdAt', 'asc').get();
-        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    }
-    async addComment(data) { return await this.db.collection('comments').add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() }); }
-
-    sanitizeData(data) {
-        const sanitized = {};
-        for (const key in data) {
-            const value = data[key];
-            if (value !== undefined && value !== null && value !== '') {
-                const numValue = Number(value);
-                sanitized[key] = !isNaN(numValue) && value !== '' ? numValue : value;
-            }
-        }
-        return sanitized;
-    }
+    async getComments(comicId) { const snap = await this.db.collection('comics').doc(comicId).collection('comments').orderBy('createdAt', 'asc').get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
+    async addComment(comicId, text) { const user = auth.currentUser; if (!user) throw new Error("로그인이 필요합니다."); await this.db.collection('comics').doc(comicId).collection('comments').add({ text, userId: user.uid, userName: user.displayName, userPhotoUrl: user.photoURL, createdAt: firebase.firestore.FieldValue.serverTimestamp() }); }
 }
 
 window.authManager = new AuthManager();

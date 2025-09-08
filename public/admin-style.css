@@ -22,7 +22,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .admin-container { display: flex; height: 100vh; }
 .sidebar { width: 240px; background-color: var(--bg-white); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
 .main-content { flex: 1; overflow-y: auto; }
-.admin-page { padding: 32px; }
+.admin-page { padding: 32px; display: none; }
+.admin-page.active { display: block; }
 .hidden { display: none !important; }
 
 /* ===== 사이드바 ===== */

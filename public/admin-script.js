@@ -22,13 +22,14 @@ class AdminManager {
         this.elements['nav-comic-management'].addEventListener('click', () => this.showView('comic-management'));
         this.elements.addGameBtn.addEventListener('click', () => this.openGameModal());
         this.elements.addComicBtn.addEventListener('click', () => this.openComicModal());
+        window.adminManager = this;
     }
 
     showView(viewName) {
-        document.querySelectorAll('.admin-page').forEach(p => p.classList.add('hidden'));
+        document.querySelectorAll('.admin-page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
         
-        document.getElementById(`${viewName}-page`).classList.remove('hidden');
+        document.getElementById(`${viewName}-page`).classList.add('active');
         document.getElementById(`nav-${viewName}`).classList.add('active');
 
         if (viewName === 'game-management' && this.allGames.length === 0) this.loadGames();
@@ -47,7 +48,7 @@ class AdminManager {
     async loadComics() {
         this.showLoading(true);
         try {
-            this.allComics = await window.boardGameAPI.getAllComics();
+            this.allComics = await window.boardGameAPI.getComics();
             this.renderComics();
         } catch(e) { alert("만화 목록 로딩 실패: " + e.message); }
         finally { this.showLoading(false); }
@@ -192,5 +193,5 @@ class AdminManager {
     showLoading(show) { this.elements.loading.classList.toggle('hidden', !show); }
 }
 
-window.adminManager = new AdminManager();
+new AdminManager();
 
