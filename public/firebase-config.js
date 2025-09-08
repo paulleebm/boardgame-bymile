@@ -93,8 +93,8 @@ class BoardGameAPI {
     async updateGame(id, data) { await this.db.collection('boardgames').doc(id).update({...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}); }
     async deleteGame(id) { await this.db.collection('boardgames').doc(id).delete(); }
 
-    // Comics
-    async getComics() { const snap = await this.db.collection('comics').orderBy('createdAt', 'desc').get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
+    // Comics (orderBy 제거)
+    async getComics() { const snap = await this.db.collection('comics').get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
     async addComic(data) { const docRef = await this.db.collection('comics').add({...data, createdAt: firebase.firestore.FieldValue.serverTimestamp()}); return {id: docRef.id, ...data}; }
     async updateComic(id, data) { await this.db.collection('comics').doc(id).update(data); }
     async deleteComic(id) { await this.db.collection('comics').doc(id).delete(); }

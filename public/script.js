@@ -4,6 +4,8 @@ class BoardGameViewer {
         this.allGames = [];
         this.allComics = [];
         this.currentData = [];
+        this.statusFilterActive = false;
+        this.favoriteFilterActive = false;
         this.DEFAULT_IMAGE_URL = 'https://placehold.co/300x300/667eea/ffffff?text=No+Image';
         this.DEFAULT_PROFILE_IMAGE_URL = 'https://i.imgur.com/rWd9g3i.png';
         this.currentUser = null;
@@ -22,7 +24,8 @@ class BoardGameViewer {
             'gameGrid', 'comicGrid', 'detailModal', 'loading', 'errorMessage', 
             'successMessage', 'nav-games-btn', 'nav-comics-btn', 'nav-mypage-btn',
             'filter-sidebar', 'filter-overlay', 'close-filter-btn',
-            'games-page', 'comics-page', 'mypage-page', 'myPageContent', 'page-header'
+            'games-page', 'comics-page', 'mypage-page', 'myPageContent', 'page-header',
+            'gameCount' // gameCount 추가
         ];
         ids.forEach(id => this.elements[id] = document.getElementById(id));
     }
@@ -76,7 +79,7 @@ class BoardGameViewer {
         }
         this.elements['page-header'].innerHTML = `<h1>${title}</h1>${controls}`;
         if (page === 'games') {
-            document.getElementById('open-filter-btn').addEventListener('click', () => this.toggleFilterSidebar(true));
+            document.getElementById('open-filter-btn')?.addEventListener('click', () => this.toggleFilterSidebar(true));
             document.getElementById('statusFilterBtn')?.addEventListener('click', () => this.toggleStatusFilter());
             document.getElementById('favoriteFilterBtn')?.addEventListener('click', () => this.toggleFavoriteFilter());
         }
@@ -92,19 +95,25 @@ class BoardGameViewer {
         this.updateHeader(viewName);
         
         if (viewName === 'comics' && this.allComics.length === 0) this.loadComics();
+        if (viewName === 'mypage') this.renderMyPage(); // 마이페이지 탭 클릭 시 즉시 렌더링
     }
     
     toggleFilterSidebar(forceOpen) {
-        this.elements['filter-sidebar'].classList.toggle('open', forceOpen);
-        this.elements['filter-overlay'].classList.toggle('hidden', !forceOpen);
+        this.elements['filter-sidebar']?.classList.toggle('open', forceOpen);
+        this.elements['filter-overlay']?.classList.toggle('hidden', !forceOpen);
     }
     
     setupAuthMonitoring() {
         window.authManager.onAuthStateChanged((user) => {
             this.currentUser = user;
-            this.renderMyPage();
-            if (user) this.loadUserFavorites();
-            else this.favorites.clear();
+            if (this.getActiveView() === 'mypage') {
+                this.renderMyPage();
+            }
+            if (user) {
+                this.loadUserFavorites();
+            } else {
+                this.favorites.clear();
+            }
             this.renderGridView();
             this.updateHeader(this.getActiveView());
         });
@@ -190,7 +199,10 @@ class BoardGameViewer {
         try {
             this.allComics = await window.boardGameAPI.getComics();
             this.renderComicView();
-        } catch(e) { this.showError("만화 목록 로딩 실패"); }
+        } catch(e) { 
+            console.error("만화 목록 로딩 실패:", e);
+            this.showError("만화 목록 로딩에 실패했습니다."); 
+        }
         finally { this.showLoading(false); }
     }
 
@@ -205,6 +217,7 @@ class BoardGameViewer {
         
         this.currentData = filtered;
         this.renderGridView();
+        this.updateGameCount(); // 게임 개수 업데이트 호출 추가
     }
     
     applySearch(data) {
@@ -245,6 +258,7 @@ class BoardGameViewer {
     renderGridView() {
         const grid = this.elements.gameGrid;
         if (!grid) return;
+        this.updateGameCount();
         grid.innerHTML = this.currentData.length === 0
             ? `<p class="empty-state-text">조건에 맞는 보드게임이 없습니다.</p>`
             : this.currentData.map(item => this.createGameCard(item)).join('');
@@ -267,6 +281,7 @@ class BoardGameViewer {
     renderComicView() {
         const grid = this.elements.comicGrid;
         if (!grid) return;
+        this.allComics.sort((a, b) => this.getDate(b.createdAt) - this.getDate(a.createdAt));
         grid.innerHTML = this.allComics.length === 0
             ? `<p class="empty-state-text">아직 만화가 없습니다.</p>`
             : this.allComics.map(item => this.createComicCard(item)).join('');
@@ -293,20 +308,22 @@ class BoardGameViewer {
         const youtubeButton = game.youtubeUrl ? `<button class="youtube-btn" onclick="window.open('${game.youtubeUrl}', '_blank')">룰 설명 영상 보기</button>` : '';
 
         this.elements.detailModal.innerHTML = `
-             <div class="detail-content">
-                <button onclick="this.closest('.modal').classList.add('hidden')" class="modal-close-btn">&times;</button>
-                <div class="modal-image">
-                    <img src="${game.imageUrl || this.DEFAULT_IMAGE_URL}" alt="${this.escapeHtml(game.name)}">
-                    ${favoriteButton}
-                </div>
-                <div class="detail-info">
-                    <h2>${this.escapeHtml(game.name)}</h2>
-                    <div class="detail-field"><span>난이도:</span> <span>${game.difficulty || '-'}</span></div>
-                    <div class="detail-field"><span>인원:</span> <span>${this.formatPlayerCount(game.minPlayers, game.maxPlayers)}</span></div>
-                    <div class="detail-field"><span>베스트 인원:</span> <span>${this.formatBestPlayers(game.bestPlayers)}</span></div>
-                    <div class="detail-field"><span>플레이 시간:</span> <span>${game.playTime ? game.playTime + '분' : '-'}</span></div>
-                    <div class="detail-field"><span>장르:</span> <span>${this.escapeHtml(game.genre)}</span></div>
-                    ${youtubeButton}
+             <div class="modal-overlay" onclick="this.parentElement.classList.add('hidden')">
+                <div class="detail-content" onclick="event.stopPropagation()">
+                    <button onclick="this.closest('.modal').classList.add('hidden')" class="modal-close-btn">&times;</button>
+                    <div class="modal-image">
+                        <img src="${game.imageUrl || this.DEFAULT_IMAGE_URL}" alt="${this.escapeHtml(game.name)}">
+                        ${favoriteButton}
+                    </div>
+                    <div class="detail-info">
+                        <h2>${this.escapeHtml(game.name)}</h2>
+                        <div class="detail-field"><span>난이도:</span> <span>${game.difficulty || '-'}</span></div>
+                        <div class="detail-field"><span>인원:</span> <span>${this.formatPlayerCount(game.minPlayers, game.maxPlayers)}</span></div>
+                        <div class="detail-field"><span>베스트 인원:</span> <span>${this.formatBestPlayers(game.bestPlayers)}</span></div>
+                        <div class="detail-field"><span>플레이 시간:</span> <span>${game.playTime ? game.playTime + '분' : '-'}</span></div>
+                        <div class="detail-field"><span>장르:</span> <span>${this.escapeHtml(game.genre)}</span></div>
+                        ${youtubeButton}
+                    </div>
                 </div>
             </div>`;
         this.elements.detailModal.classList.remove('hidden');
@@ -319,23 +336,25 @@ class BoardGameViewer {
         const comments = await window.boardGameAPI.getComments(comicId);
     
         this.elements.detailModal.innerHTML = `
-            <div class="detail-content">
-                <div class="modal-header">
-                    <h2>${this.escapeHtml(comic.title)}</h2>
-                    <button onclick="this.closest('.modal').classList.add('hidden')" class="modal-close-btn">&times;</button>
-                </div>
-                <div class="comic-viewer-body">
-                    ${(comic.imageUrls || []).map(url => `<img src="${url}" alt="만화 페이지">`).join('')}
-                </div>
-                <div class="comments-section">
-                    <h3>댓글</h3>
-                    <div id="comment-list">${this.renderComments(comments)}</div>
-                    ${this.currentUser ? `
-                        <div class="comment-form">
-                            <input type="text" id="comment-input" class="comment-input" placeholder="댓글을 입력하세요...">
-                            <button class="comment-submit" onclick="submitComment('${comicId}')">등록</button>
-                        </div>
-                    ` : '<p>댓글을 작성하려면 <a href="#" onclick="handleLogin(); return false;">로그인</a>이 필요합니다.</p>'}
+            <div class="modal-overlay" onclick="this.parentElement.classList.add('hidden')">
+                <div class="detail-content" onclick="event.stopPropagation()">
+                    <div class="modal-header">
+                        <h2>${this.escapeHtml(comic.title)}</h2>
+                        <button onclick="this.closest('.modal').classList.add('hidden')" class="modal-close-btn">&times;</button>
+                    </div>
+                    <div class="comic-viewer-body">
+                        ${(comic.imageUrls || []).map(url => `<img src="${url}" alt="만화 페이지">`).join('')}
+                    </div>
+                    <div class="comments-section">
+                        <h3>댓글</h3>
+                        <div id="comment-list">${this.renderComments(comments)}</div>
+                        ${this.currentUser ? `
+                            <div class="comment-form">
+                                <input type="text" id="comment-input" class="comment-input" placeholder="댓글을 입력하세요...">
+                                <button class="comment-submit" onclick="submitComment('${comicId}')">등록</button>
+                            </div>
+                        ` : '<p>댓글을 작성하려면 <a href="#" onclick="handleLogin(); return false;">로그인</a>이 필요합니다.</p>'}
+                    </div>
                 </div>
             </div>`;
         this.elements.detailModal.classList.remove('hidden');
@@ -373,7 +392,7 @@ class BoardGameViewer {
         ['difficulty', 'time'].forEach(type => {
             const minInput = this.elements[`${type}Min`];
             const maxInput = this.elements[`${type}Max`];
-            const range = minInput.parentElement.querySelector('.slider-range');
+            const range = minInput?.parentElement.querySelector('.slider-range');
             
             if (!minInput || !maxInput || !range) return;
             
@@ -381,8 +400,11 @@ class BoardGameViewer {
                 let min = parseFloat(minInput.value);
                 let max = parseFloat(maxInput.value);
                 
-                if (this.activeSlider === minInput && min > max) { maxInput.value = min; max = min; }
-                if (this.activeSlider === maxInput && max < min) { minInput.value = max; min = max; }
+                if (min > max) {
+                    // Prevent sliders from crossing
+                    if (this.activeSlider === minInput) { maxInput.value = min; max = min; } 
+                    else { minInput.value = max; min = max; }
+                }
                 
                 const minPercent = ((min - minInput.min) / (minInput.max - minInput.min)) * 100;
                 const maxPercent = ((max - maxInput.min) / (maxInput.max - maxInput.min)) * 100;
@@ -392,13 +414,15 @@ class BoardGameViewer {
 
                 this.elements[`${type}MinValue`].textContent = min.toFixed(type === 'difficulty' ? 1 : 0) + (type === 'time' ? '분' : '');
                 const maxText = max.toFixed(type === 'difficulty' ? 1 : 0);
-                this.elements[`${type}MaxValue`].textContent = maxText + (type === 'time' ? (max == maxInput.max ? '분+' : '분') : '');
+                const maxSuffix = type === 'time' ? (max == maxInput.max ? '분+' : '분') : '';
+                this.elements[`${type}MaxValue`].textContent = maxText + maxSuffix;
             };
             
-            minInput.addEventListener('mousedown', () => this.activeSlider = minInput);
-            minInput.addEventListener('touchstart', () => this.activeSlider = minInput);
-            maxInput.addEventListener('mousedown', () => this.activeSlider = maxInput);
-            maxInput.addEventListener('touchstart', () => this.activeSlider = maxInput);
+            const setActiveSlider = (e) => { this.activeSlider = e.target; };
+            minInput.addEventListener('mousedown', setActiveSlider);
+            minInput.addEventListener('touchstart', setActiveSlider);
+            maxInput.addEventListener('mousedown', setActiveSlider);
+            maxInput.addEventListener('touchstart', setActiveSlider);
 
             minInput.addEventListener('input', update);
             maxInput.addEventListener('input', update);
@@ -418,12 +442,17 @@ class BoardGameViewer {
         return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), delay); };
     }
 
-    // ▼▼▼▼▼▼ 누락되었던 헬퍼 함수들 추가 ▼▼▼▼▼▼
+    updateGameCount() {
+        if (this.elements.gameCount) {
+            this.elements.gameCount.textContent = `총 ${this.currentData.length}개`;
+        }
+    }
+
     getDate(ts) { return ts?.toDate ? ts.toDate() : new Date(ts?.seconds * 1000 || 0); }
     escapeHtml(text) { return text != null ? String(text).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])) : ''; }
     formatPlayerCount(min, max) { return min && max ? (min === max ? `${min}명` : `${min}-${max}명`) : (min ? `${min}명+` : (max ? `~${max}명` : '-')); }
     formatBestPlayers(best) { return best ? (String(best).match(/[,|-]/) ? best : `${best}명`) : '-'; }
-    showLoading(show) { this.elements.loading.classList.toggle('hidden', !show); }
+    showLoading(show) { this.elements.loading?.classList.toggle('hidden', !show); }
     
     showMessage(message, type) {
         const el = this.elements[`${type}Message`];
@@ -434,7 +463,6 @@ class BoardGameViewer {
     }
     showError(message) { this.showMessage(message, 'error'); }
     showSuccess(message) { this.showMessage(message, 'success'); }
-    // ▲▲▲▲▲▲ 누락되었던 헬퍼 함수들 추가 ▲▲▲▲▲▲
 }
 
 document.addEventListener('DOMContentLoaded', () => {
