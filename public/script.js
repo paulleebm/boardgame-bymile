@@ -418,6 +418,7 @@ class BoardGameViewer {
         return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), delay); };
     }
 
+    // ▼▼▼▼▼▼ 누락되었던 헬퍼 함수들 추가 ▼▼▼▼▼▼
     getDate(ts) { return ts?.toDate ? ts.toDate() : new Date(ts?.seconds * 1000 || 0); }
     escapeHtml(text) { return text != null ? String(text).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])) : ''; }
     formatPlayerCount(min, max) { return min && max ? (min === max ? `${min}명` : `${min}-${max}명`) : (min ? `${min}명+` : (max ? `~${max}명` : '-')); }
@@ -433,6 +434,7 @@ class BoardGameViewer {
     }
     showError(message) { this.showMessage(message, 'error'); }
     showSuccess(message) { this.showMessage(message, 'success'); }
+    // ▲▲▲▲▲▲ 누락되었던 헬퍼 함수들 추가 ▲▲▲▲▲▲
 }
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -21,11 +21,10 @@ const googleProvider = new firebase.auth.GoogleAuthProvider();
 // --- 인증 관리 클래스 ---
 class AuthManager {
     constructor() {
-        this.currentUser = null;
+        this.currentUser = undefined; // 초기 상태를 undefined로 설정
         this.authCallbacks = [];
         this._init();
     }
-
     _init() {
         auth.onAuthStateChanged(user => {
             this.currentUser = user;
@@ -33,7 +32,6 @@ class AuthManager {
             if(user) this.ensureUserDocument(user);
         });
     }
-
     async ensureUserDocument(user) {
         const userRef = db.collection('users').doc(user.uid);
         const userDoc = await userRef.get();
@@ -46,32 +44,19 @@ class AuthManager {
                 lastLoginAt: firebase.firestore.FieldValue.serverTimestamp(),
             });
         } else {
-            await userRef.update({
-                lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
+            await userRef.update({ lastLoginAt: firebase.firestore.FieldValue.serverTimestamp() });
         }
     }
-    
     onAuthStateChanged(callback) {
         this.authCallbacks.push(callback);
         if(this.currentUser !== undefined) callback(this.currentUser);
     }
-
     notifyAuthCallbacks(user) {
         (this.authCallbacks || []).forEach(cb => cb(user));
     }
-    
-    async signInWithGoogle() {
-        return (await auth.signInWithPopup(googleProvider)).user;
-    }
-
-    async signOut() {
-        await auth.signOut();
-    }
-    
-    getCurrentUser() {
-        return auth.currentUser;
-    }
+    async signInWithGoogle() { return (await auth.signInWithPopup(googleProvider)).user; }
+    async signOut() { await auth.signOut(); }
+    getCurrentUser() { return auth.currentUser; }
 }
 
 // --- 즐겨찾기 관리 클래스 ---
@@ -81,21 +66,13 @@ class FavoriteManager {
         this.favorites = new Set();
         this.favoriteCallbacks = [];
     }
-
-    onFavoritesChanged(callback) {
-        this.favoriteCallbacks.push(callback);
-    }
-
-    notifyFavoriteCallbacks() {
-        (this.favoriteCallbacks || []).forEach(cb => cb(Array.from(this.favorites)));
-    }
-
+    onFavoritesChanged(callback) { this.favoriteCallbacks.push(callback); }
+    notifyFavoriteCallbacks() { (this.favoriteCallbacks || []).forEach(cb => cb(Array.from(this.favorites))); }
     async loadUserFavorites(userId) {
         const doc = await db.collection('userFavorites').doc(userId).get();
         this.favorites = doc.exists ? new Set(doc.data().gameIds || []) : new Set();
         this.notifyFavoriteCallbacks();
     }
-
     async toggleFavorite(gameId) {
         const user = this.authManager.getCurrentUser();
         if (!user) throw new Error('로그인이 필요합니다.');
