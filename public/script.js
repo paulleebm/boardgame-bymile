@@ -2,7 +2,7 @@
 class BoardGameViewer {
     constructor() {
         this.allGames = [];
-        this.allComics = [];
+        this.allPosts = []; // allComics -> allPosts
         this.currentData = [];
         this.statusFilterActive = false;
         this.favoriteFilterActive = false;
@@ -18,14 +18,14 @@ class BoardGameViewer {
 
     initializeElements() {
         const ids = [
-            'searchInput', 'searchType', 'playerCountInput',
+            'nameSearchInput', 'genreSearchInput', 'playerCountInput', 'bestMatchToggle',
             'difficultyMin', 'difficultyMax', 'difficultyMinValue', 'difficultyMaxValue', 
             'timeMin', 'timeMax', 'timeMinValue', 'timeMaxValue',
-            'gameGrid', 'comicGrid', 'detailModal', 'loading', 'errorMessage', 
-            'successMessage', 'nav-games-btn', 'nav-comics-btn', 'nav-mypage-btn',
+            'gameGrid', 'postGrid', 'detailModal', 'loading', 'errorMessage', 
+            'successMessage', 'nav-games-btn', 'nav-posts-btn', 'nav-mypage-btn',
             'filter-sidebar', 'filter-overlay', 'close-filter-btn',
-            'games-page', 'comics-page', 'mypage-page', 'myPageContent', 'page-header',
-            'gameCount' // gameCount 추가
+            'games-page', 'posts-page', 'mypage-page', 'myPageContent', 'page-header',
+            'post-viewer-page' // 게시글 상세 페이지
         ];
         ids.forEach(id => this.elements[id] = document.getElementById(id));
     }
@@ -35,28 +35,51 @@ class BoardGameViewer {
         this.initializeSliders();
         this.setupAuthMonitoring();
         this.loadInitialData();
-        this.showView('games');
+        this.handleUrlChange(); // 페이지 로드 시 URL 처리
     }
 
     setupEventListeners() {
         const addListener = (element, event, handler) => element && element.addEventListener(event, handler);
 
         addListener(this.elements['nav-games-btn'], 'click', () => this.showView('games'));
-        addListener(this.elements['nav-comics-btn'], 'click', () => this.showView('comics'));
+        addListener(this.elements['nav-posts-btn'], 'click', () => this.showView('posts'));
         addListener(this.elements['nav-mypage-btn'], 'click', () => this.showView('mypage'));
         
         addListener(this.elements['filter-overlay'], 'click', () => this.toggleFilterSidebar(false));
         addListener(this.elements['close-filter-btn'], 'click', () => this.toggleFilterSidebar(false));
         
-        const filterInputs = ['searchInput', 'searchType', 'playerCountInput'];
-        filterInputs.forEach(id => addListener(this.elements[id], 'input', () => this.debounceSearch()));
+        const filterInputs = ['nameSearchInput', 'genreSearchInput', 'playerCountInput', 'bestMatchToggle'];
+        filterInputs.forEach(id => {
+            const el = this.elements[id];
+            if (el) {
+                const eventType = el.type === 'checkbox' ? 'change' : 'input';
+                addListener(el, eventType, () => this.debounceSearch());
+            }
+        });
         
+        // 브라우저 뒤로가기/앞으로가기 이벤트 처리
+        window.addEventListener('popstate', () => this.handleUrlChange());
+
+        // 전역 함수 할당
         window.openGameModal = (id) => this.openGameModal(id);
-        window.openComicModal = (id) => this.openComicModal(id);
+        window.showPostPage = (id) => this.showPostPage(id);
         window.toggleFavorite = (id, event) => this.toggleFavorite(id, event);
         window.handleLogin = () => this.handleLogin();
         window.handleLogout = () => this.handleLogout();
-        window.submitComment = (comicId) => this.submitComment(comicId);
+        window.submitComment = (postId) => this.submitComment(postId);
+    }
+    
+    // URL 변경을 감지하고 그에 맞는 화면을 보여주는 함수
+    handleUrlChange() {
+        const hash = window.location.hash;
+        if (hash.startsWith('#post/')) {
+            const postId = hash.substring(6);
+            this.renderPostDetailView(postId);
+        } else {
+            this.hidePostPage();
+            const viewName = hash.substring(1) || 'games';
+            this.showView(viewName, false); // URL 변경으로 인한 뷰 전환 시 pushState 안함
+        }
     }
 
     updateHeader(page) {
@@ -72,8 +95,8 @@ class BoardGameViewer {
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                     </button>
                 </div>`;
-        } else if (page === 'comics') {
-            title = '📚 보드게임 만화';
+        } else if (page === 'posts') {
+            title = '📚 보드게임 게시판';
         } else if (page === 'mypage') {
             title = '👤 마이페이지';
         }
@@ -85,17 +108,23 @@ class BoardGameViewer {
         }
     }
 
-    showView(viewName) {
+    showView(viewName, shouldPushState = true) {
+        if (shouldPushState) {
+            history.pushState({ view: viewName }, '', `#${viewName}`);
+        }
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
-        this.elements[`${viewName}-page`]?.classList.add('active');
-        this.elements[`nav-${viewName}-btn`]?.classList.add('active');
+        const pageEl = this.elements[`${viewName}-page`];
+        const navBtnEl = this.elements[`nav-${viewName}-btn`];
+
+        if(pageEl) pageEl.classList.add('active');
+        if(navBtnEl) navBtnEl.classList.add('active');
         
         this.updateHeader(viewName);
         
-        if (viewName === 'comics' && this.allComics.length === 0) this.loadComics();
-        if (viewName === 'mypage') this.renderMyPage(); // 마이페이지 탭 클릭 시 즉시 렌더링
+        if (viewName === 'posts' && this.allPosts.length === 0) this.loadPosts();
+        if (viewName === 'mypage') this.renderMyPage();
     }
     
     toggleFilterSidebar(forceOpen) {
@@ -124,7 +153,11 @@ class BoardGameViewer {
         });
     }
 
-    getActiveView() { return document.querySelector('.nav-btn.active')?.id.replace('nav-','').replace('-btn','') || 'games'; }
+    getActiveView() {
+        const hash = window.location.hash.substring(1);
+        if (hash.startsWith('post/')) return 'post';
+        return hash || 'games';
+    }
     
     renderMyPage() {
         const contentEl = this.elements.myPageContent;
@@ -190,51 +223,63 @@ class BoardGameViewer {
             this.allGames = await window.boardGameAPI.getAllGames();
             this.allGames.sort((a, b) => this.getDate(b.createdAt) - this.getDate(a.createdAt));
             this.advancedSearchAndFilter();
-        } catch (error) { this.showError('데이터를 불러오는 데 실패했습니다.'); } 
+        } catch (error) { this.showError('데이터를 불러오는 데 실패했습니다.'); console.error(error); } 
         finally { this.showLoading(false); }
     }
 
-    async loadComics() {
+    async loadPosts() {
         this.showLoading(true);
         try {
-            this.allComics = await window.boardGameAPI.getComics();
-            this.renderComicView();
+            this.allPosts = await window.boardGameAPI.getPosts();
+            this.renderPostView();
         } catch(e) { 
-            console.error("만화 목록 로딩 실패:", e);
-            this.showError("만화 목록 로딩에 실패했습니다."); 
+            console.error("게시글 목록 로딩 실패:", e);
+            this.showError("게시글 목록 로딩에 실패했습니다."); 
         }
         finally { this.showLoading(false); }
     }
 
     advancedSearchAndFilter() {
         let filtered = [...this.allGames];
+        
         if (this.favoriteFilterActive) filtered = filtered.filter(g => this.favorites.has(g.id));
         if (this.statusFilterActive) filtered = filtered.filter(g => g.status && g.status !== 'normal');
         
-        filtered = this.applySearch(filtered);
+        const nameQuery = (this.elements.nameSearchInput.value || '').trim().toLowerCase();
+        const genreQuery = (this.elements.genreSearchInput.value || '').trim().toLowerCase();
+        const playerCount = parseInt(this.elements.playerCountInput.value, 10);
+        const bestMatchOnly = this.elements.bestMatchToggle.checked;
+
+        if (nameQuery) filtered = filtered.filter(g => (g.name || '').toLowerCase().includes(nameQuery));
+        if (genreQuery) filtered = filtered.filter(g => (g.genre || '').toLowerCase().includes(genreQuery));
+
+        if (!isNaN(playerCount)) {
+            if (bestMatchOnly) {
+                filtered = filtered.filter(g => {
+                    if (!g.bestPlayers) return false;
+                    const best = String(g.bestPlayers);
+                    if (best.includes('-')) {
+                        const [min, max] = best.split('-').map(Number);
+                        return playerCount >= min && playerCount <= max;
+                    }
+                    if (best.includes(',')) {
+                        const options = best.split(',').map(s => s.trim());
+                        return options.includes(String(playerCount));
+                    }
+                    return parseInt(best, 10) === playerCount;
+                });
+            } else {
+                filtered = filtered.filter(g => playerCount >= (g.minPlayers || 1) && playerCount <= (g.maxPlayers || 99));
+            }
+        }
+        
         filtered = this.applySliderFilter(filtered, 'difficulty');
         filtered = this.applySliderFilter(filtered, 'time');
         
         this.currentData = filtered;
         this.renderGridView();
-        this.updateGameCount(); // 게임 개수 업데이트 호출 추가
     }
-    
-    applySearch(data) {
-        const query = (this.elements.searchInput.value || '').trim().toLowerCase();
-        const type = this.elements.searchType.value;
-        const playerCount = parseInt(this.elements.playerCountInput.value, 10);
-    
-        if (!query && isNaN(playerCount)) return data;
-    
-        return data.filter(game => {
-            if (query && type === 'name' && !(game.name || '').toLowerCase().includes(query)) return false;
-            if (query && type === 'genre' && !(game.genre || '').toLowerCase().includes(query)) return false;
-            if (!isNaN(playerCount) && (playerCount < (game.minPlayers || 1) || playerCount > (game.maxPlayers || 99))) return false;
-            return true;
-        });
-    }
-
+        
     applySliderFilter(data, type) {
         const minEl = this.elements[`${type}Min`];
         const maxEl = this.elements[`${type}Max`];
@@ -258,7 +303,6 @@ class BoardGameViewer {
     renderGridView() {
         const grid = this.elements.gameGrid;
         if (!grid) return;
-        this.updateGameCount();
         grid.innerHTML = this.currentData.length === 0
             ? `<p class="empty-state-text">조건에 맞는 보드게임이 없습니다.</p>`
             : this.currentData.map(item => this.createGameCard(item)).join('');
@@ -278,20 +322,20 @@ class BoardGameViewer {
             </div>`;
     }
     
-    renderComicView() {
-        const grid = this.elements.comicGrid;
+    renderPostView() {
+        const grid = this.elements.postGrid;
         if (!grid) return;
-        this.allComics.sort((a, b) => this.getDate(b.createdAt) - this.getDate(a.createdAt));
-        grid.innerHTML = this.allComics.length === 0
-            ? `<p class="empty-state-text">아직 만화가 없습니다.</p>`
-            : this.allComics.map(item => this.createComicCard(item)).join('');
+        this.allPosts.sort((a, b) => this.getDate(b.createdAt) - this.getDate(a.createdAt));
+        grid.innerHTML = this.allPosts.length === 0
+            ? `<p class="empty-state-text">아직 게시글이 없습니다.</p>`
+            : this.allPosts.map(item => this.createPostCard(item)).join('');
     }
 
-    createComicCard(item) {
+    createPostCard(item) {
         return `
-            <div class="comic-list-item" onclick="openComicModal('${item.id}')">
-                <img src="${item.thumbnailUrl || this.DEFAULT_IMAGE_URL}" class="comic-thumbnail" alt="${this.escapeHtml(item.title)}">
-                <div class="comic-info">
+            <div class="post-list-item" onclick="showPostPage('${item.id}')">
+                <img src="${item.thumbnailUrl || this.DEFAULT_IMAGE_URL}" class="post-thumbnail" alt="${this.escapeHtml(item.title)}">
+                <div class="post-info">
                     <h3>${this.escapeHtml(item.title)}</h3>
                     <p>${this.escapeHtml(item.author)}</p>
                 </div>
@@ -329,35 +373,67 @@ class BoardGameViewer {
         this.elements.detailModal.classList.remove('hidden');
     }
     
-    async openComicModal(comicId) {
-        const comic = this.allComics.find(c => c.id === comicId);
-        if (!comic) return;
+    // 게시글 상세 페이지를 띄우기 전 URL을 변경하는 함수
+    showPostPage(postId) {
+        history.pushState({ postId }, '', `#post/${postId}`);
+        this.renderPostDetailView(postId);
+    }
     
-        const comments = await window.boardGameAPI.getComments(comicId);
-    
-        this.elements.detailModal.innerHTML = `
-            <div class="modal-overlay" onclick="this.parentElement.classList.add('hidden')">
-                <div class="detail-content" onclick="event.stopPropagation()">
-                    <div class="modal-header">
-                        <h2>${this.escapeHtml(comic.title)}</h2>
-                        <button onclick="this.closest('.modal').classList.add('hidden')" class="modal-close-btn">&times;</button>
-                    </div>
-                    <div class="comic-viewer-body">
-                        ${(comic.imageUrls || []).map(url => `<img src="${url}" alt="만화 페이지">`).join('')}
-                    </div>
-                    <div class="comments-section">
-                        <h3>댓글</h3>
-                        <div id="comment-list">${this.renderComments(comments)}</div>
-                        ${this.currentUser ? `
-                            <div class="comment-form">
-                                <input type="text" id="comment-input" class="comment-input" placeholder="댓글을 입력하세요...">
-                                <button class="comment-submit" onclick="submitComment('${comicId}')">등록</button>
-                            </div>
-                        ` : '<p>댓글을 작성하려면 <a href="#" onclick="handleLogin(); return false;">로그인</a>이 필요합니다.</p>'}
-                    </div>
+    // 게시글 상세 페이지 내용을 렌더링하고 보여주는 함수
+    async renderPostDetailView(postId) {
+        let post = this.allPosts.find(p => p.id === postId);
+        if (!post) {
+            this.showLoading(true);
+            post = await window.boardGameAPI.getPost(postId); // 단일 게시물 가져오기
+            this.showLoading(false);
+        }
+        if (!post) {
+            this.showError('게시글을 찾을 수 없습니다.');
+            history.replaceState(null, '', '#posts'); // URL을 게시판 목록으로 되돌림
+            this.handleUrlChange();
+            return;
+        }
+
+        const comments = await window.boardGameAPI.getComments(postId);
+        const viewer = this.elements['post-viewer-page'];
+        
+        viewer.querySelector('.post-view-title').textContent = this.escapeHtml(post.title);
+        viewer.querySelector('.post-viewer-content').innerHTML = this.formatPostContent(post.content);
+        viewer.querySelector('.comments-section #comment-list').innerHTML = this.renderComments(comments);
+        
+        const commentForm = viewer.querySelector('.comments-section .comment-form-container');
+        if (this.currentUser) {
+            commentForm.innerHTML = `
+                <div class="comment-form">
+                    <input type="text" id="comment-input" class="comment-input" placeholder="댓글을 입력하세요...">
+                    <button class="comment-submit" onclick="submitComment('${postId}')">등록</button>
                 </div>
-            </div>`;
-        this.elements.detailModal.classList.remove('hidden');
+            `;
+        } else {
+            commentForm.innerHTML = '<p>댓글을 작성하려면 <a href="#" onclick="handleLogin(); return false;">로그인</a>이 필요합니다.</p>';
+        }
+        
+        viewer.querySelector('.post-view-back-btn').onclick = () => history.back();
+
+        document.body.classList.add('post-view-active');
+        viewer.classList.add('active');
+    }
+    
+    // 게시글 상세 페이지를 숨기는 함수
+    hidePostPage() {
+        document.body.classList.remove('post-view-active');
+        this.elements['post-viewer-page'].classList.remove('active');
+    }
+
+    formatPostContent(content) {
+        if (!content) return '';
+        const lines = this.escapeHtml(content).split('\n');
+        return lines.map(line => {
+            if (line.match(/\.(jpeg|jpg|gif|png)$/i)) {
+                return `<img src="${line}" alt="게시글 이미지">`;
+            }
+            return `<p>${line}</p>`;
+        }).join('');
     }
 
     renderComments(comments) {
@@ -373,16 +449,17 @@ class BoardGameViewer {
         `).join('');
     }
 
-    async submitComment(comicId) {
+    async submitComment(postId) {
         const input = document.getElementById('comment-input');
+        if (!input) return;
         const text = input.value.trim();
         if (!text || !this.currentUser) return;
         
         try {
-            await window.boardGameAPI.addComment(comicId, text);
+            await window.boardGameAPI.addComment(postId, text);
             input.value = '';
-            const comments = await window.boardGameAPI.getComments(comicId);
-            document.getElementById('comment-list').innerHTML = this.renderComments(comments);
+            const comments = await window.boardGameAPI.getComments(postId);
+            document.querySelector('#post-viewer-page #comment-list').innerHTML = this.renderComments(comments);
         } catch (e) {
             this.showError('댓글 등록에 실패했습니다.');
         }
@@ -401,13 +478,12 @@ class BoardGameViewer {
                 let max = parseFloat(maxInput.value);
                 
                 if (min > max) {
-                    // Prevent sliders from crossing
                     if (this.activeSlider === minInput) { maxInput.value = min; max = min; } 
                     else { minInput.value = max; min = max; }
                 }
                 
                 const minPercent = ((min - minInput.min) / (minInput.max - minInput.min)) * 100;
-                const maxPercent = ((max - maxInput.min) / (maxInput.max - maxInput.min)) * 100;
+                const maxPercent = ((max - maxInput.min) / (maxInput.max - minInput.min)) * 100;
                 
                 range.style.left = `${minPercent}%`;
                 range.style.width = `${maxPercent - minPercent}%`;
@@ -440,12 +516,6 @@ class BoardGameViewer {
     debounce(func, delay) {
         let timeout;
         return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), delay); };
-    }
-
-    updateGameCount() {
-        if (this.elements.gameCount) {
-            this.elements.gameCount.textContent = `총 ${this.currentData.length}개`;
-        }
     }
 
     getDate(ts) { return ts?.toDate ? ts.toDate() : new Date(ts?.seconds * 1000 || 0); }

@@ -93,19 +93,18 @@ class BoardGameAPI {
     async updateGame(id, data) { await this.db.collection('boardgames').doc(id).update({...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}); }
     async deleteGame(id) { await this.db.collection('boardgames').doc(id).delete(); }
 
-    // Comics (orderBy 제거)
-    async getComics() { const snap = await this.db.collection('comics').get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
-    async addComic(data) { const docRef = await this.db.collection('comics').add({...data, createdAt: firebase.firestore.FieldValue.serverTimestamp()}); return {id: docRef.id, ...data}; }
-    async updateComic(id, data) { await this.db.collection('comics').doc(id).update(data); }
-    async deleteComic(id) { await this.db.collection('comics').doc(id).delete(); }
+    // Posts
+    async getPosts() { const snap = await this.db.collection('posts').get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
+    async addPost(data) { const docRef = await this.db.collection('posts').add({...data, createdAt: firebase.firestore.FieldValue.serverTimestamp()}); return {id: docRef.id, ...data}; }
+    async updatePost(id, data) { await this.db.collection('posts').doc(id).update(data); }
+    async deletePost(id) { await this.db.collection('posts').doc(id).delete(); }
     
     // Comments
-    async getComments(comicId) { const snap = await this.db.collection('comics').doc(comicId).collection('comments').orderBy('createdAt', 'asc').get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
-    async addComment(comicId, text) { const user = auth.currentUser; if (!user) throw new Error("로그인이 필요합니다."); await this.db.collection('comics').doc(comicId).collection('comments').add({ text, userId: user.uid, userName: user.displayName, userPhotoUrl: user.photoURL, createdAt: firebase.firestore.FieldValue.serverTimestamp() }); }
+    async getComments(postId) { const snap = await this.db.collection('posts').doc(postId).collection('comments').orderBy('createdAt', 'asc').get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
+    async addComment(postId, text) { const user = auth.currentUser; if (!user) throw new Error("로그인이 필요합니다."); await this.db.collection('posts').doc(postId).collection('comments').add({ text, userId: user.uid, userName: user.displayName, userPhotoUrl: user.photoURL, createdAt: firebase.firestore.FieldValue.serverTimestamp() }); }
 }
 
 window.authManager = new AuthManager();
 window.favoriteManager = new FavoriteManager(window.authManager);
 window.boardGameAPI = new BoardGameAPI();
 window.firebaseInitialized = true;
-

@@ -54,7 +54,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .action-btn.primary { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
 .item-list { display: grid; grid-template-columns: 1fr; gap: 16px; }
 
-/* ===== 아이템 카드 (게임/만화) ===== */
+/* ===== 아이템 카드 (게임/게시글) ===== */
 .item-card {
     background-color: var(--bg-white);
     border-radius: var(--border-radius);
@@ -94,4 +94,84 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .loading { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; z-index: 9999; }
 .spinner { width: 50px; height: 50px; border: 4px solid var(--border-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== 반응형 디자인 ===== */
+@media (max-width: 768px) {
+    .sidebar {
+        display: none;
+    }
+
+    .main-content {
+        width: 100%;
+    }
+
+    .admin-page {
+        padding: 16px;
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+    }
+    
+    .header-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .item-card {
+        grid-template-columns: 60px 1fr;
+        grid-template-rows: auto auto;
+        grid-template-areas: 
+            "thumb info"
+            ". actions";
+        padding: 12px;
+        gap: 8px 12px;
+        align-items: center;
+    }
+
+    .item-thumbnail {
+        grid-area: thumb;
+        width: 60px;
+        height: 60px;
+    }
+
+    .item-info {
+        grid-area: info;
+        min-width: 0;
+    }
+    
+    .item-info h3 {
+        font-size: 1.1em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .item-actions {
+        grid-area: actions;
+        justify-self: end;
+    }
+
+    .modal-content {
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .form-row .form-group {
+        margin-bottom: 16px;
+    }
+    .form-row .form-group:last-child {
+        margin-bottom: 0;
+    }
+}
 

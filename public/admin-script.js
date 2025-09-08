@@ -1,7 +1,7 @@
 class AdminManager {
     constructor() {
         this.allGames = [];
-        this.allComics = [];
+        this.allPosts = [];
         this.elements = {};
         this.initializeElements();
         this.setupEventListeners();
@@ -10,22 +10,23 @@ class AdminManager {
 
     initializeElements() {
         const ids = [
-            'nav-game-management', 'nav-comic-management', 'game-management-page',
-            'comic-management-page', 'gamesList', 'comicsList', 'modal-container', 'loading',
-            'addGameBtn', 'bulkUploadBtn', 'addComicBtn'
+            'nav-game-management', 'nav-post-management', 'game-management-page',
+            'post-management-page', 'gamesList', 'postsList', 'modal-container', 'loading',
+            'addGameBtn', 'bulkUploadBtn', 'addPostBtn'
         ];
         ids.forEach(id => this.elements[id] = document.getElementById(id));
     }
 
     setupEventListeners() {
         this.elements['nav-game-management'].addEventListener('click', () => this.showView('game-management'));
-        this.elements['nav-comic-management'].addEventListener('click', () => this.showView('comic-management'));
+        this.elements['nav-post-management'].addEventListener('click', () => this.showView('post-management'));
         this.elements.addGameBtn.addEventListener('click', () => this.openGameModal());
-        this.elements.addComicBtn.addEventListener('click', () => this.openComicModal());
+        this.elements.addPostBtn.addEventListener('click', () => this.openPostModal());
         window.adminManager = this;
     }
 
     showView(viewName) {
+        console.log(`[Debug] Admin: Showing view: ${viewName}`);
         document.querySelectorAll('.admin-page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
         
@@ -33,7 +34,7 @@ class AdminManager {
         document.getElementById(`nav-${viewName}`).classList.add('active');
 
         if (viewName === 'game-management' && this.allGames.length === 0) this.loadGames();
-        if (viewName === 'comic-management' && this.allComics.length === 0) this.loadComics();
+        if (viewName === 'post-management' && this.allPosts.length === 0) this.loadPosts();
     }
     
     async loadGames() {
@@ -45,14 +46,14 @@ class AdminManager {
         finally { this.showLoading(false); }
     }
     
-    async loadComics() {
+    async loadPosts() {
         this.showLoading(true);
         try {
-            this.allComics = await window.boardGameAPI.getComics();
-            this.renderComics();
+            this.allPosts = await window.boardGameAPI.getPosts();
+            this.renderPosts();
         } catch(e) { 
-            console.error("관리자 만화 로딩 실패:", e);
-            alert("만화 목록 로딩 실패: " + e.message); 
+            console.error("[Debug] Admin: Failed to load posts:", e);
+            alert("게시글 목록 로딩 실패: " + e.message); 
         }
         finally { this.showLoading(false); }
     }
@@ -62,9 +63,9 @@ class AdminManager {
         this.elements.gamesList.innerHTML = sortedGames.map(game => this.createItemCard(game, 'game')).join('');
     }
 
-    renderComics() {
-        const sortedComics = [...this.allComics].sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-        this.elements.comicsList.innerHTML = sortedComics.map(comic => this.createItemCard(comic, 'comic')).join('');
+    renderPosts() {
+        const sortedPosts = [...this.allPosts].sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+        this.elements.postsList.innerHTML = sortedPosts.map(post => this.createItemCard(post, 'post')).join('');
     }
 
     createItemCard(item, type) {
@@ -81,7 +82,7 @@ class AdminManager {
                     <p>${subtext || '정보 없음'}</p>
                 </div>
                 <div class="item-actions">
-                    <button class="action-btn" onclick="window.adminManager.open${isGame ? 'Game' : 'Comic'}Modal('${item.id}')">수정</button>
+                    <button class="action-btn" onclick="window.adminManager.open${isGame ? 'Game' : 'Post'}Modal('${item.id}')">수정</button>
                     <button class="action-btn danger" onclick="window.adminManager.deleteItem('${item.id}', '${type}')">삭제</button>
                 </div>
             </div>
@@ -119,18 +120,18 @@ class AdminManager {
         this.setupModalEvents('game', gameId);
     }
     
-    openComicModal(comicId = null) {
-        const comic = comicId ? this.allComics.find(c => c.id === comicId) : {};
-        const title = comicId ? '만화 수정' : '새 만화 추가';
+    openPostModal(postId = null) {
+        const post = postId ? this.allPosts.find(p => p.id === postId) : {};
+        const title = postId ? '게시글 수정' : '새 게시글 추가';
         this.elements['modal-container'].innerHTML = `
              <div class="modal-overlay">
                 <div class="modal-content">
                     <div class="modal-header"><h2>${title}</h2><button class="close-btn">&times;</button></div>
                     <div class="modal-body">
-                        <div class="form-group"><label>만화 제목*</label><input type="text" name="title" value="${comic?.title || ''}" required></div>
-                        <div class="form-group"><label>작가/출처</label><input type="text" name="author" value="${comic?.author || ''}"></div>
-                        <div class="form-group"><label>썸네일 URL</label><input type="url" name="thumbnailUrl" value="${comic?.thumbnailUrl || ''}"></div>
-                        <div class="form-group"><label>이미지 URL (한 줄에 하나씩)</label><textarea name="imageUrls" rows="5">${(comic?.imageUrls || []).join('\n')}</textarea></div>
+                        <div class="form-group"><label>제목*</label><input type="text" name="title" value="${post?.title || ''}" required></div>
+                        <div class="form-group"><label>작성자/출처</label><input type="text" name="author" value="${post?.author || ''}"></div>
+                        <div class="form-group"><label>내용 (이미지 URL을 그대로 붙여넣으면 이미지로 표시됩니다)</label><textarea name="content" rows="8">${post?.content || ''}</textarea></div>
+                        <div class="form-group"><label>대표 이미지 URL</label><input type="url" name="thumbnailUrl" value="${post?.thumbnailUrl || ''}"></div>
                     </div>
                     <div class="modal-footer">
                         <button class="action-btn close-btn">취소</button>
@@ -138,7 +139,7 @@ class AdminManager {
                     </div>
                 </div>
             </div>`;
-        this.setupModalEvents('comic', comicId);
+        this.setupModalEvents('post', postId);
     }
     
     setupModalEvents(type, id) {
@@ -151,9 +152,7 @@ class AdminManager {
         const data = {};
         modal.querySelectorAll('input, textarea, select').forEach(input => {
             const value = input.value.trim();
-            if (input.name === 'imageUrls') {
-                data[input.name] = value.split('\n').filter(Boolean);
-            } else if(value) {
+            if (value) {
                 data[input.name] = (input.type === 'number' && !isNaN(value)) ? Number(value) : value;
             }
         });
@@ -164,10 +163,10 @@ class AdminManager {
                 if (!data.name) { alert("게임 이름은 필수입니다."); return; }
                 id ? await window.boardGameAPI.updateGame(id, data) : await window.boardGameAPI.addGame(data);
                 await this.loadGames();
-            } else {
-                if (!data.title) { alert("만화 제목은 필수입니다."); return; }
-                id ? await window.boardGameAPI.updateComic(id, data) : await window.boardGameAPI.addComic(data);
-                await this.loadComics();
+            } else if (type === 'post') {
+                if (!data.title) { alert("게시글 제목은 필수입니다."); return; }
+                id ? await window.boardGameAPI.updatePost(id, data) : await window.boardGameAPI.addPost(data);
+                await this.loadPosts();
             }
             modal.remove();
         } catch (e) {
@@ -184,9 +183,9 @@ class AdminManager {
             if (type === 'game') {
                 await window.boardGameAPI.deleteGame(id);
                 await this.loadGames();
-            } else {
-                await window.boardGameAPI.deleteComic(id);
-                await this.loadComics();
+            } else if (type === 'post') {
+                await window.boardGameAPI.deletePost(id);
+                await this.loadPosts();
             }
         } catch(e) {
             alert("삭제 실패: " + e.message);
@@ -198,5 +197,15 @@ class AdminManager {
     showLoading(show) { this.elements.loading.classList.toggle('hidden', !show); }
 }
 
-new AdminManager();
+document.addEventListener('DOMContentLoaded', () => {
+    function waitForFirebase() {
+        if (window.firebaseInitialized) {
+            new AdminManager();
+        } else {
+            console.log('[Debug] Admin: Waiting for Firebase to initialize...');
+            setTimeout(waitForFirebase, 100);
+        }
+    }
+    waitForFirebase();
+});
 
