@@ -1,4 +1,3 @@
-// 사용자 페이지 메인 스크립트 (UI 개편 최종 버전)
 class BoardGameViewer {
     constructor() {
         this.allGames = [];
@@ -10,7 +9,17 @@ class BoardGameViewer {
         this.DEFAULT_PROFILE_IMAGE_URL = 'https://i.imgur.com/rWd9g3i.png';
         this.currentUser = null;
         this.favorites = new Set();
+        this.profileImageFile = null;
         
+        this.sortOrders = ['name_asc', 'name_desc', 'difficulty_asc', 'difficulty_desc'];
+        this.sortLabels = {
+            'name_asc': '가나다순',
+            'name_desc': '가나다 역순',
+            'difficulty_asc': '난이도 낮은순',
+            'difficulty_desc': '난이도 높은순'
+        };
+        this.currentSortIndex = 0;
+
         this.elements = {};
         this.initializeElements();
         this.initialize();
@@ -23,9 +32,9 @@ class BoardGameViewer {
             'timeMin', 'timeMax', 'timeMinValue', 'timeMaxValue',
             'gameGrid', 'postGrid', 'detailModal', 'loading', 'errorMessage', 
             'successMessage', 'nav-games-btn', 'nav-posts-btn', 'nav-mypage-btn',
-            'filter-sidebar', 'filter-overlay', 'close-filter-btn',
+            'filter-sidebar', 'filter-overlay', 'close-filter-btn', 'sort-btn',
             'games-page', 'posts-page', 'mypage-page', 'myPageContent', 'page-header',
-            'post-view-page' // Corrected ID
+            'post-view-page'
         ];
         ids.forEach(id => {
             const el = document.getElementById(id);
@@ -45,7 +54,7 @@ class BoardGameViewer {
         this.initializeSliders();
         this.setupAuthMonitoring();
         this.loadInitialData();
-        this.handleUrlChange(); // 페이지 로드 시 URL 처리
+        this.handleUrlChange();
     }
 
     setupEventListeners() {
@@ -57,6 +66,7 @@ class BoardGameViewer {
         
         addListener(this.elements['filter-overlay'], 'click', () => this.toggleFilterSidebar(false));
         addListener(this.elements['close-filter-btn'], 'click', () => this.toggleFilterSidebar(false));
+        addListener(this.elements['sort-btn'], 'click', () => this.cycleSortOrder());
         
         const filterInputs = ['nameSearchInput', 'genreSearchInput', 'playerCountInput', 'bestPlayerToggle'];
         filterInputs.forEach(id => {
@@ -67,19 +77,25 @@ class BoardGameViewer {
             }
         });
         
-        // 브라우저 뒤로가기/앞으로가기 이벤트 처리
         window.addEventListener('popstate', () => this.handleUrlChange());
 
-        // 전역 함수 할당
         window.openGameModal = (id) => this.openGameModal(id);
         window.showPostPage = (id) => this.showPostPage(id);
         window.toggleFavorite = (id, event) => this.toggleFavorite(id, event);
         window.handleLogin = () => this.handleLogin();
         window.handleLogout = () => this.handleLogout();
         window.submitComment = (postId) => this.submitComment(postId);
+        window.handleDeleteComment = (postId, commentId) => this.handleDeleteComment(postId, commentId);
+        window.handleProfileUpdate = () => this.handleProfileUpdate();
     }
     
-    // URL 변경을 감지하고 그에 맞는 화면을 보여주는 함수
+    cycleSortOrder() {
+        this.currentSortIndex = (this.currentSortIndex + 1) % this.sortOrders.length;
+        const newSortOrder = this.sortOrders[this.currentSortIndex];
+        this.elements['sort-btn'].textContent = `정렬: ${this.sortLabels[newSortOrder]}`;
+        this.advancedSearchAndFilter();
+    }
+
     handleUrlChange() {
         const hash = window.location.hash;
         if (hash.startsWith('#post/')) {
@@ -88,7 +104,7 @@ class BoardGameViewer {
         } else {
             this.hidePostPage();
             const viewName = hash.substring(1) || 'games';
-            this.showView(viewName, false); // URL 변경으로 인한 뷰 전환 시 pushState 안함
+            this.showView(viewName, false);
         }
     }
 
@@ -96,7 +112,8 @@ class BoardGameViewer {
         let title = '';
         let controls = '';
         if (page === 'games') {
-            title = '🎲 보드게임 목록';
+            const gameCount = this.currentData ? this.currentData.length : 0;
+            title = `🎲 보드게임 목록 <span class="game-count-badge">${gameCount}</span>`;
             controls = `
                 <div class="header-controls">
                     <button id="statusFilterBtn" class="action-icon-btn ${this.statusFilterActive ? 'active' : ''}" title="특별 상태 게임만 보기">❗</button>
@@ -113,8 +130,8 @@ class BoardGameViewer {
         this.elements['page-header'].innerHTML = `<h1>${title}</h1>${controls}`;
         if (page === 'games') {
             document.getElementById('open-filter-btn')?.addEventListener('click', () => this.toggleFilterSidebar(true));
-            document.getElementById('statusFilterBtn')?.addEventListener('click', () => this.toggleStatusFilter());
-            document.getElementById('favoriteFilterBtn')?.addEventListener('click', () => this.toggleFavoriteFilter());
+            document.getElementById('statusFilterBtn')?.addEventListener('click', () => this.toggleFilter());
+            document.getElementById('favoriteFilterBtn')?.addEventListener('click', () => this.toggleFilter(true));
         }
     }
 
@@ -145,9 +162,15 @@ class BoardGameViewer {
     setupAuthMonitoring() {
         window.authManager.onAuthStateChanged((user) => {
             this.currentUser = user;
-            if (this.getActiveView() === 'mypage') {
+            const currentView = this.getActiveView();
+            if (currentView === 'mypage') {
                 this.renderMyPage();
+            } else if (currentView === 'post') {
+                 const hash = window.location.hash;
+                 const postId = hash.substring(6);
+                 this.renderPostDetailView(postId);
             }
+
             if (user) {
                 this.loadUserFavorites();
             } else {
@@ -172,14 +195,44 @@ class BoardGameViewer {
     renderMyPage() {
         const contentEl = this.elements.myPageContent;
         if (!contentEl) return;
+        this.profileImageFile = null;
+
         if (this.currentUser) {
             contentEl.innerHTML = `
-                <div class="profile-card">
-                    <img src="${this.currentUser.photoURL || this.DEFAULT_PROFILE_IMAGE_URL}" alt="프로필" class="profile-avatar">
-                    <div class="profile-name">${this.escapeHtml(this.currentUser.displayName)}</div>
-                    <div class="profile-email">${this.escapeHtml(this.currentUser.email)}</div>
-                    <button class="logout-btn" onclick="handleLogout()">로그아웃</button>
+                <div class="profile-card editable">
+                     <div class="profile-image-upload">
+                        <img src="${this.currentUser.photoURL || this.DEFAULT_PROFILE_IMAGE_URL}" id="profileImagePreview" class="profile-avatar" alt="프로필 미리보기">
+                        <label for="profileImageInput" class="profile-image-upload-label">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                        </label>
+                        <input type="file" id="profileImageInput" accept="image/*">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="displayNameInput">닉네임</label>
+                        <input type="text" id="displayNameInput" class="form-input" value="${this.escapeHtml(this.currentUser.displayName)}">
+                    </div>
+                     <div class="profile-email">${this.escapeHtml(this.currentUser.email)}</div>
+
+                    <div class="profile-actions">
+                         <button class="action-btn primary" onclick="handleProfileUpdate()">프로필 저장</button>
+                         <button class="logout-btn" onclick="handleLogout()">로그아웃</button>
+                    </div>
                 </div>`;
+            
+            const imageInput = document.getElementById('profileImageInput');
+            const imagePreview = document.getElementById('profileImagePreview');
+
+            imageInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    this.profileImageFile = file;
+                    const reader = new FileReader();
+                    reader.onload = (e) => { imagePreview.src = e.target.result; };
+                    reader.readAsDataURL(file);
+                }
+            });
+
         } else {
             contentEl.innerHTML = `
                 <div class="mypage-login-prompt">
@@ -214,16 +267,15 @@ class BoardGameViewer {
         } catch (error) { this.showError(error.message); }
     }
     
-    toggleFavoriteFilter() {
-        if (!this.currentUser) return;
-        this.favoriteFilterActive = !this.favoriteFilterActive;
-        document.getElementById('favoriteFilterBtn')?.classList.toggle('active', this.favoriteFilterActive);
-        this.advancedSearchAndFilter();
-    }
-
-    toggleStatusFilter() {
-        this.statusFilterActive = !this.statusFilterActive;
-        document.getElementById('statusFilterBtn')?.classList.toggle('active', this.statusFilterActive);
+    toggleFilter(isFavorite = false) {
+        if (isFavorite) {
+            if (!this.currentUser) return;
+            this.favoriteFilterActive = !this.favoriteFilterActive;
+            document.getElementById('favoriteFilterBtn')?.classList.toggle('active', this.favoriteFilterActive);
+        } else {
+            this.statusFilterActive = !this.statusFilterActive;
+            document.getElementById('statusFilterBtn')?.classList.toggle('active', this.statusFilterActive);
+        }
         this.advancedSearchAndFilter();
     }
     
@@ -231,7 +283,6 @@ class BoardGameViewer {
         this.showLoading(true);
         try {
             this.allGames = await window.boardGameAPI.getAllGames();
-            this.allGames.sort((a, b) => this.getDate(b.createdAt) - this.getDate(a.createdAt));
             this.advancedSearchAndFilter();
         } catch (error) { 
             console.error("데이터 로딩 중 오류 발생:", error);
@@ -257,13 +308,6 @@ class BoardGameViewer {
     }
 
     advancedSearchAndFilter() {
-        if (!this.elements.nameSearchInput || !this.elements.genreSearchInput || !this.elements.playerCountInput || !this.elements.bestPlayerToggle) {
-            console.warn('필터링 UI 요소를 찾을 수 없어 필터링을 건너뜁니다. 전체 목록을 표시합니다.');
-            this.currentData = [...this.allGames];
-            this.renderGridView();
-            return;
-        }
-
         let filtered = [...this.allGames];
         
         if (this.favoriteFilterActive) filtered = filtered.filter(g => this.favorites.has(g.id));
@@ -300,8 +344,25 @@ class BoardGameViewer {
         filtered = this.applySliderFilter(filtered, 'difficulty');
         filtered = this.applySliderFilter(filtered, 'time');
         
+        const sortOrder = this.sortOrders[this.currentSortIndex];
+        filtered.sort((a, b) => {
+            switch (sortOrder) {
+                case 'name_asc':
+                    return (a.name || '').localeCompare(b.name || '', 'ko');
+                case 'name_desc':
+                    return (b.name || '').localeCompare(a.name || '', 'ko');
+                case 'difficulty_asc':
+                    return (a.difficulty || 0) - (b.difficulty || 0);
+                case 'difficulty_desc':
+                    return (b.difficulty || 0) - (a.difficulty || 0);
+                default:
+                    return 0;
+            }
+        });
+
         this.currentData = filtered;
         this.renderGridView();
+        this.updateHeader('games');
     }
         
     applySliderFilter(data, type) {
@@ -415,20 +476,37 @@ class BoardGameViewer {
         this.elements.detailModal.classList.remove('hidden');
     }
     
-    // 게시글 상세 페이지를 띄우기 전 URL을 변경하는 함수
+    async handleProfileUpdate() {
+        if (!this.currentUser) return;
+        const displayNameInput = document.getElementById('displayNameInput');
+        const newDisplayName = displayNameInput.value.trim();
+
+        if (!newDisplayName) { this.showError("닉네임을 입력해주세요."); return; }
+        this.showLoading(true);
+        try {
+            const updates = { displayName: newDisplayName };
+            if (this.profileImageFile) {
+                const downloadURL = await window.boardGameAPI.uploadProfileImage(this.currentUser.uid, this.profileImageFile);
+                updates.photoURL = downloadURL;
+            }
+            await window.authManager.updateUserProfile(updates);
+            this.showSuccess("프로필이 성공적으로 업데이트되었습니다.");
+        } catch (error) {
+            console.error("Profile update failed:", error);
+            this.showError(error.message || "프로필 업데이트에 실패했습니다.");
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
     showPostPage(postId) {
         history.pushState({ postId }, '', `#post/${postId}`);
         this.renderPostDetailView(postId);
     }
     
-    // 게시글 상세 페이지 내용을 렌더링하고 보여주는 함수
     async renderPostDetailView(postId) {
         const viewer = this.elements['post-view-page'];
-        if (!viewer) {
-            console.error('게시글 상세 보기 요소를 찾을 수 없습니다.');
-            return;
-        }
-
+        if (!viewer) { console.error('게시글 상세 보기 요소를 찾을 수 없습니다.'); return; }
         this.showLoading(true);
         try {
             const post = await window.boardGameAPI.getPost(postId);
@@ -438,9 +516,7 @@ class BoardGameViewer {
                 this.handleUrlChange();
                 return;
             }
-
             const comments = await window.boardGameAPI.getComments(postId);
-            
             viewer.innerHTML = `
                 <header class="post-view-header">
                     <button class="post-view-back-btn">
@@ -449,31 +525,33 @@ class BoardGameViewer {
                     <h2 class="post-view-title">${this.escapeHtml(post.title)}</h2>
                 </header>
                 <div class="post-view-container">
-                    <div class="post-viewer-content">${this.formatPostContent(post.content)}</div>
+                    <div class="post-content-wrapper">
+                        <h1>${this.escapeHtml(post.title)}</h1>
+                        <div class="post-meta">
+                            <span>By ${this.escapeHtml(post.author || 'Unknown')}</span> | <span>${this.formatTimestamp(post.createdAt)}</span>
+                        </div>
+                        <div class="post-viewer-content">${this.formatPostContent(post.content)}</div>
+                    </div>
                     <section class="comments-section">
-                        <h3>댓글</h3>
-                        <div id="comment-list">${this.renderComments(comments)}</div>
+                        <h3>댓글 ${comments.length}개</h3>
+                        <div id="comment-list">${this.renderComments(comments, postId)}</div>
                         <div class="comment-form-container"></div>
                     </section>
                 </div>
             `;
-
             const commentFormContainer = viewer.querySelector('.comment-form-container');
             if (this.currentUser) {
                 commentFormContainer.innerHTML = `
-                    <div class="comment-form">
-                        <input type="text" id="comment-input" class="comment-input" placeholder="댓글을 입력하세요...">
-                        <button class="comment-submit" onclick="submitComment('${postId}')">등록</button>
-                    </div>`;
+                    <form onsubmit="event.preventDefault(); submitComment('${postId}');" class="comment-form">
+                        <input type="text" id="comment-input" class="comment-input" placeholder="댓글을 입력하세요..." autocomplete="off">
+                        <button type="submit" class="comment-submit">등록</button>
+                    </form>`;
             } else {
                 commentFormContainer.innerHTML = '<p>댓글을 작성하려면 <a href="#" onclick="handleLogin(); return false;">로그인</a>이 필요합니다.</p>';
             }
-            
             viewer.querySelector('.post-view-back-btn').onclick = () => history.back();
-
             document.body.classList.add('post-view-active');
             viewer.classList.add('active');
-
         } catch (error) {
             console.error("Error rendering post detail:", error);
             this.showError("게시글을 불러오는 데 실패했습니다.");
@@ -482,13 +560,12 @@ class BoardGameViewer {
         }
     }
     
-    // 게시글 상세 페이지를 숨기는 함수
     hidePostPage() {
         document.body.classList.remove('post-view-active');
         const viewer = this.elements['post-view-page'];
         if (viewer) {
             viewer.classList.remove('active');
-            viewer.innerHTML = ''; // 내용을 비워 메모리 누수 방지
+            viewer.innerHTML = '';
         }
     }
 
@@ -504,40 +581,44 @@ class BoardGameViewer {
         }).join('');
     }
 
-    renderComments(comments) {
+    renderComments(comments, postId) {
         if (!comments || comments.length === 0) return '<p>아직 댓글이 없습니다.</p>';
-        return comments.map(comment => `
-            <div class="comment-item">
-                <img src="${comment.userPhotoUrl || this.DEFAULT_PROFILE_IMAGE_URL}" alt="${this.escapeHtml(comment.userName)}" class="comment-avatar">
-                <div class="comment-content">
-                    <div class="comment-author">${this.escapeHtml(comment.userName)}</div>
-                    <div class="comment-text">${this.escapeHtml(comment.text)}</div>
-                </div>
-            </div>
-        `).join('');
+        return comments.map(comment => {
+            const isAuthor = this.currentUser && this.currentUser.uid === comment.userId;
+            const deleteButton = isAuthor
+                ? `<button class="comment-delete-btn" onclick="handleDeleteComment('${postId}', '${comment.id}')">삭제</button>`
+                : '';
+            return `
+                <div class="comment-item">
+                    <img src="${comment.userPhotoUrl || this.DEFAULT_PROFILE_IMAGE_URL}" alt="${this.escapeHtml(comment.userName)}" class="comment-avatar">
+                    <div class="comment-body">
+                        <div class="comment-header">
+                            <span class="comment-author">${this.escapeHtml(comment.userName)}</span>
+                            <div class="comment-meta">
+                                <span class="comment-timestamp">${this.formatTimestamp(comment.createdAt)}</span>
+                                ${deleteButton}
+                            </div>
+                        </div>
+                        <div class="comment-text">${this.escapeHtml(comment.text)}</div>
+                    </div>
+                </div>`;
+        }).join('');
     }
 
     async submitComment(postId) {
         const input = document.getElementById('comment-input');
         if (!input) return;
         const text = input.value.trim();
-        if (!text) {
-             this.showError('댓글 내용을 입력해주세요.');
-             return;
-        }
-        if (!this.currentUser) {
-            this.showError('로그인이 필요합니다.');
-            return;
-        }
-        
+        if (!text) { this.showError('댓글 내용을 입력해주세요.'); return; }
+        if (!this.currentUser) { this.showError('로그인이 필요합니다.'); return; }
         const submitBtn = document.querySelector('.comment-submit');
         submitBtn.disabled = true;
-
         try {
             await window.boardGameAPI.addComment(postId, text);
             input.value = '';
             const comments = await window.boardGameAPI.getComments(postId);
-            document.querySelector('#post-view-page #comment-list').innerHTML = this.renderComments(comments);
+            document.querySelector('#post-view-page #comment-list').innerHTML = this.renderComments(comments, postId);
+            document.querySelector('.comments-section h3').textContent = `댓글 ${comments.length}개`;
         } catch (e) {
             this.showError('댓글 등록에 실패했습니다.');
         } finally {
@@ -545,48 +626,56 @@ class BoardGameViewer {
         }
     }
 
+    async handleDeleteComment(postId, commentId) {
+        if (!confirm('정말로 댓글을 삭제하시겠습니까?')) return;
+        this.showLoading(true);
+        try {
+            await window.boardGameAPI.deleteComment(postId, commentId);
+            const comments = await window.boardGameAPI.getComments(postId);
+            document.querySelector('#post-view-page #comment-list').innerHTML = this.renderComments(comments, postId);
+            document.querySelector('.comments-section h3').textContent = `댓글 ${comments.length}개`;
+            this.showSuccess('댓글이 삭제되었습니다.');
+        } catch (e) {
+            console.error('Error deleting comment:', e);
+            this.showError(e.message || '댓글 삭제에 실패했습니다.');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    formatTimestamp(ts) {
+        if (!ts) return '';
+        const date = this.getDate(ts);
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        const hh = String(date.getHours()).padStart(2, '0');
+        const min = String(date.getMinutes()).padStart(2, '0');
+        return `${yyyy}.${mm}.${dd} ${hh}:${min}`;
+    }
+
     initializeSliders() {
         ['difficulty', 'time'].forEach(type => {
-            const minInput = this.elements[`${type}Min`];
-            const maxInput = this.elements[`${type}Max`];
+            const minInput = this.elements[`${type}Min`], maxInput = this.elements[`${type}Max`];
             const range = minInput?.parentElement.querySelector('.slider-range');
-            
             if (!minInput || !maxInput || !range) return;
-            
             const update = () => {
-                let min = parseFloat(minInput.value);
-                let max = parseFloat(maxInput.value);
-                
-                if (min > max) {
-                    if (this.activeSlider === minInput) { maxInput.value = min; max = min; } 
-                    else { minInput.value = max; min = max; }
-                }
-                
+                let min = parseFloat(minInput.value), max = parseFloat(maxInput.value);
+                if (min > max) { this.activeSlider === minInput ? maxInput.value = min : minInput.value = max; }
+                min = parseFloat(minInput.value), max = parseFloat(maxInput.value);
                 const minPercent = ((min - minInput.min) / (minInput.max - minInput.min)) * 100;
                 const maxPercent = ((max - maxInput.min) / (maxInput.max - minInput.min)) * 100;
-                
-                range.style.left = `${minPercent}%`;
-                range.style.width = `${maxPercent - minPercent}%`;
-
+                range.style.left = `${minPercent}%`; range.style.width = `${maxPercent - minPercent}%`;
                 this.elements[`${type}MinValue`].textContent = min.toFixed(type === 'difficulty' ? 1 : 0) + (type === 'time' ? '분' : '');
                 const maxText = max.toFixed(type === 'difficulty' ? 1 : 0);
                 const maxSuffix = type === 'time' ? (max == maxInput.max ? '분+' : '분') : '';
                 this.elements[`${type}MaxValue`].textContent = maxText + maxSuffix;
             };
-            
             const setActiveSlider = (e) => { this.activeSlider = e.target; };
-            minInput.addEventListener('mousedown', setActiveSlider);
-            minInput.addEventListener('touchstart', setActiveSlider);
-            maxInput.addEventListener('mousedown', setActiveSlider);
-            maxInput.addEventListener('touchstart', setActiveSlider);
-
-            minInput.addEventListener('input', update);
-            maxInput.addEventListener('input', update);
-
-            const debouncedFilter = this.debounce(() => this.advancedSearchAndFilter(), 200);
-            minInput.addEventListener('change', debouncedFilter);
-            maxInput.addEventListener('change', debouncedFilter);
-
+            [minInput, maxInput].forEach(el => {
+                el.addEventListener('mousedown', setActiveSlider); el.addEventListener('touchstart', setActiveSlider);
+                el.addEventListener('input', update); el.addEventListener('change', this.debounce(() => this.advancedSearchAndFilter(), 200));
+            });
             update();
         });
     }

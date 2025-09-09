@@ -44,6 +44,9 @@
             <button id="close-filter-btn" class="close-btn">&times;</button>
         </div>
         <div class="controls">
+             <div class="filter-group">
+                <button id="sort-btn" class="filter-sort-btn">정렬: 가나다순</button>
+             </div>
              <div class="search-box">
                  <label for="nameSearchInput">게임 이름</label>
                  <input type="text" id="nameSearchInput" class="filter-input" placeholder="게임 이름으로 검색">
@@ -118,8 +121,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="script.js"></script>
 </body>
 </html>
-
