@@ -2,7 +2,7 @@
 class BoardGameViewer {
     constructor() {
         this.allGames = [];
-        this.allPosts = []; // allComics -> allPosts
+        this.allPosts = [];
         this.currentData = [];
         this.statusFilterActive = false;
         this.favoriteFilterActive = false;
@@ -18,16 +18,26 @@ class BoardGameViewer {
 
     initializeElements() {
         const ids = [
-            'nameSearchInput', 'genreSearchInput', 'playerCountInput', 'bestMatchToggle',
+            'nameSearchInput', 'genreSearchInput', 'playerCountInput', 'bestPlayerToggle',
             'difficultyMin', 'difficultyMax', 'difficultyMinValue', 'difficultyMaxValue', 
             'timeMin', 'timeMax', 'timeMinValue', 'timeMaxValue',
             'gameGrid', 'postGrid', 'detailModal', 'loading', 'errorMessage', 
             'successMessage', 'nav-games-btn', 'nav-posts-btn', 'nav-mypage-btn',
             'filter-sidebar', 'filter-overlay', 'close-filter-btn',
             'games-page', 'posts-page', 'mypage-page', 'myPageContent', 'page-header',
-            'post-viewer-page' // 게시글 상세 페이지
+            'post-view-page' // Corrected ID
         ];
-        ids.forEach(id => this.elements[id] = document.getElementById(id));
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) {
+                console.error(`Initialization Error: Element with ID '${id}' not found.`);
+            }
+            this.elements[id] = el;
+        });
+
+        if (!this.elements['post-view-page']) {
+             console.error("FATAL: post-view-page element is missing from the DOM during initialization.");
+        }
     }
 
     initialize() {
@@ -48,7 +58,7 @@ class BoardGameViewer {
         addListener(this.elements['filter-overlay'], 'click', () => this.toggleFilterSidebar(false));
         addListener(this.elements['close-filter-btn'], 'click', () => this.toggleFilterSidebar(false));
         
-        const filterInputs = ['nameSearchInput', 'genreSearchInput', 'playerCountInput', 'bestMatchToggle'];
+        const filterInputs = ['nameSearchInput', 'genreSearchInput', 'playerCountInput', 'bestPlayerToggle'];
         filterInputs.forEach(id => {
             const el = this.elements[id];
             if (el) {
@@ -109,7 +119,7 @@ class BoardGameViewer {
     }
 
     showView(viewName, shouldPushState = true) {
-        if (shouldPushState) {
+        if (shouldPushState && `#${viewName}` !== window.location.hash) {
             history.pushState({ view: viewName }, '', `#${viewName}`);
         }
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -223,7 +233,14 @@ class BoardGameViewer {
             this.allGames = await window.boardGameAPI.getAllGames();
             this.allGames.sort((a, b) => this.getDate(b.createdAt) - this.getDate(a.createdAt));
             this.advancedSearchAndFilter();
-        } catch (error) { this.showError('데이터를 불러오는 데 실패했습니다.'); console.error(error); } 
+        } catch (error) { 
+            console.error("데이터 로딩 중 오류 발생:", error);
+            if (error.code === 'permission-denied') {
+                this.showError('데이터를 불러올 권한이 없습니다. Firestore 보안 규칙을 확인해주세요.');
+            } else {
+                this.showError('데이터를 불러오는 데 실패했습니다.');
+            }
+        } 
         finally { this.showLoading(false); }
     }
 
@@ -240,6 +257,13 @@ class BoardGameViewer {
     }
 
     advancedSearchAndFilter() {
+        if (!this.elements.nameSearchInput || !this.elements.genreSearchInput || !this.elements.playerCountInput || !this.elements.bestPlayerToggle) {
+            console.warn('필터링 UI 요소를 찾을 수 없어 필터링을 건너뜁니다. 전체 목록을 표시합니다.');
+            this.currentData = [...this.allGames];
+            this.renderGridView();
+            return;
+        }
+
         let filtered = [...this.allGames];
         
         if (this.favoriteFilterActive) filtered = filtered.filter(g => this.favorites.has(g.id));
@@ -248,7 +272,7 @@ class BoardGameViewer {
         const nameQuery = (this.elements.nameSearchInput.value || '').trim().toLowerCase();
         const genreQuery = (this.elements.genreSearchInput.value || '').trim().toLowerCase();
         const playerCount = parseInt(this.elements.playerCountInput.value, 10);
-        const bestMatchOnly = this.elements.bestMatchToggle.checked;
+        const bestMatchOnly = this.elements.bestPlayerToggle.checked;
 
         if (nameQuery) filtered = filtered.filter(g => (g.name || '').toLowerCase().includes(nameQuery));
         if (genreQuery) filtered = filtered.filter(g => (g.genre || '').toLowerCase().includes(genreQuery));
@@ -307,14 +331,32 @@ class BoardGameViewer {
             ? `<p class="empty-state-text">조건에 맞는 보드게임이 없습니다.</p>`
             : this.currentData.map(item => this.createGameCard(item)).join('');
     }
+
+    getStatusInfo(status) {
+        const statusMap = {
+            'new': { text: 'NEW', className: 'status-new' },
+            'shipping': { text: '배송중', className: 'status-shipping' },
+            'purchasing': { text: '구매중', className: 'status-purchasing' },
+            'rented': { text: '대여중', className: 'status-rented' },
+        };
+        return statusMap[status] || null;
+    }
     
     createGameCard(item) {
         const title = this.escapeHtml(item.name || '제목 없음');
         const imageUrl = item.imageUrl || this.DEFAULT_IMAGE_URL;
         const favoriteIndicator = (this.currentUser && this.favorites.has(item.id)) ? `<div class="favorite-indicator">❤️</div>` : '';
+        
+        let statusBadge = '';
+        const statusInfo = this.getStatusInfo(item.status);
+        if (statusInfo) {
+            statusBadge = `<div class="game-status-badge ${statusInfo.className}">${statusInfo.text}</div>`;
+        }
+
         return `
             <div class="game-card-grid" onclick="openGameModal('${item.id}')">
                 <div class="game-image">
+                    ${statusBadge}
                     <img src="${imageUrl}" alt="${title}" loading="lazy" onerror="this.src='${this.DEFAULT_IMAGE_URL}'">
                     ${favoriteIndicator}
                 </div>
@@ -381,57 +423,83 @@ class BoardGameViewer {
     
     // 게시글 상세 페이지 내용을 렌더링하고 보여주는 함수
     async renderPostDetailView(postId) {
-        let post = this.allPosts.find(p => p.id === postId);
-        if (!post) {
-            this.showLoading(true);
-            post = await window.boardGameAPI.getPost(postId); // 단일 게시물 가져오기
-            this.showLoading(false);
-        }
-        if (!post) {
-            this.showError('게시글을 찾을 수 없습니다.');
-            history.replaceState(null, '', '#posts'); // URL을 게시판 목록으로 되돌림
-            this.handleUrlChange();
+        const viewer = this.elements['post-view-page'];
+        if (!viewer) {
+            console.error('게시글 상세 보기 요소를 찾을 수 없습니다.');
             return;
         }
 
-        const comments = await window.boardGameAPI.getComments(postId);
-        const viewer = this.elements['post-viewer-page'];
-        
-        viewer.querySelector('.post-view-title').textContent = this.escapeHtml(post.title);
-        viewer.querySelector('.post-viewer-content').innerHTML = this.formatPostContent(post.content);
-        viewer.querySelector('.comments-section #comment-list').innerHTML = this.renderComments(comments);
-        
-        const commentForm = viewer.querySelector('.comments-section .comment-form-container');
-        if (this.currentUser) {
-            commentForm.innerHTML = `
-                <div class="comment-form">
-                    <input type="text" id="comment-input" class="comment-input" placeholder="댓글을 입력하세요...">
-                    <button class="comment-submit" onclick="submitComment('${postId}')">등록</button>
+        this.showLoading(true);
+        try {
+            const post = await window.boardGameAPI.getPost(postId);
+            if (!post) {
+                this.showError('게시글을 찾을 수 없습니다.');
+                history.replaceState(null, '', '#posts');
+                this.handleUrlChange();
+                return;
+            }
+
+            const comments = await window.boardGameAPI.getComments(postId);
+            
+            viewer.innerHTML = `
+                <header class="post-view-header">
+                    <button class="post-view-back-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <h2 class="post-view-title">${this.escapeHtml(post.title)}</h2>
+                </header>
+                <div class="post-view-container">
+                    <div class="post-viewer-content">${this.formatPostContent(post.content)}</div>
+                    <section class="comments-section">
+                        <h3>댓글</h3>
+                        <div id="comment-list">${this.renderComments(comments)}</div>
+                        <div class="comment-form-container"></div>
+                    </section>
                 </div>
             `;
-        } else {
-            commentForm.innerHTML = '<p>댓글을 작성하려면 <a href="#" onclick="handleLogin(); return false;">로그인</a>이 필요합니다.</p>';
-        }
-        
-        viewer.querySelector('.post-view-back-btn').onclick = () => history.back();
 
-        document.body.classList.add('post-view-active');
-        viewer.classList.add('active');
+            const commentFormContainer = viewer.querySelector('.comment-form-container');
+            if (this.currentUser) {
+                commentFormContainer.innerHTML = `
+                    <div class="comment-form">
+                        <input type="text" id="comment-input" class="comment-input" placeholder="댓글을 입력하세요...">
+                        <button class="comment-submit" onclick="submitComment('${postId}')">등록</button>
+                    </div>`;
+            } else {
+                commentFormContainer.innerHTML = '<p>댓글을 작성하려면 <a href="#" onclick="handleLogin(); return false;">로그인</a>이 필요합니다.</p>';
+            }
+            
+            viewer.querySelector('.post-view-back-btn').onclick = () => history.back();
+
+            document.body.classList.add('post-view-active');
+            viewer.classList.add('active');
+
+        } catch (error) {
+            console.error("Error rendering post detail:", error);
+            this.showError("게시글을 불러오는 데 실패했습니다.");
+        } finally {
+            this.showLoading(false);
+        }
     }
     
     // 게시글 상세 페이지를 숨기는 함수
     hidePostPage() {
         document.body.classList.remove('post-view-active');
-        this.elements['post-viewer-page'].classList.remove('active');
+        const viewer = this.elements['post-view-page'];
+        if (viewer) {
+            viewer.classList.remove('active');
+            viewer.innerHTML = ''; // 내용을 비워 메모리 누수 방지
+        }
     }
 
     formatPostContent(content) {
         if (!content) return '';
         const lines = this.escapeHtml(content).split('\n');
         return lines.map(line => {
-            if (line.match(/\.(jpeg|jpg|gif|png)$/i)) {
-                return `<img src="${line}" alt="게시글 이미지">`;
+            if (line.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
+                return `<img src="${line}" alt="게시글 이미지" loading="lazy">`;
             }
+            if (line.trim() === '') return '<br>';
             return `<p>${line}</p>`;
         }).join('');
     }
@@ -453,15 +521,27 @@ class BoardGameViewer {
         const input = document.getElementById('comment-input');
         if (!input) return;
         const text = input.value.trim();
-        if (!text || !this.currentUser) return;
+        if (!text) {
+             this.showError('댓글 내용을 입력해주세요.');
+             return;
+        }
+        if (!this.currentUser) {
+            this.showError('로그인이 필요합니다.');
+            return;
+        }
         
+        const submitBtn = document.querySelector('.comment-submit');
+        submitBtn.disabled = true;
+
         try {
             await window.boardGameAPI.addComment(postId, text);
             input.value = '';
             const comments = await window.boardGameAPI.getComments(postId);
-            document.querySelector('#post-viewer-page #comment-list').innerHTML = this.renderComments(comments);
+            document.querySelector('#post-view-page #comment-list').innerHTML = this.renderComments(comments);
         } catch (e) {
             this.showError('댓글 등록에 실패했습니다.');
+        } finally {
+            submitBtn.disabled = false;
         }
     }
 

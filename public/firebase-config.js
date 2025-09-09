@@ -95,6 +95,7 @@ class BoardGameAPI {
 
     // Posts
     async getPosts() { const snap = await this.db.collection('posts').get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
+    async getPost(id) { const doc = await this.db.collection('posts').doc(id).get(); return doc.exists ? { id: doc.id, ...doc.data() } : null; }
     async addPost(data) { const docRef = await this.db.collection('posts').add({...data, createdAt: firebase.firestore.FieldValue.serverTimestamp()}); return {id: docRef.id, ...data}; }
     async updatePost(id, data) { await this.db.collection('posts').doc(id).update(data); }
     async deletePost(id) { await this.db.collection('posts').doc(id).delete(); }
