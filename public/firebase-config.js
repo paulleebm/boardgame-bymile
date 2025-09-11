@@ -16,13 +16,16 @@ if (!firebase.apps.length) {
 
 const db = firebase.firestore();
 const auth = firebase.auth();
-const storage = firebase.storage();
 const googleProvider = new firebase.auth.GoogleAuthProvider();
+let storage;
+if (typeof firebase.storage === 'function') {
+    storage = firebase.storage();
+}
 
 // --- 인증 관리 클래스 ---
 class AuthManager {
     constructor() {
-        this.currentUser = undefined; // 초기 상태를 undefined로 설정
+        this.currentUser = undefined;
         this.authCallbacks = [];
         this._init();
     }
@@ -58,14 +61,13 @@ class AuthManager {
     async signInWithGoogle() { return (await auth.signInWithPopup(googleProvider)).user; }
     async signOut() { await auth.signOut(); }
     getCurrentUser() { return auth.currentUser; }
-
     async updateUserProfile(updates) {
         const user = this.getCurrentUser();
-        if (!user) throw new Error("로그인이 필요합니다.");
+        if (!user) throw new Error('로그인이 필요합니다.');
         await user.updateProfile(updates);
-        const userRef = db.collection('users').doc(user.uid);
-        await userRef.update(updates);
-        this.notifyAuthCallbacks(auth.currentUser);
+        await db.collection('users').doc(user.uid).update(updates);
+        this.currentUser = auth.currentUser; // 최신 정보로 갱신
+        this.notifyAuthCallbacks(this.currentUser);
     }
 }
 
@@ -95,10 +97,7 @@ class FavoriteManager {
 
 // --- API 래퍼 클래스 ---
 class BoardGameAPI {
-    constructor() { 
-        this.db = db;
-        this.storage = storage;
-    }
+    constructor() { this.db = db; }
     
     // Games
     async getAllGames() { const snap = await this.db.collection('boardgames').get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
@@ -107,10 +106,35 @@ class BoardGameAPI {
     async deleteGame(id) { await this.db.collection('boardgames').doc(id).delete(); }
 
     // Posts
-    async getPosts() { const snap = await this.db.collection('posts').get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
-    async getPost(id) { const doc = await this.db.collection('posts').doc(id).get(); return doc.exists ? { id: doc.id, ...doc.data() } : null; }
-    async addPost(data) { const docRef = await this.db.collection('posts').add({...data, createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp()}); return {id: docRef.id, ...data}; }
-    async updatePost(id, data) { await this.db.collection('posts').doc(id).update({...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}); }
+    async getPosts() { const snap = await this.db.collection('posts').orderBy('createdAt', 'desc').get(); return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
+    async getPost(id) {
+        const docRef = this.db.collection('posts').doc(id);
+        const doc = await docRef.get();
+        if (doc.exists) {
+            // Firestore 트랜잭션을 사용하여 원자적으로 조회수 업데이트
+            await this.db.runTransaction(async (transaction) => {
+                const postDoc = await transaction.get(docRef);
+                if (!postDoc.exists) {
+                    throw "문서가 존재하지 않습니다!";
+                }
+                const newViewCount = (postDoc.data().viewCount || 0) + 1;
+                transaction.update(docRef, { viewCount: newViewCount });
+            });
+            // 업데이트된 문서를 다시 가져와 반환
+            const updatedDoc = await docRef.get();
+            return { id: updatedDoc.id, ...updatedDoc.data() };
+        }
+        return null;
+    }
+    async addPost(data) {
+        const docRef = await this.db.collection('posts').add({
+            ...data,
+            viewCount: 0,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        return {id: docRef.id, ...data};
+    }
+    async updatePost(id, data) { await this.db.collection('posts').doc(id).update(data); }
     async deletePost(id) { await this.db.collection('posts').doc(id).delete(); }
     
     // Comments
@@ -119,34 +143,74 @@ class BoardGameAPI {
     async deleteComment(postId, commentId) {
         const user = auth.currentUser;
         if (!user) throw new Error("로그인이 필요합니다.");
-
         const commentRef = this.db.collection('posts').doc(postId).collection('comments').doc(commentId);
         const commentDoc = await commentRef.get();
-
-        if (!commentDoc.exists) {
-            throw new Error("댓글을 찾을 수 없습니다.");
-        }
-
-        if (commentDoc.data().userId !== user.uid) {
+        if (commentDoc.exists && commentDoc.data().userId === user.uid) {
+            await commentRef.delete();
+        } else {
             throw new Error("댓글을 삭제할 권한이 없습니다.");
         }
-        
-        await commentRef.delete();
     }
 
-    // Profile
+    // Profile Images
     async uploadProfileImage(userId, file) {
-        if (!userId || !file) {
-            throw new Error("User ID and file are required.");
-        }
+        if (!storage) throw new Error("Firebase Storage가 초기화되지 않았습니다.");
         const filePath = `profileImages/${userId}/${Date.now()}_${file.name}`;
-        const storageRef = this.storage.ref(filePath);
-        const snapshot = await storageRef.put(file);
-        return await snapshot.ref.getDownloadURL();
+        const fileRef = storage.ref(filePath);
+        await fileRef.put(file);
+        return await fileRef.getDownloadURL();
+    }
+    
+    // Visit Logs
+    async getVisitLogs() {
+        const snapshot = await this.db.collection('visitLogs').orderBy('timestamp', 'desc').limit(100).get();
+        return snapshot.docs.map(doc => doc.data());
     }
 }
+
+// --- 방문자 로그 기록 클래스 ---
+class VisitLogger {
+    constructor(authManager) {
+        this.db = db;
+        this.authManager = authManager;
+        this.logVisit();
+    }
+
+    async getIpAddress() {
+        try {
+            const response = await fetch('https://api.ipify.org?format=json');
+            if (!response.ok) return 'unknown';
+            const data = await response.json();
+            return data.ip;
+        } catch (error) {
+            console.error('IP 주소를 가져오는 데 실패했습니다.', error);
+            return 'unknown';
+        }
+    }
+
+    async logVisit() {
+        const ipAddress = await this.getIpAddress();
+        const user = this.authManager.getCurrentUser();
+        
+        const logData = {
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            identifier: user ? user.uid : ipAddress,
+            isLoggedIn: !!user,
+            email: user ? user.email : null,
+            userAgent: navigator.userAgent
+        };
+
+        await this.db.collection('visitLogs').add(logData);
+    }
+}
+
 
 window.authManager = new AuthManager();
 window.favoriteManager = new FavoriteManager(window.authManager);
 window.boardGameAPI = new BoardGameAPI();
+// visitLogger는 사용자가 사이트에 접속할 때마다 자동으로 로그를 남깁니다.
+if (!window.visitLogger) {
+    window.visitLogger = new VisitLogger(window.authManager);
+}
 window.firebaseInitialized = true;
+

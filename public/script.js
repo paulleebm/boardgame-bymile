@@ -216,7 +216,7 @@ class BoardGameViewer {
 
                     <div class="profile-actions">
                          <button class="action-btn primary" onclick="handleProfileUpdate()">프로필 저장</button>
-                         <button class="logout-btn" onclick="handleLogout()">로그아웃</button>
+                         <button class="logout-btn action-btn" onclick="handleLogout()">로그아웃</button>
                     </div>
                 </div>`;
             
@@ -714,4 +714,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     waitForAPI();
 });
-

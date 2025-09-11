@@ -15,6 +15,7 @@
             <nav class="sidebar-nav">
                 <button id="nav-game-management" class="nav-item active">게임 관리</button>
                 <button id="nav-post-management" class="nav-item">게시판 관리</button>
+                <button id="nav-visit-log" class="nav-item">방문 로그</button>
             </nav>
             <div class="sidebar-footer">
                 <a href="index.html" class="view-btn">사용자 페이지로</a>
@@ -46,18 +47,40 @@
                      <div id="postsList" class="item-list"></div>
                 </div>
             </section>
+
+            <!-- 방문 로그 페이지 -->
+            <section id="visit-log-page" class="admin-page">
+                <header class="page-header">
+                    <h1>방문 로그</h1>
+                </header>
+                <div class="content-body">
+                    <div class="log-table-container">
+                        <table class="log-table">
+                            <thead>
+                                <tr>
+                                    <th>시간</th>
+                                    <th>식별자 (UID or IP)</th>
+                                    <th>로그인 여부</th>
+                                </tr>
+                            </thead>
+                            <tbody id="visit-log-body">
+                                <!-- 로그 데이터가 여기에 삽입됩니다 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
     <!-- Modals -->
-    <div id="modal-container">
-        <!-- Modals will be injected here -->
-    </div>
+    <div id="modal-container"></div>
     <div class="loading hidden" id="loading"><div class="spinner"></div></div>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="admin-script.js"></script>
 </body>
