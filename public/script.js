@@ -440,7 +440,10 @@ class BoardGameViewer {
                 <img src="${item.thumbnailUrl || this.DEFAULT_IMAGE_URL}" class="post-thumbnail" alt="${this.escapeHtml(item.title)}">
                 <div class="post-info">
                     <h3>${this.escapeHtml(item.title)}</h3>
-                    <p>${this.escapeHtml(item.author)}</p>
+                    <p class="post-meta">
+                        <span>${this.escapeHtml(item.author)}</span>
+                        <span>조회수 ${item.viewCount || 0}</span>
+                    </p>
                 </div>
             </div>
         `;
@@ -528,7 +531,9 @@ class BoardGameViewer {
                     <div class="post-content-wrapper">
                         <h1>${this.escapeHtml(post.title)}</h1>
                         <div class="post-meta">
-                            <span>By ${this.escapeHtml(post.author || 'Unknown')}</span> | <span>${this.formatTimestamp(post.createdAt)}</span>
+                           <span>${this.escapeHtml(post.author || 'Unknown')}</span>
+                           <span>${this.formatTimestamp(post.createdAt)}</span>
+                           <span>조회수 ${post.viewCount || 0}</span>
                         </div>
                         <div class="post-viewer-content">${this.formatPostContent(post.content)}</div>
                     </div>
@@ -714,3 +719,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     waitForAPI();
 });
+

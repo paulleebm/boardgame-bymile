@@ -111,16 +111,12 @@ class BoardGameAPI {
         const docRef = this.db.collection('posts').doc(id);
         const doc = await docRef.get();
         if (doc.exists) {
-            // Firestore 트랜잭션을 사용하여 원자적으로 조회수 업데이트
             await this.db.runTransaction(async (transaction) => {
                 const postDoc = await transaction.get(docRef);
-                if (!postDoc.exists) {
-                    throw "문서가 존재하지 않습니다!";
-                }
+                if (!postDoc.exists) throw "문서가 존재하지 않습니다!";
                 const newViewCount = (postDoc.data().viewCount || 0) + 1;
                 transaction.update(docRef, { viewCount: newViewCount });
             });
-            // 업데이트된 문서를 다시 가져와 반환
             const updatedDoc = await docRef.get();
             return { id: updatedDoc.id, ...updatedDoc.data() };
         }
@@ -189,18 +185,23 @@ class VisitLogger {
     }
 
     async logVisit() {
-        const ipAddress = await this.getIpAddress();
-        const user = this.authManager.getCurrentUser();
-        
-        const logData = {
-            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            identifier: user ? user.uid : ipAddress,
-            isLoggedIn: !!user,
-            email: user ? user.email : null,
-            userAgent: navigator.userAgent
-        };
+        if (sessionStorage.getItem('visitLogged')) return;
 
-        await this.db.collection('visitLogs').add(logData);
+        const ipAddress = await this.getIpAddress();
+        this.authManager.onAuthStateChanged(async (user) => {
+            if (sessionStorage.getItem('visitLogged')) return;
+
+            const logData = {
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                identifier: user ? user.displayName : ipAddress,
+                isLoggedIn: !!user,
+                email: user ? user.email : null,
+                userAgent: navigator.userAgent
+            };
+
+            await this.db.collection('visitLogs').add(logData);
+            sessionStorage.setItem('visitLogged', 'true');
+        });
     }
 }
 
@@ -208,7 +209,6 @@ class VisitLogger {
 window.authManager = new AuthManager();
 window.favoriteManager = new FavoriteManager(window.authManager);
 window.boardGameAPI = new BoardGameAPI();
-// visitLogger는 사용자가 사이트에 접속할 때마다 자동으로 로그를 남깁니다.
 if (!window.visitLogger) {
     window.visitLogger = new VisitLogger(window.authManager);
 }
