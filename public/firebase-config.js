@@ -3,7 +3,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyA4Q7fbrhlXG9LU67MpUovSLkXrqtHhftc",
   authDomain: "boardgame-bymile.firebaseapp.com",
   projectId: "boardgame-bymile",
-  storageBucket: "boardgame-bymile.appspot.com",
+  storageBucket: "boardgame-bymile.firebasestorage.app", // 올바른 버킷 주소로 수정
   messagingSenderId: "450054853638",
   appId: "1:450054853638:web:f0c7895aa7e38cd7915f87",
   measurementId: "G-F5FS0S6VTE"
@@ -122,15 +122,116 @@ class BoardGameAPI {
         }
         return null;
     }
-    async addPost(data) {
-        const docRef = await this.db.collection('posts').add({
-            ...data,
-            viewCount: 0,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        return {id: docRef.id, ...data};
+    
+    async uploadPostMedia(postId, file, fileNamePrefix = '') {
+        if (!storage) throw new Error("Firebase Storage가 초기화되지 않았습니다.");
+        
+        // Handle cases where file might not have a name (e.g., a Blob from canvas)
+        const originalFileName = file.name || `thumbnail-${Date.now()}.jpg`;
+        const fileExtension = originalFileName.split('.').pop();
+        
+        const fileName = `${fileNamePrefix}${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExtension}`;
+        const filePath = `posts/${postId}/${fileName}`;
+        const fileRef = storage.ref(filePath);
+        const metadata = { contentType: file.type };
+        const snapshot = await fileRef.put(file, metadata);
+        return await snapshot.ref.getDownloadURL();
     }
-    async updatePost(id, data) { await this.db.collection('posts').doc(id).update(data); }
+
+    async addPost(data) {
+        const docRef = this.db.collection('posts').doc();
+        const postDataForFirestore = {
+            title: data.title,
+            author: data.author,
+            postType: data.postType,
+            viewCount: 0,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        };
+        
+        if (data.postType === 'card-news') {
+            postDataForFirestore.media = [];
+            postDataForFirestore.thumbnailUrl = '';
+
+            if (data.thumbnailFile) {
+                 postDataForFirestore.thumbnailUrl = await this.uploadPostMedia(docRef.id, data.thumbnailFile, 'thumbnail_');
+            }
+
+            if (data.files && data.files.length > 0) {
+                const filesToUpload = data.files.map(mediaObject => mediaObject.file);
+                const uploadPromises = filesToUpload.map(file => this.uploadPostMedia(docRef.id, file));
+                const urls = await Promise.all(uploadPromises);
+                
+                postDataForFirestore.media = data.files.map((mediaObject, index) => ({
+                    url: urls[index],
+                    type: mediaObject.type
+                }));
+
+                if (!postDataForFirestore.thumbnailUrl && postDataForFirestore.media.length > 0) {
+                    if (postDataForFirestore.media[0].type === 'image') {
+                        postDataForFirestore.thumbnailUrl = postDataForFirestore.media[0].url;
+                    }
+                }
+            }
+        } else if (data.postType === 'standard') {
+            postDataForFirestore.content = data.content || '';
+            postDataForFirestore.thumbnailUrl = data.thumbnailUrl || '';
+        }
+
+        await docRef.set(postDataForFirestore);
+        return {id: docRef.id, ...postDataForFirestore};
+    }
+    
+    async updatePost(id, data) {
+        const postDataForFirestore = {
+            title: data.title,
+            author: data.author,
+            postType: data.postType,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+    
+        if (data.postType === 'card-news') {
+            postDataForFirestore.content = firebase.firestore.FieldValue.delete();
+            
+            let thumbnailUrl = '';
+            if (data.thumbnailFile) {
+                thumbnailUrl = await this.uploadPostMedia(id, data.thumbnailFile, 'thumbnail_');
+            }
+    
+            const uploadPromises = data.files.map(fileOrMedia => {
+                if (fileOrMedia.file instanceof File) {
+                    return this.uploadPostMedia(id, fileOrMedia.file);
+                }
+                return Promise.resolve(fileOrMedia.url);
+            });
+            const urls = await Promise.all(uploadPromises);
+
+            const newMedia = data.files.map((fileOrMedia, index) => ({
+                url: urls[index],
+                type: fileOrMedia.type
+            }));
+    
+            postDataForFirestore.media = newMedia;
+            postDataForFirestore.thumbnailUrl = thumbnailUrl;
+
+            if (!postDataForFirestore.thumbnailUrl && newMedia.length > 0) {
+                 if (newMedia[0].type === 'image') {
+                    postDataForFirestore.thumbnailUrl = newMedia[0].url;
+                 } else {
+                    const existingData = (await this.db.collection('posts').doc(id).get()).data();
+                    postDataForFirestore.thumbnailUrl = existingData.thumbnailUrl || '';
+                 }
+            }
+
+        } else {
+            postDataForFirestore.media = firebase.firestore.FieldValue.delete();
+            postDataForFirestore.content = data.content || '';
+            postDataForFirestore.thumbnailUrl = data.thumbnailUrl || '';
+        }
+        
+        await this.db.collection('posts').doc(id).update(postDataForFirestore); 
+    }
+    
     async deletePost(id) { await this.db.collection('posts').doc(id).delete(); }
     
     // Comments

@@ -5,10 +5,20 @@
       "http://localhost:5000",
       "https://boardgame.bymile.site"
     ],
-    "method": ["GET", "PUT", "POST", "DELETE"],
+    "method": [
+      "GET",
+      "HEAD",
+      "PUT",
+      "POST",
+      "DELETE"
+    ],
     "responseHeader": [
       "Content-Type",
-      "Access-Control-Allow-Origin"
+      "Content-Length",
+      "Authorization",
+      "X-Goog-Resumable",
+      "X-Upload-Content-Type",
+      "X-Upload-Content-Length"
     ],
     "maxAgeSeconds": 3600
   }

@@ -10,6 +10,7 @@ class BoardGameViewer {
         this.currentUser = null;
         this.favorites = new Set();
         this.profileImageFile = null;
+        this.isCardNewsMuted = true; // 카드뉴스 사운드 상태
         
         this.sortOrders = ['name_asc', 'name_desc', 'difficulty_asc', 'difficulty_desc'];
         this.sortLabels = {
@@ -520,31 +521,47 @@ class BoardGameViewer {
                 return;
             }
             const comments = await window.boardGameAPI.getComments(postId);
-            viewer.innerHTML = `
-                <header class="post-view-header">
-                    <button class="post-view-back-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                    </button>
-                    <h2 class="post-view-title">${this.escapeHtml(post.title)}</h2>
-                </header>
-                <div class="post-view-container">
-                    <div class="post-content-wrapper">
-                        <h1>${this.escapeHtml(post.title)}</h1>
-                        <div class="post-meta">
-                           <span>${this.escapeHtml(post.author || 'Unknown')}</span>
-                           <span>${this.formatTimestamp(post.createdAt)}</span>
-                           <span>조회수 ${post.viewCount || 0}</span>
-                        </div>
-                        <div class="post-viewer-content">${this.formatPostContent(post.content)}</div>
+            
+            if (post.postType === 'card-news') {
+                this.renderCardNewsPost(post, comments, postId);
+            } else {
+                this.renderStandardPost(post, comments, postId);
+            }
+        } catch (error) {
+            console.error("Error rendering post detail:", error);
+            this.showError("게시글을 불러오는 데 실패했습니다.");
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    renderStandardPost(post, comments, postId) {
+        const viewer = this.elements['post-view-page'];
+        viewer.innerHTML = `
+            <header class="post-view-header">
+                <button class="post-view-back-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <h2 class="post-view-title">${this.escapeHtml(post.title)}</h2>
+            </header>
+            <div class="post-view-container">
+                <div class="post-content-wrapper">
+                    <h1>${this.escapeHtml(post.title)}</h1>
+                    <div class="post-meta">
+                       <span>${this.escapeHtml(post.author || 'Unknown')}</span>
+                       <span>${this.formatTimestamp(post.createdAt)}</span>
+                       <span>조회수 ${post.viewCount || 0}</span>
                     </div>
-                    <section class="comments-section">
-                        <h3>댓글 ${comments.length}개</h3>
-                        <div id="comment-list">${this.renderComments(comments, postId)}</div>
-                        <div class="comment-form-container"></div>
-                    </section>
+                    <div class="post-viewer-content">${this.formatPostContent(post.content)}</div>
                 </div>
-            `;
-            const commentFormContainer = viewer.querySelector('.comment-form-container');
+                <section class="comments-section">
+                    <h3>댓글 ${comments.length}개</h3>
+                    <div id="comment-list">${this.renderComments(comments, postId)}</div>
+                    <div class="comment-form-container"></div>
+                </section>
+            </div>
+        `;
+        const commentFormContainer = viewer.querySelector('.comment-form-container');
             if (this.currentUser) {
                 commentFormContainer.innerHTML = `
                     <form onsubmit="event.preventDefault(); submitComment('${postId}');" class="comment-form">
@@ -557,12 +574,177 @@ class BoardGameViewer {
             viewer.querySelector('.post-view-back-btn').onclick = () => history.back();
             document.body.classList.add('post-view-active');
             viewer.classList.add('active');
-        } catch (error) {
-            console.error("Error rendering post detail:", error);
-            this.showError("게시글을 불러오는 데 실패했습니다.");
-        } finally {
-            this.showLoading(false);
+    }
+
+    renderCardNewsPost(post, comments, postId) {
+        const viewer = this.elements['post-view-page'];
+        const mediaSlides = post.media.map(item => {
+            if (item.type === 'video') {
+                return `<div class="card-news-slide"><video src="${item.url}" loop muted playsinline></video></div>`;
+            }
+            return `<div class="card-news-slide"><img src="${item.url}" alt="카드뉴스 이미지"></div>`;
+        }).join('');
+    
+        viewer.innerHTML = `
+            <div class="card-news-viewer">
+                <header class="post-view-header">
+                     <button class="post-view-back-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <h2 class="post-view-title">${this.escapeHtml(post.title)}</h2>
+                </header>
+                <div class="card-news-slider">
+                    <div class="card-news-slider-container">
+                        ${mediaSlides}
+                        <div class="card-news-slide comments-slide">
+                            <section class="comments-section">
+                                 <h3>댓글 ${comments.length}개</h3>
+                                 <div id="comment-list">${this.renderComments(comments, postId)}</div>
+                                 <div class="comment-form-container"></div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+                <button class="card-news-sound-toggle">
+                    <svg class="icon-sound-on" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                    <svg class="icon-sound-off" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+                </button>
+            </div>
+        `;
+        
+        const commentFormContainer = viewer.querySelector('.comment-form-container');
+        if (this.currentUser) {
+            commentFormContainer.innerHTML = `
+                <form onsubmit="event.preventDefault(); submitComment('${postId}');" class="comment-form">
+                    <input type="text" id="comment-input" class="comment-input" placeholder="댓글을 입력하세요..." autocomplete="off">
+                    <button type="submit" class="comment-submit">등록</button>
+                </form>`;
+        } else {
+            commentFormContainer.innerHTML = '<p>댓글을 작성하려면 <a href="#" onclick="handleLogin(); return false;">로그인</a>이 필요합니다.</p>';
         }
+    
+        viewer.querySelector('.post-view-back-btn').onclick = () => history.back();
+        document.body.classList.add('post-view-active');
+        viewer.classList.add('active');
+    
+        const slider = viewer.querySelector('.card-news-slider');
+        const sliderContainer = viewer.querySelector('.card-news-slider-container');
+        const slides = viewer.querySelectorAll('.card-news-slide');
+        const soundToggleButton = viewer.querySelector('.card-news-sound-toggle');
+        const iconSoundOn = soundToggleButton.querySelector('.icon-sound-on');
+        const iconSoundOff = soundToggleButton.querySelector('.icon-sound-off');
+        
+        let isDragging = false,
+            startPos = 0,
+            currentTranslate = 0,
+            prevTranslate = 0,
+            animationID,
+            currentIndex = 0;
+            
+        const updateSoundIcon = () => {
+            if (this.isCardNewsMuted) {
+                iconSoundOn.style.display = 'none';
+                iconSoundOff.style.display = 'block';
+            } else {
+                iconSoundOn.style.display = 'block';
+                iconSoundOff.style.display = 'none';
+            }
+        };
+
+        soundToggleButton.addEventListener('click', () => {
+            this.isCardNewsMuted = !this.isCardNewsMuted;
+            updateSoundIcon();
+            const currentSlide = slides[currentIndex];
+            const currentVideo = currentSlide.querySelector('video');
+            if (currentVideo) {
+                currentVideo.muted = this.isCardNewsMuted;
+                if (!this.isCardNewsMuted) {
+                    currentVideo.play().catch(e => console.error("Play with sound failed:", e));
+                }
+            }
+        });
+    
+        const getPositionX = (event) => {
+            return event.type.includes('mouse') ? event.pageX : event.touches[0].clientX;
+        }
+    
+        const setSliderPosition = () => {
+            sliderContainer.style.transform = `translateX(${currentTranslate}px)`;
+        }
+
+        const animation = () => {
+            setSliderPosition();
+            if (isDragging) requestAnimationFrame(animation);
+        }
+
+        const setPositionByIndex = () => {
+            currentTranslate = currentIndex * -slider.clientWidth;
+            prevTranslate = currentTranslate;
+            sliderContainer.style.transition = 'transform 0.3s ease-out';
+            sliderContainer.style.transform = `translateX(${currentTranslate}px)`;
+    
+            slides.forEach((slide, index) => {
+                const video = slide.querySelector('video');
+                if (video) { 
+                    if (index === currentIndex) {
+                        video.muted = this.isCardNewsMuted;
+                        video.play().catch(e => console.error("Autoplay failed:", e));
+                    } else {
+                        video.pause();
+                        video.currentTime = 0;
+                    }
+                }
+            });
+        };
+        
+        const touchStart = (index) => {
+            return (event) => {
+                currentIndex = index;
+                startPos = getPositionX(event);
+                isDragging = true;
+                animationID = requestAnimationFrame(animation);
+                sliderContainer.classList.add('grabbing');
+            }
+        }
+    
+        const touchEnd = () => {
+            if (!isDragging) return;
+            isDragging = false;
+            cancelAnimationFrame(animationID);
+            const movedBy = currentTranslate - prevTranslate;
+    
+            if (movedBy < -100 && currentIndex < slides.length - 1) {
+                currentIndex += 1;
+            }
+            if (movedBy > 100 && currentIndex > 0) {
+                currentIndex -= 1;
+            }
+            setPositionByIndex();
+            sliderContainer.classList.remove('grabbing');
+        }
+    
+        const touchMove = (event) => {
+            if (isDragging) {
+                const currentPosition = getPositionX(event);
+                currentTranslate = prevTranslate + currentPosition - startPos;
+            }
+        }
+        
+        slides.forEach((slide, index) => {
+            slide.addEventListener('dragstart', (e) => e.preventDefault());
+            // Touch events
+            slide.addEventListener('touchstart', touchStart(index), { passive: true });
+            slide.addEventListener('touchend', touchEnd, { passive: true });
+            slide.addEventListener('touchmove', touchMove, { passive: true });
+            // Mouse events
+            slide.addEventListener('mousedown', touchStart(index));
+            slide.addEventListener('mouseup', touchEnd);
+            slide.addEventListener('mouseleave', touchEnd);
+            slide.addEventListener('mousemove', touchMove);
+        });
+        
+        updateSoundIcon();
+        setPositionByIndex();
     }
     
     hidePostPage() {
@@ -678,8 +860,10 @@ class BoardGameViewer {
             };
             const setActiveSlider = (e) => { this.activeSlider = e.target; };
             [minInput, maxInput].forEach(el => {
-                el.addEventListener('mousedown', setActiveSlider); el.addEventListener('touchstart', setActiveSlider);
-                el.addEventListener('input', update); el.addEventListener('change', this.debounce(() => this.advancedSearchAndFilter(), 200));
+                el.addEventListener('mousedown', setActiveSlider); 
+                el.addEventListener('touchstart', setActiveSlider, { passive: true });
+                el.addEventListener('input', update); 
+                el.addEventListener('change', this.debounce(() => this.advancedSearchAndFilter(), 200));
             });
             update();
         });

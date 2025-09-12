@@ -3,6 +3,8 @@ class AdminManager {
         this.allGames = [];
         this.allPosts = [];
         this.elements = {};
+        this.mediaFiles = [];
+        this.thumbnailFile = null;
         this.initializeElements();
         this.initialize();
     }
@@ -151,11 +153,21 @@ class AdminManager {
     }
 
     openModal(type, id = null) {
+        this.mediaFiles = [];
+        this.thumbnailFile = null;
         const data = id 
             ? (type === 'game' ? this.allGames.find(g => g.id === id) : this.allPosts.find(p => p.id === id))
             : {};
+
+        if (type === 'post' && data.media) {
+            this.mediaFiles = data.media.map(m => ({...m, id: Math.random()}));
+        }
+
         const modalHtml = type === 'game' ? this.getGameModalHtml(data) : this.getPostModalHtml(data);
         this.elements['modal-container'].innerHTML = modalHtml;
+        if(type === 'post') {
+            this.renderMediaPreview();
+        }
         this.setupModalEvents(type, id);
     }
 
@@ -200,6 +212,7 @@ class AdminManager {
     }
 
     getPostModalHtml(data) {
+        const isCardNews = data.postType === 'card-news';
         return `
             <div class="modal-overlay">
                 <div class="modal-content">
@@ -208,11 +221,30 @@ class AdminManager {
                         <button class="close-btn">&times;</button>
                     </div>
                     <div class="modal-body">
+                        <div class="form-group">
+                            <label>게시글 유형</label>
+                            <div class="post-type-selector">
+                                <label><input type="radio" name="postType" value="standard" ${!isCardNews ? 'checked' : ''}> 일반</label>
+                                <label><input type="radio" name="postType" value="card-news" ${isCardNews ? 'checked' : ''}> 카드뉴스</label>
+                            </div>
+                        </div>
                         <div class="form-group"><label>제목</label><input type="text" name="title" value="${data.title || ''}"></div>
                         <div class="form-group"><label>작성자</label><input type="text" name="author" value="${data.author || ''}"></div>
-                        <div class="form-group"><label>썸네일 URL</label><input type="text" name="thumbnailUrl" value="${data.thumbnailUrl || ''}"></div>
                         <div class="form-group"><label>조회수</label><input type="number" name="viewCount" value="${data.viewCount || '0'}"></div>
-                        <div class="form-group"><label>내용</label><textarea name="content" rows="10">${data.content || ''}</textarea></div>
+                        
+                        <div id="standard-content" class="${isCardNews ? 'hidden' : ''}">
+                            <div class="form-group"><label>썸네일 URL</label><input type="text" name="thumbnailUrl" value="${data.thumbnailUrl || ''}"></div>
+                            <div class="form-group"><label>내용</label><textarea name="content" rows="10">${data.content || ''}</textarea></div>
+                        </div>
+
+                        <div id="card-news-content" class="${!isCardNews ? 'hidden' : ''}">
+                             <div class="form-group">
+                                <label>미디어 파일</label>
+                                <div id="media-preview-container" class="media-preview-container"></div>
+                                <input type="file" id="media-file-input" multiple accept="image/*,video/*" class="hidden">
+                                <button type="button" id="add-media-btn" class="action-btn" onclick="document.getElementById('media-file-input').click()">파일 선택</button>
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button class="action-btn close-btn">취소</button>
@@ -221,41 +253,140 @@ class AdminManager {
                 </div>
             </div>`;
     }
-
+    
     setupModalEvents(type, id) {
         const modal = this.elements['modal-container'].querySelector('.modal-overlay');
-        modal.querySelector('.save-btn').addEventListener('click', () => this.saveItem(type, id, modal));
         modal.querySelectorAll('.close-btn').forEach(btn => btn.addEventListener('click', () => modal.remove()));
+        modal.querySelector('.save-btn').addEventListener('click', () => this.saveItem(type, id, modal));
+
+        if (type === 'post') {
+            const standardContent = modal.querySelector('#standard-content');
+            const cardNewsContent = modal.querySelector('#card-news-content');
+            modal.querySelectorAll('input[name="postType"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    if (e.target.value === 'card-news') {
+                        standardContent.classList.add('hidden');
+                        cardNewsContent.classList.remove('hidden');
+                    } else {
+                        standardContent.classList.remove('hidden');
+                        cardNewsContent.classList.add('hidden');
+                    }
+                });
+            });
+            modal.querySelector('#media-file-input').addEventListener('change', (e) => this.handleMediaFilesChange(e));
+        }
+    }
+
+    async handleMediaFilesChange(event) {
+        const files = Array.from(event.target.files);
+        for (const file of files) {
+            this.mediaFiles.push({
+                id: Math.random(),
+                file: file,
+                type: file.type.startsWith('video') ? 'video' : 'image',
+                previewUrl: URL.createObjectURL(file)
+            });
+        }
+        
+        if (this.mediaFiles.length > 0 && this.mediaFiles[0].type === 'video') {
+            this.thumbnailFile = await this.generateVideoThumbnail(this.mediaFiles[0].file);
+        } else {
+            this.thumbnailFile = null;
+        }
+
+        this.renderMediaPreview();
+    }
+    
+    generateVideoThumbnail(videoFile) {
+        return new Promise((resolve) => {
+            const video = document.createElement('video');
+            const canvas = document.createElement('canvas');
+            video.src = URL.createObjectURL(videoFile);
+            video.muted = true;
+    
+            video.onloadeddata = () => {
+                video.currentTime = 1; 
+            };
+    
+            video.onseeked = () => {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                URL.revokeObjectURL(video.src);
+                canvas.toBlob(resolve, 'image/jpeg');
+            };
+    
+            video.play().catch(() => {
+                // Play may fail but loadeddata and seeked should still work.
+            });
+        });
+    }
+
+
+    renderMediaPreview() {
+        const container = document.getElementById('media-preview-container');
+        container.innerHTML = '';
+        this.mediaFiles.forEach((media, index) => {
+            const previewEl = document.createElement('div');
+            previewEl.className = 'media-preview-item';
+            previewEl.dataset.id = media.id;
+
+            let mediaTag;
+            if (media.type === 'video') {
+                mediaTag = `<video src="${media.previewUrl || media.url}" muted playsinline></video>`;
+            } else {
+                mediaTag = `<img src="${media.previewUrl || media.url}" alt="미리보기">`;
+            }
+
+            previewEl.innerHTML = `
+                ${mediaTag}
+                <div class="media-item-overlay">
+                    <button type="button" class="remove-media-btn" data-id="${media.id}">&times;</button>
+                </div>
+            `;
+            container.appendChild(previewEl);
+        });
+
+        container.querySelectorAll('.remove-media-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idToRemove = Number(e.target.dataset.id);
+                this.mediaFiles = this.mediaFiles.filter(m => m.id !== idToRemove);
+                this.renderMediaPreview();
+            });
+        });
     }
 
     async saveItem(type, id, modal) {
         const data = {};
-        modal.querySelectorAll('input, textarea, select').forEach(input => {
-            const name = input.name;
-            if (!name) return;
+        if (type === 'post') {
+            data.postType = modal.querySelector('input[name="postType"]:checked').value;
+            data.title = modal.querySelector('input[name="title"]').value.trim();
+            data.author = modal.querySelector('input[name="author"]').value.trim();
 
-            let value = input.value;
-            
-            if (input.type !== 'select-one') {
-                value = value.trim();
-            }
-
-            if (input.type === 'number') {
-                if (value !== '') {
-                    data[name] = Number(value);
-                } else if (!id) {
-                    data[name] = null;
-                }
+            if (data.postType === 'card-news') {
+                data.files = this.mediaFiles;
+                data.thumbnailFile = this.thumbnailFile;
             } else {
-                data[name] = value;
+                data.thumbnailUrl = modal.querySelector('input[name="thumbnailUrl"]').value.trim();
+                data.content = modal.querySelector('textarea[name="content"]').value;
             }
-        });
-
-        if (type === 'game' && !id && !data.name) {
-            alert("게임 이름은 필수입니다.");
-            return; 
-        } else if (type === 'post' && !id && !data.title) {
-            alert("게시글 제목은 필수입니다.");
+        } else { // game
+            modal.querySelectorAll('input, textarea, select').forEach(input => {
+                const name = input.name;
+                if (!name) return;
+                let value = input.value;
+                if (input.type !== 'select-one') value = value.trim();
+                if (input.type === 'number') {
+                    data[name] = value !== '' ? Number(value) : null;
+                } else {
+                    data[name] = value;
+                }
+            });
+        }
+        
+        if (!data.title) {
+            alert("제목은 필수입니다.");
             return;
         }
 
@@ -270,6 +401,7 @@ class AdminManager {
             }
             modal.remove();
         } catch (e) {
+            console.error("저장 실패:", e);
             alert('저장 실패: ' + e.message);
         } finally {
             this.showLoading(false);

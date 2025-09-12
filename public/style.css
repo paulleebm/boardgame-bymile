@@ -508,3 +508,73 @@ input:checked + .toggle-slider:before {
 .message.error { background-color: var(--error-color); }
 .message.hidden, .modal.hidden { display: none; }
 
+/* 카드뉴스 스타일 추가 */
+.card-news-viewer {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+.card-news-slider {
+    flex-grow: 1;
+    position: relative;
+    overflow: hidden;
+    cursor: grab;
+}
+.card-news-slider-container {
+    height: 100%;
+    display: flex;
+    transition: transform 0.3s ease-out;
+}
+.card-news-slider-container.grabbing {
+    cursor: grabbing;
+    transition: none;
+}
+.card-news-slide {
+    width: 100%;
+    height: 100%;
+    flex: 0 0 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #000;
+}
+.card-news-slide img,
+.card-news-slide video {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    user-select: none;
+}
+.card-news-slide.comments-slide {
+    background-color: var(--bg-main);
+    align-items: flex-start;
+    overflow-y: auto;
+}
+.card-news-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(5px);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.card-news-nav.prev {
+    left: 10px;
+}
+.card-news-nav.next {
+    right: 10px;
+}
+
+
