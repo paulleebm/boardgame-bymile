@@ -385,8 +385,10 @@ class AdminManager {
             });
         }
         
-        if (!data.title) {
-            alert("제목은 필수입니다.");
+        const titleOrName = type === 'game' ? data.name : data.title;
+        if (!titleOrName) {
+            const message = type === 'game' ? "게임 이름은 필수입니다." : "게시글 제목은 필수입니다.";
+            alert(message);
             return;
         }
 
@@ -437,4 +439,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     waitForAPI();
 });
-
