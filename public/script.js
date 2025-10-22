@@ -1,16 +1,9 @@
 class BoardGameViewer {
     constructor() {
         this.allGames = [];
-        this.allPosts = [];
         this.currentData = [];
-        this.statusFilterActive = false;
-        this.favoriteFilterActive = false;
+        this.statusFilterActive = false; // 상태 필터 활성화 여부
         this.DEFAULT_IMAGE_URL = 'https://placehold.co/300x300/667eea/ffffff?text=No+Image';
-        this.DEFAULT_PROFILE_IMAGE_URL = 'https://i.imgur.com/rWd9g3i.png';
-        this.currentUser = null;
-        this.favorites = new Set();
-        this.profileImageFile = null;
-        this.isCardNewsMuted = true; // 카드뉴스 사운드 상태
         
         this.sortOrders = ['name_asc', 'name_desc', 'difficulty_asc', 'difficulty_desc'];
         this.sortLabels = {
@@ -31,11 +24,10 @@ class BoardGameViewer {
             'nameSearchInput', 'genreSearchInput', 'playerCountInput', 'bestPlayerToggle',
             'difficultyMin', 'difficultyMax', 'difficultyMinValue', 'difficultyMaxValue', 
             'timeMin', 'timeMax', 'timeMinValue', 'timeMaxValue',
-            'gameGrid', 'postGrid', 'detailModal', 'loading', 'errorMessage', 
-            'successMessage', 'nav-games-btn', 'nav-posts-btn', 'nav-mypage-btn',
-            'filter-sidebar', 'filter-overlay', 'close-filter-btn', 'sort-btn',
-            'games-page', 'posts-page', 'mypage-page', 'myPageContent', 'page-header',
-            'post-view-page'
+            'gameGrid', 'detailModal', 'loading', 'errorMessage', 
+            'successMessage', 'filter-sidebar', 'filter-overlay', 
+            'close-filter-btn', 'open-filter-btn', 'sort-btn', 'game-count-badge',
+            'statusFilterBtn' // 상태 필터 버튼 ID 추가
         ];
         ids.forEach(id => {
             const el = document.getElementById(id);
@@ -44,30 +36,22 @@ class BoardGameViewer {
             }
             this.elements[id] = el;
         });
-
-        if (!this.elements['post-view-page']) {
-             console.error("FATAL: post-view-page element is missing from the DOM during initialization.");
-        }
     }
 
     initialize() {
         this.setupEventListeners();
         this.initializeSliders();
-        this.setupAuthMonitoring();
         this.loadInitialData();
-        this.handleUrlChange();
     }
 
     setupEventListeners() {
         const addListener = (element, event, handler) => element && element.addEventListener(event, handler);
 
-        addListener(this.elements['nav-games-btn'], 'click', () => this.showView('games'));
-        addListener(this.elements['nav-posts-btn'], 'click', () => this.showView('posts'));
-        addListener(this.elements['nav-mypage-btn'], 'click', () => this.showView('mypage'));
-        
+        addListener(this.elements['open-filter-btn'], 'click', () => this.toggleFilterSidebar(true));
         addListener(this.elements['filter-overlay'], 'click', () => this.toggleFilterSidebar(false));
         addListener(this.elements['close-filter-btn'], 'click', () => this.toggleFilterSidebar(false));
         addListener(this.elements['sort-btn'], 'click', () => this.cycleSortOrder());
+        addListener(this.elements['statusFilterBtn'], 'click', () => this.toggleStatusFilter()); // 상태 필터 이벤트 리스너 추가
         
         const filterInputs = ['nameSearchInput', 'genreSearchInput', 'playerCountInput', 'bestPlayerToggle'];
         filterInputs.forEach(id => {
@@ -77,206 +61,28 @@ class BoardGameViewer {
                 addListener(el, eventType, () => this.debounceSearch());
             }
         });
-        
-        window.addEventListener('popstate', () => this.handleUrlChange());
 
         window.openGameModal = (id) => this.openGameModal(id);
-        window.showPostPage = (id) => this.showPostPage(id);
-        window.toggleFavorite = (id, event) => this.toggleFavorite(id, event);
-        window.handleLogin = () => this.handleLogin();
-        window.handleLogout = () => this.handleLogout();
-        window.submitComment = (postId) => this.submitComment(postId);
-        window.handleDeleteComment = (postId, commentId) => this.handleDeleteComment(postId, commentId);
-        window.handleProfileUpdate = () => this.handleProfileUpdate();
     }
     
     cycleSortOrder() {
         this.currentSortIndex = (this.currentSortIndex + 1) % this.sortOrders.length;
-        const newSortOrder = this.sortOrders[this.currentSortIndex];
-        this.elements['sort-btn'].textContent = `정렬: ${this.sortLabels[newSortOrder]}`;
+        this.elements['sort-btn'].textContent = `정렬: ${this.sortLabels[this.sortOrders[this.currentSortIndex]]}`;
         this.advancedSearchAndFilter();
     }
 
-    handleUrlChange() {
-        const hash = window.location.hash;
-        if (hash.startsWith('#post/')) {
-            const postId = hash.substring(6);
-            this.renderPostDetailView(postId);
-        } else {
-            this.hidePostPage();
-            const viewName = hash.substring(1) || 'games';
-            this.showView(viewName, false);
-        }
-    }
-
-    updateHeader(page) {
-        let title = '';
-        let controls = '';
-        if (page === 'games') {
-            const gameCount = this.currentData ? this.currentData.length : 0;
-            title = `🎲 보드게임 목록 <span class="game-count-badge">${gameCount}</span>`;
-            controls = `
-                <div class="header-controls">
-                    <button id="statusFilterBtn" class="action-icon-btn ${this.statusFilterActive ? 'active' : ''}" title="특별 상태 게임만 보기">❗</button>
-                    <button id="favoriteFilterBtn" class="action-icon-btn ${this.favoriteFilterActive ? 'active' : ''} ${this.currentUser ? '' : 'hidden'}" title="즐겨찾기만 보기">❤️</button>
-                    <button id="open-filter-btn" class="action-icon-btn" aria-label="필터 열기">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-                    </button>
-                </div>`;
-        } else if (page === 'posts') {
-            title = '📚 보드게임 게시판';
-        } else if (page === 'mypage') {
-            title = '👤 마이페이지';
-        }
-        this.elements['page-header'].innerHTML = `<h1>${title}</h1>${controls}`;
-        if (page === 'games') {
-            document.getElementById('open-filter-btn')?.addEventListener('click', () => this.toggleFilterSidebar(true));
-            document.getElementById('statusFilterBtn')?.addEventListener('click', () => this.toggleFilter());
-            document.getElementById('favoriteFilterBtn')?.addEventListener('click', () => this.toggleFilter(true));
-        }
-    }
-
-    showView(viewName, shouldPushState = true) {
-        if (shouldPushState && `#${viewName}` !== window.location.hash) {
-            history.pushState({ view: viewName }, '', `#${viewName}`);
-        }
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-
-        const pageEl = this.elements[`${viewName}-page`];
-        const navBtnEl = this.elements[`nav-${viewName}-btn`];
-
-        if(pageEl) pageEl.classList.add('active');
-        if(navBtnEl) navBtnEl.classList.add('active');
-        
-        this.updateHeader(viewName);
-        
-        if (viewName === 'posts' && this.allPosts.length === 0) this.loadPosts();
-        if (viewName === 'mypage') this.renderMyPage();
+    updateGameCount() {
+        this.elements['game-count-badge'].textContent = this.currentData.length;
     }
     
     toggleFilterSidebar(forceOpen) {
         this.elements['filter-sidebar']?.classList.toggle('open', forceOpen);
         this.elements['filter-overlay']?.classList.toggle('hidden', !forceOpen);
     }
-    
-    setupAuthMonitoring() {
-        window.authManager.onAuthStateChanged((user) => {
-            this.currentUser = user;
-            const currentView = this.getActiveView();
-            if (currentView === 'mypage') {
-                this.renderMyPage();
-            } else if (currentView === 'post') {
-                 const hash = window.location.hash;
-                 const postId = hash.substring(6);
-                 this.renderPostDetailView(postId);
-            }
 
-            if (user) {
-                this.loadUserFavorites();
-            } else {
-                this.favorites.clear();
-            }
-            this.renderGridView();
-            this.updateHeader(this.getActiveView());
-        });
-        
-        window.favoriteManager.onFavoritesChanged((favoriteIds) => {
-            this.favorites = new Set(favoriteIds);
-            this.renderGridView();
-        });
-    }
-
-    getActiveView() {
-        const hash = window.location.hash.substring(1);
-        if (hash.startsWith('post/')) return 'post';
-        return hash || 'games';
-    }
-    
-    renderMyPage() {
-        const contentEl = this.elements.myPageContent;
-        if (!contentEl) return;
-        this.profileImageFile = null;
-
-        if (this.currentUser) {
-            contentEl.innerHTML = `
-                <div class="profile-card editable">
-                     <div class="profile-image-upload">
-                        <img src="${this.currentUser.photoURL || this.DEFAULT_PROFILE_IMAGE_URL}" id="profileImagePreview" class="profile-avatar" alt="프로필 미리보기">
-                        <label for="profileImageInput" class="profile-image-upload-label">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                        </label>
-                        <input type="file" id="profileImageInput" accept="image/*">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="displayNameInput">닉네임</label>
-                        <input type="text" id="displayNameInput" class="form-input" value="${this.escapeHtml(this.currentUser.displayName)}">
-                    </div>
-                     <div class="profile-email">${this.escapeHtml(this.currentUser.email)}</div>
-
-                    <div class="profile-actions">
-                         <button class="action-btn primary" onclick="handleProfileUpdate()">프로필 저장</button>
-                         <button class="logout-btn action-btn" onclick="handleLogout()">로그아웃</button>
-                    </div>
-                </div>`;
-            
-            const imageInput = document.getElementById('profileImageInput');
-            const imagePreview = document.getElementById('profileImagePreview');
-
-            imageInput.addEventListener('change', (event) => {
-                const file = event.target.files[0];
-                if (file) {
-                    this.profileImageFile = file;
-                    const reader = new FileReader();
-                    reader.onload = (e) => { imagePreview.src = e.target.result; };
-                    reader.readAsDataURL(file);
-                }
-            });
-
-        } else {
-            contentEl.innerHTML = `
-                <div class="mypage-login-prompt">
-                    <p>로그인하고 더 많은 기능을 이용해보세요!</p>
-                    <button class="login-btn-main" onclick="handleLogin()">Google 계정으로 로그인</button>
-                </div>`;
-        }
-    }
-
-    async loadUserFavorites() { if (this.currentUser) await window.favoriteManager.loadUserFavorites(this.currentUser.uid); }
-    
-    async handleLogin() {
-        try {
-            this.showLoading(true);
-            await window.authManager.signInWithGoogle();
-            this.showSuccess('로그인되었습니다!');
-        } catch (error) { this.showError(error.message || '로그인에 실패했습니다.'); }
-        finally { this.showLoading(false); }
-    }
-
-    async handleLogout() {
-        try { await window.authManager.signOut(); this.showSuccess('로그아웃되었습니다.'); }
-        catch (error) { this.showError('로그아웃에 실패했습니다.'); }
-    }
-
-    async toggleFavorite(gameId, event) {
-        event?.stopPropagation();
-        if (!this.currentUser) { this.showError('로그인 후 즐겨찾기를 사용할 수 있습니다.'); return; }
-        try {
-            const isFavorited = await window.favoriteManager.toggleFavorite(gameId);
-            this.showSuccess(isFavorited ? '즐겨찾기에 추가!' : '즐겨찾기에서 제거');
-        } catch (error) { this.showError(error.message); }
-    }
-    
-    toggleFilter(isFavorite = false) {
-        if (isFavorite) {
-            if (!this.currentUser) return;
-            this.favoriteFilterActive = !this.favoriteFilterActive;
-            document.getElementById('favoriteFilterBtn')?.classList.toggle('active', this.favoriteFilterActive);
-        } else {
-            this.statusFilterActive = !this.statusFilterActive;
-            document.getElementById('statusFilterBtn')?.classList.toggle('active', this.statusFilterActive);
-        }
+    toggleStatusFilter() {
+        this.statusFilterActive = !this.statusFilterActive;
+        this.elements['statusFilterBtn'].classList.toggle('active', this.statusFilterActive);
         this.advancedSearchAndFilter();
     }
     
@@ -287,32 +93,18 @@ class BoardGameViewer {
             this.advancedSearchAndFilter();
         } catch (error) { 
             console.error("데이터 로딩 중 오류 발생:", error);
-            if (error.code === 'permission-denied') {
-                this.showError('데이터를 불러올 권한이 없습니다. Firestore 보안 규칙을 확인해주세요.');
-            } else {
-                this.showError('데이터를 불러오는 데 실패했습니다.');
-            }
+            this.showError('데이터를 불러오는 데 실패했습니다.');
         } 
-        finally { this.showLoading(false); }
-    }
-
-    async loadPosts() {
-        this.showLoading(true);
-        try {
-            this.allPosts = await window.boardGameAPI.getPosts();
-            this.renderPostView();
-        } catch(e) { 
-            console.error("게시글 목록 로딩 실패:", e);
-            this.showError("게시글 목록 로딩에 실패했습니다."); 
-        }
         finally { this.showLoading(false); }
     }
 
     advancedSearchAndFilter() {
         let filtered = [...this.allGames];
         
-        if (this.favoriteFilterActive) filtered = filtered.filter(g => this.favorites.has(g.id));
-        if (this.statusFilterActive) filtered = filtered.filter(g => g.status && g.status !== 'normal');
+        // 상태 필터 로직 추가
+        if (this.statusFilterActive) {
+            filtered = filtered.filter(g => g.status && g.status !== 'normal');
+        }
         
         const nameQuery = (this.elements.nameSearchInput.value || '').trim().toLowerCase();
         const genreQuery = (this.elements.genreSearchInput.value || '').trim().toLowerCase();
@@ -332,8 +124,7 @@ class BoardGameViewer {
                         return playerCount >= min && playerCount <= max;
                     }
                     if (best.includes(',')) {
-                        const options = best.split(',').map(s => s.trim());
-                        return options.includes(String(playerCount));
+                        return best.split(',').map(s => s.trim()).includes(String(playerCount));
                     }
                     return parseInt(best, 10) === playerCount;
                 });
@@ -348,41 +139,32 @@ class BoardGameViewer {
         const sortOrder = this.sortOrders[this.currentSortIndex];
         filtered.sort((a, b) => {
             switch (sortOrder) {
-                case 'name_asc':
-                    return (a.name || '').localeCompare(b.name || '', 'ko');
-                case 'name_desc':
-                    return (b.name || '').localeCompare(a.name || '', 'ko');
-                case 'difficulty_asc':
-                    return (a.difficulty || 0) - (b.difficulty || 0);
-                case 'difficulty_desc':
-                    return (b.difficulty || 0) - (a.difficulty || 0);
-                default:
-                    return 0;
+                case 'name_asc': return (a.name || '').localeCompare(b.name || '', 'ko');
+                case 'name_desc': return (b.name || '').localeCompare(a.name || '', 'ko');
+                case 'difficulty_asc': return (a.difficulty || 0) - (b.difficulty || 0);
+                case 'difficulty_desc': return (b.difficulty || 0) - (a.difficulty || 0);
+                default: return 0;
             }
         });
 
         this.currentData = filtered;
         this.renderGridView();
-        this.updateHeader('games');
+        this.updateGameCount();
     }
         
     applySliderFilter(data, type) {
-        const minEl = this.elements[`${type}Min`];
-        const maxEl = this.elements[`${type}Max`];
+        const minEl = this.elements[`${type}Min`], maxEl = this.elements[`${type}Max`];
         if (!minEl || !maxEl) return data;
 
-        const min = parseFloat(minEl.value);
-        const max = parseFloat(maxEl.value);
+        const min = parseFloat(minEl.value), max = parseFloat(maxEl.value);
         const field = type === 'time' ? 'playTime' : 'difficulty';
-        const defaultMin = parseFloat(minEl.min);
-        const defaultMax = parseFloat(maxEl.max);
+        const defaultMin = parseFloat(minEl.min), defaultMax = parseFloat(maxEl.max);
         
         if (min === defaultMin && max === defaultMax) return data;
 
         return data.filter(game => {
             const value = parseFloat(game[field]) || 0;
-            const upperValue = (max === defaultMax) ? Infinity : max;
-            return value >= min && value <= upperValue;
+            return value >= min && value <= (max === defaultMax ? Infinity : max);
         });
     }
     
@@ -407,56 +189,24 @@ class BoardGameViewer {
     createGameCard(item) {
         const title = this.escapeHtml(item.name || '제목 없음');
         const imageUrl = item.imageUrl || this.DEFAULT_IMAGE_URL;
-        const favoriteIndicator = (this.currentUser && this.favorites.has(item.id)) ? `<div class="favorite-indicator">❤️</div>` : '';
-        
-        let statusBadge = '';
         const statusInfo = this.getStatusInfo(item.status);
-        if (statusInfo) {
-            statusBadge = `<div class="game-status-badge ${statusInfo.className}">${statusInfo.text}</div>`;
-        }
+        const statusBadge = statusInfo ? `<div class="game-status-badge ${statusInfo.className}">${statusInfo.text}</div>` : '';
 
         return `
             <div class="game-card-grid" onclick="openGameModal('${item.id}')">
                 <div class="game-image">
                     ${statusBadge}
-                    <img src="${imageUrl}" alt="${title}" loading="lazy" onerror="this.src='${this.DEFAULT_IMAGE_URL}'">
-                    ${favoriteIndicator}
+                    <img src="${imageUrl}" alt="${title}" onerror="this.src='${this.DEFAULT_IMAGE_URL}'">
                 </div>
                 <div class="game-title-grid"><h3>${title}</h3></div>
             </div>`;
-    }
-    
-    renderPostView() {
-        const grid = this.elements.postGrid;
-        if (!grid) return;
-        this.allPosts.sort((a, b) => this.getDate(b.createdAt) - this.getDate(a.createdAt));
-        grid.innerHTML = this.allPosts.length === 0
-            ? `<p class="empty-state-text">아직 게시글이 없습니다.</p>`
-            : this.allPosts.map(item => this.createPostCard(item)).join('');
-    }
-
-    createPostCard(item) {
-        return `
-            <div class="post-list-item" onclick="showPostPage('${item.id}')">
-                <img src="${item.thumbnailUrl || this.DEFAULT_IMAGE_URL}" class="post-thumbnail" alt="${this.escapeHtml(item.title)}">
-                <div class="post-info">
-                    <h3>${this.escapeHtml(item.title)}</h3>
-                    <p class="post-meta">
-                        <span>${this.escapeHtml(item.author)}</span>
-                        <span>조회수 ${item.viewCount || 0}</span>
-                    </p>
-                </div>
-            </div>
-        `;
     }
 
     openGameModal(gameId) {
         const game = this.allGames.find(g => g.id === gameId);
         if (!game) return;
-        this.currentModalGame = game;
         
-        const favoriteButton = this.currentUser ? `<button class="modal-favorite-btn" onclick="toggleFavorite('${game.id}', event)">${this.favorites.has(game.id) ? '❤️' : '🤍'}</button>` : '';
-        const youtubeButton = game.youtubeUrl ? `<button class="youtube-btn" onclick="window.open('${game.youtubeUrl}', '_blank')">룰 설명 영상 보기</button>` : '';
+        const youtubeButton = game.youtubeUrl ? `<a href="${game.youtubeUrl}" target="_blank" rel="noopener noreferrer" class="youtube-btn">룰 설명 영상 보기</a>` : '';
 
         this.elements.detailModal.innerHTML = `
              <div class="modal-overlay" onclick="this.parentElement.classList.add('hidden')">
@@ -464,7 +214,6 @@ class BoardGameViewer {
                     <button onclick="this.closest('.modal').classList.add('hidden')" class="modal-close-btn">&times;</button>
                     <div class="modal-image">
                         <img src="${game.imageUrl || this.DEFAULT_IMAGE_URL}" alt="${this.escapeHtml(game.name)}">
-                        ${favoriteButton}
                     </div>
                     <div class="detail-info">
                         <h2>${this.escapeHtml(game.name)}</h2>
@@ -479,367 +228,6 @@ class BoardGameViewer {
             </div>`;
         this.elements.detailModal.classList.remove('hidden');
     }
-    
-    async handleProfileUpdate() {
-        if (!this.currentUser) return;
-        const displayNameInput = document.getElementById('displayNameInput');
-        const newDisplayName = displayNameInput.value.trim();
-
-        if (!newDisplayName) { this.showError("닉네임을 입력해주세요."); return; }
-        this.showLoading(true);
-        try {
-            const updates = { displayName: newDisplayName };
-            if (this.profileImageFile) {
-                const downloadURL = await window.boardGameAPI.uploadProfileImage(this.currentUser.uid, this.profileImageFile);
-                updates.photoURL = downloadURL;
-            }
-            await window.authManager.updateUserProfile(updates);
-            this.showSuccess("프로필이 성공적으로 업데이트되었습니다.");
-        } catch (error) {
-            console.error("Profile update failed:", error);
-            this.showError(error.message || "프로필 업데이트에 실패했습니다.");
-        } finally {
-            this.showLoading(false);
-        }
-    }
-
-    showPostPage(postId) {
-        history.pushState({ postId }, '', `#post/${postId}`);
-        this.renderPostDetailView(postId);
-    }
-    
-    async renderPostDetailView(postId) {
-        const viewer = this.elements['post-view-page'];
-        if (!viewer) { console.error('게시글 상세 보기 요소를 찾을 수 없습니다.'); return; }
-        this.showLoading(true);
-        try {
-            const post = await window.boardGameAPI.getPost(postId);
-            if (!post) {
-                this.showError('게시글을 찾을 수 없습니다.');
-                history.replaceState(null, '', '#posts');
-                this.handleUrlChange();
-                return;
-            }
-            const comments = await window.boardGameAPI.getComments(postId);
-            
-            if (post.postType === 'card-news') {
-                this.renderCardNewsPost(post, comments, postId);
-            } else {
-                this.renderStandardPost(post, comments, postId);
-            }
-        } catch (error) {
-            console.error("Error rendering post detail:", error);
-            this.showError("게시글을 불러오는 데 실패했습니다.");
-        } finally {
-            this.showLoading(false);
-        }
-    }
-
-    renderStandardPost(post, comments, postId) {
-        const viewer = this.elements['post-view-page'];
-        viewer.innerHTML = `
-            <header class="post-view-header">
-                <button class="post-view-back-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                </button>
-                <h2 class="post-view-title">${this.escapeHtml(post.title)}</h2>
-            </header>
-            <div class="post-view-container">
-                <div class="post-content-wrapper">
-                    <h1>${this.escapeHtml(post.title)}</h1>
-                    <div class="post-meta">
-                       <span>${this.escapeHtml(post.author || 'Unknown')}</span>
-                       <span>${this.formatTimestamp(post.createdAt)}</span>
-                       <span>조회수 ${post.viewCount || 0}</span>
-                    </div>
-                    <div class="post-viewer-content">${this.formatPostContent(post.content)}</div>
-                </div>
-                <section class="comments-section">
-                    <h3>댓글 ${comments.length}개</h3>
-                    <div id="comment-list">${this.renderComments(comments, postId)}</div>
-                    <div class="comment-form-container"></div>
-                </section>
-            </div>
-        `;
-        const commentFormContainer = viewer.querySelector('.comment-form-container');
-            if (this.currentUser) {
-                commentFormContainer.innerHTML = `
-                    <form onsubmit="event.preventDefault(); submitComment('${postId}');" class="comment-form">
-                        <input type="text" id="comment-input" class="comment-input" placeholder="댓글을 입력하세요..." autocomplete="off">
-                        <button type="submit" class="comment-submit">등록</button>
-                    </form>`;
-            } else {
-                commentFormContainer.innerHTML = '<p>댓글을 작성하려면 <a href="#" onclick="handleLogin(); return false;">로그인</a>이 필요합니다.</p>';
-            }
-            viewer.querySelector('.post-view-back-btn').onclick = () => history.back();
-            document.body.classList.add('post-view-active');
-            viewer.classList.add('active');
-    }
-
-    renderCardNewsPost(post, comments, postId) {
-        const viewer = this.elements['post-view-page'];
-        const mediaSlides = post.media.map(item => {
-            if (item.type === 'video') {
-                return `<div class="card-news-slide"><video src="${item.url}" loop muted playsinline></video></div>`;
-            }
-            return `<div class="card-news-slide"><img src="${item.url}" alt="카드뉴스 이미지"></div>`;
-        }).join('');
-    
-        viewer.innerHTML = `
-            <div class="card-news-viewer">
-                <header class="post-view-header">
-                     <button class="post-view-back-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                    </button>
-                    <h2 class="post-view-title">${this.escapeHtml(post.title)}</h2>
-                </header>
-                <div class="card-news-slider">
-                    <div class="card-news-slider-container">
-                        ${mediaSlides}
-                        <div class="card-news-slide comments-slide">
-                            <section class="comments-section">
-                                 <h3>댓글 ${comments.length}개</h3>
-                                 <div id="comment-list">${this.renderComments(comments, postId)}</div>
-                                 <div class="comment-form-container"></div>
-                            </section>
-                        </div>
-                    </div>
-                </div>
-                <button class="card-news-sound-toggle">
-                    <svg class="icon-sound-on" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-                    <svg class="icon-sound-off" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
-                </button>
-            </div>
-        `;
-        
-        const commentFormContainer = viewer.querySelector('.comment-form-container');
-        if (this.currentUser) {
-            commentFormContainer.innerHTML = `
-                <form onsubmit="event.preventDefault(); submitComment('${postId}');" class="comment-form">
-                    <input type="text" id="comment-input" class="comment-input" placeholder="댓글을 입력하세요..." autocomplete="off">
-                    <button type="submit" class="comment-submit">등록</button>
-                </form>`;
-        } else {
-            commentFormContainer.innerHTML = '<p>댓글을 작성하려면 <a href="#" onclick="handleLogin(); return false;">로그인</a>이 필요합니다.</p>';
-        }
-    
-        viewer.querySelector('.post-view-back-btn').onclick = () => history.back();
-        document.body.classList.add('post-view-active');
-        viewer.classList.add('active');
-    
-        const slider = viewer.querySelector('.card-news-slider');
-        const sliderContainer = viewer.querySelector('.card-news-slider-container');
-        const slides = viewer.querySelectorAll('.card-news-slide');
-        const soundToggleButton = viewer.querySelector('.card-news-sound-toggle');
-        const iconSoundOn = soundToggleButton.querySelector('.icon-sound-on');
-        const iconSoundOff = soundToggleButton.querySelector('.icon-sound-off');
-        
-        let isDragging = false,
-            startPos = 0,
-            currentTranslate = 0,
-            prevTranslate = 0,
-            animationID,
-            currentIndex = 0;
-            
-        const updateSoundIcon = () => {
-            if (this.isCardNewsMuted) {
-                iconSoundOn.style.display = 'none';
-                iconSoundOff.style.display = 'block';
-            } else {
-                iconSoundOn.style.display = 'block';
-                iconSoundOff.style.display = 'none';
-            }
-        };
-
-        soundToggleButton.addEventListener('click', () => {
-            this.isCardNewsMuted = !this.isCardNewsMuted;
-            updateSoundIcon();
-            const currentSlide = slides[currentIndex];
-            const currentVideo = currentSlide.querySelector('video');
-            if (currentVideo) {
-                currentVideo.muted = this.isCardNewsMuted;
-                if (!this.isCardNewsMuted) {
-                    currentVideo.play().catch(e => console.error("Play with sound failed:", e));
-                }
-            }
-        });
-    
-        const getPositionX = (event) => {
-            return event.type.includes('mouse') ? event.pageX : event.touches[0].clientX;
-        }
-    
-        const setSliderPosition = () => {
-            sliderContainer.style.transform = `translateX(${currentTranslate}px)`;
-        }
-
-        const animation = () => {
-            setSliderPosition();
-            if (isDragging) requestAnimationFrame(animation);
-        }
-
-        const setPositionByIndex = () => {
-            currentTranslate = currentIndex * -slider.clientWidth;
-            prevTranslate = currentTranslate;
-            sliderContainer.style.transition = 'transform 0.3s ease-out';
-            sliderContainer.style.transform = `translateX(${currentTranslate}px)`;
-    
-            slides.forEach((slide, index) => {
-                const video = slide.querySelector('video');
-                if (video) { 
-                    if (index === currentIndex) {
-                        video.muted = this.isCardNewsMuted;
-                        video.play().catch(e => console.error("Autoplay failed:", e));
-                    } else {
-                        video.pause();
-                        video.currentTime = 0;
-                    }
-                }
-            });
-        };
-        
-        const touchStart = (index) => {
-            return (event) => {
-                currentIndex = index;
-                startPos = getPositionX(event);
-                isDragging = true;
-                animationID = requestAnimationFrame(animation);
-                sliderContainer.classList.add('grabbing');
-            }
-        }
-    
-        const touchEnd = () => {
-            if (!isDragging) return;
-            isDragging = false;
-            cancelAnimationFrame(animationID);
-            const movedBy = currentTranslate - prevTranslate;
-    
-            if (movedBy < -100 && currentIndex < slides.length - 1) {
-                currentIndex += 1;
-            }
-            if (movedBy > 100 && currentIndex > 0) {
-                currentIndex -= 1;
-            }
-            setPositionByIndex();
-            sliderContainer.classList.remove('grabbing');
-        }
-    
-        const touchMove = (event) => {
-            if (isDragging) {
-                const currentPosition = getPositionX(event);
-                currentTranslate = prevTranslate + currentPosition - startPos;
-            }
-        }
-        
-        slides.forEach((slide, index) => {
-            slide.addEventListener('dragstart', (e) => e.preventDefault());
-            // Touch events
-            slide.addEventListener('touchstart', touchStart(index), { passive: true });
-            slide.addEventListener('touchend', touchEnd, { passive: true });
-            slide.addEventListener('touchmove', touchMove, { passive: true });
-            // Mouse events
-            slide.addEventListener('mousedown', touchStart(index));
-            slide.addEventListener('mouseup', touchEnd);
-            slide.addEventListener('mouseleave', touchEnd);
-            slide.addEventListener('mousemove', touchMove);
-        });
-        
-        updateSoundIcon();
-        setPositionByIndex();
-    }
-    
-    hidePostPage() {
-        document.body.classList.remove('post-view-active');
-        const viewer = this.elements['post-view-page'];
-        if (viewer) {
-            viewer.classList.remove('active');
-            viewer.innerHTML = '';
-        }
-    }
-
-    formatPostContent(content) {
-        if (!content) return '';
-        const lines = this.escapeHtml(content).split('\n');
-        return lines.map(line => {
-            if (line.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
-                return `<img src="${line}" alt="게시글 이미지" loading="lazy">`;
-            }
-            if (line.trim() === '') return '<br>';
-            return `<p>${line}</p>`;
-        }).join('');
-    }
-
-    renderComments(comments, postId) {
-        if (!comments || comments.length === 0) return '<p>아직 댓글이 없습니다.</p>';
-        return comments.map(comment => {
-            const isAuthor = this.currentUser && this.currentUser.uid === comment.userId;
-            const deleteButton = isAuthor
-                ? `<button class="comment-delete-btn" onclick="handleDeleteComment('${postId}', '${comment.id}')">삭제</button>`
-                : '';
-            return `
-                <div class="comment-item">
-                    <img src="${comment.userPhotoUrl || this.DEFAULT_PROFILE_IMAGE_URL}" alt="${this.escapeHtml(comment.userName)}" class="comment-avatar">
-                    <div class="comment-body">
-                        <div class="comment-header">
-                            <span class="comment-author">${this.escapeHtml(comment.userName)}</span>
-                            <div class="comment-meta">
-                                <span class="comment-timestamp">${this.formatTimestamp(comment.createdAt)}</span>
-                                ${deleteButton}
-                            </div>
-                        </div>
-                        <div class="comment-text">${this.escapeHtml(comment.text)}</div>
-                    </div>
-                </div>`;
-        }).join('');
-    }
-
-    async submitComment(postId) {
-        const input = document.getElementById('comment-input');
-        if (!input) return;
-        const text = input.value.trim();
-        if (!text) { this.showError('댓글 내용을 입력해주세요.'); return; }
-        if (!this.currentUser) { this.showError('로그인이 필요합니다.'); return; }
-        const submitBtn = document.querySelector('.comment-submit');
-        submitBtn.disabled = true;
-        try {
-            await window.boardGameAPI.addComment(postId, text);
-            input.value = '';
-            const comments = await window.boardGameAPI.getComments(postId);
-            document.querySelector('#post-view-page #comment-list').innerHTML = this.renderComments(comments, postId);
-            document.querySelector('.comments-section h3').textContent = `댓글 ${comments.length}개`;
-        } catch (e) {
-            this.showError('댓글 등록에 실패했습니다.');
-        } finally {
-            submitBtn.disabled = false;
-        }
-    }
-
-    async handleDeleteComment(postId, commentId) {
-        if (!confirm('정말로 댓글을 삭제하시겠습니까?')) return;
-        this.showLoading(true);
-        try {
-            await window.boardGameAPI.deleteComment(postId, commentId);
-            const comments = await window.boardGameAPI.getComments(postId);
-            document.querySelector('#post-view-page #comment-list').innerHTML = this.renderComments(comments, postId);
-            document.querySelector('.comments-section h3').textContent = `댓글 ${comments.length}개`;
-            this.showSuccess('댓글이 삭제되었습니다.');
-        } catch (e) {
-            console.error('Error deleting comment:', e);
-            this.showError(e.message || '댓글 삭제에 실패했습니다.');
-        } finally {
-            this.showLoading(false);
-        }
-    }
-
-    formatTimestamp(ts) {
-        if (!ts) return '';
-        const date = this.getDate(ts);
-        const yyyy = date.getFullYear();
-        const mm = String(date.getMonth() + 1).padStart(2, '0');
-        const dd = String(date.getDate()).padStart(2, '0');
-        const hh = String(date.getHours()).padStart(2, '0');
-        const min = String(date.getMinutes()).padStart(2, '0');
-        return `${yyyy}.${mm}.${dd} ${hh}:${min}`;
-    }
 
     initializeSliders() {
         ['difficulty', 'time'].forEach(type => {
@@ -848,20 +236,22 @@ class BoardGameViewer {
             if (!minInput || !maxInput || !range) return;
             const update = () => {
                 let min = parseFloat(minInput.value), max = parseFloat(maxInput.value);
-                if (min > max) { this.activeSlider === minInput ? maxInput.value = min : minInput.value = max; }
-                min = parseFloat(minInput.value), max = parseFloat(maxInput.value);
+                if (min > max) { [min, max] = [max, min]; } // 값 스왑
+                minInput.value = min; maxInput.value = max;
+
                 const minPercent = ((min - minInput.min) / (minInput.max - minInput.min)) * 100;
                 const maxPercent = ((max - maxInput.min) / (maxInput.max - minInput.min)) * 100;
                 range.style.left = `${minPercent}%`; range.style.width = `${maxPercent - minPercent}%`;
-                this.elements[`${type}MinValue`].textContent = min.toFixed(type === 'difficulty' ? 1 : 0) + (type === 'time' ? '분' : '');
-                const maxText = max.toFixed(type === 'difficulty' ? 1 : 0);
-                const maxSuffix = type === 'time' ? (max == maxInput.max ? '분+' : '분') : '';
-                this.elements[`${type}MaxValue`].textContent = maxText + maxSuffix;
+                
+                const formatValue = (val, isMax) => {
+                    const num = type === 'difficulty' ? val.toFixed(1) : val.toFixed(0);
+                    const suffix = type === 'time' ? (isMax && val == maxInput.max ? '분+' : '분') : '';
+                    return num + suffix;
+                };
+                this.elements[`${type}MinValue`].textContent = formatValue(min, false);
+                this.elements[`${type}MaxValue`].textContent = formatValue(max, true);
             };
-            const setActiveSlider = (e) => { this.activeSlider = e.target; };
             [minInput, maxInput].forEach(el => {
-                el.addEventListener('mousedown', setActiveSlider); 
-                el.addEventListener('touchstart', setActiveSlider, { passive: true });
                 el.addEventListener('input', update); 
                 el.addEventListener('change', this.debounce(() => this.advancedSearchAndFilter(), 200));
             });
@@ -876,10 +266,9 @@ class BoardGameViewer {
         return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), delay); };
     }
 
-    getDate(ts) { return ts?.toDate ? ts.toDate() : new Date(ts?.seconds * 1000 || 0); }
     escapeHtml(text) { return text != null ? String(text).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])) : ''; }
     formatPlayerCount(min, max) { return min && max ? (min === max ? `${min}명` : `${min}-${max}명`) : (min ? `${min}명+` : (max ? `~${max}명` : '-')); }
-    formatBestPlayers(best) { return best ? (String(best).match(/[,|-]/) ? best : `${best}명`) : '-'; }
+    formatBestPlayers(best) { return best ? (String(best).includes(',') || String(best).includes('-') ? best : `${best}명`) : '-'; }
     showLoading(show) { this.elements.loading?.classList.toggle('hidden', !show); }
     
     showMessage(message, type) {
@@ -903,4 +292,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     waitForAPI();
 });
-
